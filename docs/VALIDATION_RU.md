@@ -1,5 +1,16 @@
 # Проверка DipBot Mac 0.1
 
+## Crash/runtime follow-up, 2026-09-24
+
+- `uv run --frozen pytest -q`: **262 passed**, 12.06 с; прежнее предупреждение websockets.legacy.
+- Три SIGKILL-точки atomic write, три ошибки файловой записи, две проверки restart/reconcile и сравнительные minOut-векторы прошли.
+- Source offscreen smoke: exit 0. Production/packaging не изменены; повторная сборка не требовалась.
+- Подготовлен Windows-only DPAPI probe; системная проверка на Mac **не выполнялась**.
+- Статический разбор семи close/stop/event/error диапазонов без исполнения EXE. Реальных RPC/транзакций в этом проходе нет.
+
+[Отчёт и команды](CRASH_RUNTIME_AUDIT_RU.md). Результаты ниже относятся к предыдущим проходам.
+
+
 ## Полный статический проход, 2026-09-24
 
 - `uv run --frozen pytest -q`: **245 passed**, 7.84 с; прежнее предупреждение websockets.legacy.
