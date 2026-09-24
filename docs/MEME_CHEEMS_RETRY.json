@@ -1,0 +1,78 @@
+{
+  "utc": "2026-09-24T17:35:26.876492+00:00",
+  "mode": "PAPER",
+  "endpoint": "https://bsc-dataseed.binance.org",
+  "interval_s": 0.1,
+  "max_gap_s": 0.55,
+  "dip_pct": 3,
+  "tp_pct": 2,
+  "sl_pct": 2,
+  "transactions_sent": 0,
+  "tokens": [
+    {
+      "name": "CHEEMS",
+      "token": "0x0DF0587216a4a1bB7d5082fdc491d93d2dD4B413",
+      "token_resolution": "AMBIGUOUS",
+      "candidates": 4,
+      "routes": [
+        {
+          "router": "V2",
+          "pool": "0xaf0Eb8F2f114917ef0026105c070Cf08423F488E",
+          "decimals": 18,
+          "price_wbnb": "7.16241264375707245716692276347879027250716151735306020686996125301406356432261E-10",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1392685998266716164343395,
+          "sell_output_wbnb_raw": 995004616697932,
+          "pool_resolution": "RESOLVED"
+        },
+        {
+          "router": "V3",
+          "pool": "0x38231d4ef9d33EBea944C75a21301ff6986499C3",
+          "decimals": 18,
+          "price_wbnb": "7.16346669272193282779633250852291316463860339337995797417493858311281728659564E-10",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1392481573750937725896695,
+          "sell_output_wbnb_raw": 995005328225962,
+          "pool_resolution": "RESOLVED"
+        }
+      ],
+      "read_failures": [],
+      "selected_router": "V2",
+      "observations": 203,
+      "distinct_prices": 1,
+      "errors": [],
+      "buys": 0,
+      "exits": {},
+      "gap_resets": 10,
+      "gaps_over_550ms": 11,
+      "clean_stop": true,
+      "rpc_methods": {
+        "eth_chainId": 699,
+        "eth_getBlockByNumber": 215,
+        "eth_getCode": 10,
+        "eth_call": 242
+      },
+      "active_span_s": 60.02,
+      "median_price_ms": 249.03,
+      "p95_price_ms": 547.11,
+      "max_price_ms": 1132.84,
+      "min_price": "7.16241264375707245716692276347879027250716151735306020686996125301406356432261E-10",
+      "max_price": "7.16241264375707245716692276347879027250716151735306020686996125301406356432261E-10",
+      "synthetic_cycles": [
+        {
+          "synthetic": true,
+          "exit": "TAKE_PROFIT",
+          "passed": true
+        },
+        {
+          "synthetic": true,
+          "exit": "STOP_LOSS",
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "observation_seconds": 60.0,
+  "passed": true
+}

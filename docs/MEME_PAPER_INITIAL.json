@@ -1,0 +1,204 @@
+{
+  "utc": "2026-09-24T17:28:50.480622+00:00",
+  "mode": "PAPER",
+  "endpoint": "https://bsc-rpc.publicnode.com",
+  "interval_s": 0.1,
+  "max_gap_s": 0.55,
+  "dip_pct": 3,
+  "tp_pct": 2,
+  "sl_pct": 2,
+  "transactions_sent": 0,
+  "tokens": [
+    {
+      "name": "FLOKI",
+      "token": "0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
+      "token_resolution": "AMBIGUOUS",
+      "candidates": 5,
+      "routes": [
+        {
+          "router": "V2",
+          "pool": "0x231d9e7181E8479A8B40930961e93E7ed798542C",
+          "decimals": 9,
+          "price_wbnb": "3.66231962362445712621550216716267263674048552725801059175328382741443379264444E-8",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 27236832056043,
+          "sell_output_wbnb_raw": 995005941643967,
+          "pool_resolution": "RESOLVED"
+        },
+        {
+          "router": "V3",
+          "pool": "0x82B13a3fa0F5C6F5baa68605e5d33A757bcdEbBe",
+          "decimals": 9,
+          "price_wbnb": "3.60884309442497836542340954924790119473417847037579912044253402680654673046437E-8",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 26940923553405,
+          "sell_output_wbnb_raw": 945751321989926,
+          "pool_resolution": "RESOLVED"
+        }
+      ],
+      "selected_router": "V2",
+      "observations": 288,
+      "distinct_prices": 1,
+      "errors": [
+        "HTTPError: операция прервана. Проверьте RPC, баланс и доступность пула"
+      ],
+      "buys": 0,
+      "exits": {},
+      "gap_resets": 0,
+      "gaps_over_550ms": 1,
+      "clean_stop": true,
+      "rpc_methods": {
+        "eth_chainId": 956,
+        "eth_getBlockByNumber": 301,
+        "eth_getCode": 10,
+        "eth_call": 328
+      },
+      "median_price_ms": 143.87,
+      "p95_price_ms": 161.22,
+      "max_price_ms": 393.25,
+      "min_price": "3.66231962362445712621550216716267263674048552725801059175328382741443379264444E-8",
+      "max_price": "3.66231962362445712621550216716267263674048552725801059175328382741443379264444E-8",
+      "synthetic_cycles": [
+        {
+          "synthetic": true,
+          "exit": "TAKE_PROFIT",
+          "passed": true
+        },
+        {
+          "synthetic": true,
+          "exit": "STOP_LOSS",
+          "passed": true
+        }
+      ],
+      "passed": false
+    },
+    {
+      "name": "BabyDoge",
+      "token": "0xc748673057861a797275cd8a068abb95a902e8de",
+      "token_resolution": "AMBIGUOUS",
+      "candidates": 5,
+      "routes": [
+        {
+          "router": "V2",
+          "pool": "0xc736cA3d9b1E90Af4230BD8F9626528B3D4e0Ee0",
+          "decimals": 9,
+          "price_wbnb": "5.36671506170237921671442307346571447504374614776063873020003700802495397172973E-13",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1858678590448575704,
+          "sell_output_wbnb_raw": 995005928454199,
+          "pool_resolution": "RESOLVED"
+        },
+        {
+          "router": "V3",
+          "pool": "0x61db764C20a2EBfB7e8a7a5AFb0b2Dd85A4CEF5f",
+          "decimals": 9,
+          "price_wbnb": "5.32547001500877573968083243649552114522533600542139385505116381473362949744161E-13",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1858990410801983065,
+          "sell_output_wbnb_raw": 980099545087231,
+          "pool_resolution": "RESOLVED"
+        }
+      ],
+      "selected_router": "V2",
+      "observations": 293,
+      "distinct_prices": 3,
+      "errors": [
+        "HTTPError: операция прервана. Проверьте RPC, баланс и доступность пула"
+      ],
+      "buys": 0,
+      "exits": {},
+      "gap_resets": 0,
+      "gaps_over_550ms": 1,
+      "clean_stop": true,
+      "rpc_methods": {
+        "eth_chainId": 970,
+        "eth_getBlockByNumber": 306,
+        "eth_getCode": 10,
+        "eth_call": 332
+      },
+      "median_price_ms": 140.51,
+      "p95_price_ms": 161.63,
+      "max_price_ms": 390.82,
+      "min_price": "5.36671506170237921671442307346571447504374614776063873020003700802495397172973E-13",
+      "max_price": "5.36671610629299795301184393046727621778292662790699669186935986885240819065447E-13",
+      "synthetic_cycles": [
+        {
+          "synthetic": true,
+          "exit": "TAKE_PROFIT",
+          "passed": true
+        },
+        {
+          "synthetic": true,
+          "exit": "STOP_LOSS",
+          "passed": true
+        }
+      ],
+      "passed": false
+    },
+    {
+      "name": "CHEEMS",
+      "token": "0x0df0587216a4a1bb7d5082fdc491d93d2dd4b413",
+      "token_resolution": "AMBIGUOUS",
+      "candidates": 4,
+      "routes": [
+        {
+          "router": "V2",
+          "pool": "0xaf0Eb8F2f114917ef0026105c070Cf08423F488E",
+          "decimals": 18,
+          "price_wbnb": "7.16827202383007325497687335544875075196342532972371842843859564095698920167051E-10",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1391547610491762029277310,
+          "sell_output_wbnb_raw": 995004617364766,
+          "pool_resolution": "RESOLVED"
+        },
+        {
+          "router": "V3",
+          "pool": "0x38231d4ef9d33EBea944C75a21301ff6986499C3",
+          "decimals": 18,
+          "price_wbnb": "7.17024061067739487451337709381055586722537733404649132591051699756465828883876E-10",
+          "buy_input_wbnb_raw": 1000000000000000,
+          "buy_output_raw": 1391166059493958731629057,
+          "sell_output_wbnb_raw": 995005328661476,
+          "pool_resolution": "RESOLVED"
+        }
+      ],
+      "selected_router": "V2",
+      "observations": 294,
+      "distinct_prices": 1,
+      "errors": [
+        "HTTPError: операция прервана. Проверьте RPC, баланс и доступность пула"
+      ],
+      "buys": 0,
+      "exits": {},
+      "gap_resets": 0,
+      "gaps_over_550ms": 0,
+      "clean_stop": true,
+      "rpc_methods": {
+        "eth_chainId": 974,
+        "eth_getBlockByNumber": 307,
+        "eth_getCode": 10,
+        "eth_call": 334
+      },
+      "median_price_ms": 140.97,
+      "p95_price_ms": 159.99,
+      "max_price_ms": 390.53,
+      "min_price": "7.16827202383007325497687335544875075196342532972371842843859564095698920167051E-10",
+      "max_price": "7.16827202383007325497687335544875075196342532972371842843859564095698920167051E-10",
+      "synthetic_cycles": [
+        {
+          "synthetic": true,
+          "exit": "TAKE_PROFIT",
+          "passed": true
+        },
+        {
+          "synthetic": true,
+          "exit": "STOP_LOSS",
+          "passed": true
+        }
+      ],
+      "passed": false
+    }
+  ],
+  "observation_seconds": 180.0,
+  "passed": false
+}
