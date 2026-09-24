@@ -158,7 +158,9 @@ class LiveTrader:
         routes = []
         cache = {}
         base = dest if src == address(WBNB) else src
-        preferred = preference(self.store, base, getattr(self, "trade_router", None)) if hasattr(self, "store") else None
+        preferred = getattr(self, "converter_preference", None)
+        if preferred is None and hasattr(self, "store"):
+            preferred = preference(self.store, base, getattr(self, "trade_router", None))
         for kind, nodes, fees in conversion_specs(src, dest, preferred):
             path = []
             for index, (left, right) in enumerate(zip(nodes, nodes[1:])):

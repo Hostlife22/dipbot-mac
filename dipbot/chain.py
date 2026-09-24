@@ -164,6 +164,16 @@ class Chain:
             self._decimals[token] = value
         return self._decimals[token]
 
+    def symbol(self, token):
+        from web3.exceptions import ContractLogicError, BadFunctionCallOutput
+        try:
+            return self.call(token, TOKEN_ABI, "symbol")
+        except (ContractLogicError, BadFunctionCallOutput):
+            try:
+                return self.call(token, [fn("symbol", outputs=("bytes32",))], "symbol")
+            except (ContractLogicError, BadFunctionCallOutput):
+                return ""
+
     def balance(self, token, owner):
         return self.call(token, TOKEN_ABI, "balanceOf", address(owner))
 
@@ -217,6 +227,10 @@ class Chain:
                 if not pool.token_is_0:
                     ratio = 1 / ratio
             return ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
+
+    def resolve_address(self, raw, catalogs):
+        from .discovery import resolve
+        return resolve(self, raw, catalogs)
 
     def discover_candidates(self, target, quote, router, pair_name):
         from .autopair import Candidate

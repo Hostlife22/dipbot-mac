@@ -1,5 +1,21 @@
 # Проверка DipBot Mac 0.1
 
+## Проход workflow, 2026-09-24 (база 74ca2a9)
+
+- `uv run --frozen pytest -q`: **182 passed**, 6.60 с; одно прежнее предупреждение websockets.legacy.
+- Source offscreen smoke: exit 0.
+- `./BUILD_MAC.command`: exit 0, Intel x86_64 `.app` собрана.
+- Built smoke через Cocoa (`env -u QT_QPA_PLATFORM … --smoke-test`): exit 0.
+- `codesign --verify --deep --strict 'dist/DipBot Mac.app'`: exit 0.
+- `tools.workflow_native`: 16 диапазонов и выбранные публичные константы повторно воспроизведены. Хеши текущих исходников добавлены в `WORKFLOW_EVIDENCE.json` отдельно от EXE-свидетельств.
+- Отдельный GUI-сценарий на временном Store: суммы V2/WBNB и V3/USDT восстанавливаются при переключении и новом запуске; устаревший discovery-результат игнорируется.
+- `git diff HEAD --check`: без ошибок в итоговых файлах. Существующий индекс Git не обновлялся; commit/push не выполнялись.
+
+Оригинал не запускался, Windows-версия/активация и Windows UI не проверялись. Реальные RPC/транзакции, пользовательские файлы и Keychain не использовались. Четыре subprocess-crash проверки используют подставной транспорт. [Изменения, доказательства и ограничения](WORKFLOW_PARITY_RU.md).
+
+Ниже сохранены результаты прежних проходов.
+
+
 Дата: 2026-09-24. Актуальный результат: [аудит по ТЗ](PARITY_AUDIT_RU.md), [формальная модель](STRATEGY_SPEC_RU.md).
 
 Повторный аудит: [выводы и адреса кода](NATIVE_AUDIT_RU.md). После изменений заново собрана `dist/DipBot Mac.app`; нативный Cocoa smoke test и `codesign --verify --deep --strict` завершились с кодом 0. Дополнительно проверены граница gap, плоская цена, перенос базы до/после DIP, snapshot minOut через approve, цена после BUY receipt, сохранение позиции при сбое чтения и граница round-trip конвертера. Первоначальные read-only RPC-проверки ниже не повторялись и не являются LIVE-проверкой изменений.

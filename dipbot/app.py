@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPush
     QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea)
 
 from .chain import profiles
+from .dynamic import catalog
 from .storage import Store, Vault, data_dir
 from .worker import Worker
 from . import preferences
@@ -137,9 +138,28 @@ class Window(QMainWindow):
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))
             except ValueError:
+                saved_preferences = None
                 self.log("Сохранённые параметры некорректны: использованы значения по умолчанию")
         self.mode_changed()
         self.update_profiles()
+        saved_preferences = saved_preferences or {}
+        self.pair_amounts = dict(saved_preferences.get("pair_amounts", {}))
+        selection = saved_preferences.get("selection", {})
+        self.router.setCurrentText(selection.get("router", "AUTO"))
+        if self.quote.findText(selection.get("pair", "WBNB")) >= 0:
+            self.quote.setCurrentText(selection.get("pair", "WBNB"))
+        self.amount_key = preferences.pair_key(self.router.currentText(), self.quote.currentText())
+        if self.amount_key in self.pair_amounts:
+            self.params["amount"].setText(self.pair_amounts[self.amount_key])
+        self.auto_generation = 0
+        self.autopair_timer = QTimer(self)
+        self.autopair_timer.setSingleShot(True)
+        self.autopair_timer.setInterval(220)
+        self.autopair_timer.timeout.connect(self.auto_discover)
+        self.token.textEdited.connect(self.schedule_autopair)
+        self.pool_input.textEdited.connect(self.invalidate_discovery)
+        self.router.currentTextChanged.connect(self.market_changed)
+        self.quote.currentTextChanged.connect(self.market_changed)
         if self.locked:
             self.log("В журнале есть незавершённая LIVE-операция. Проведите сверку в настройках")
         self.worker.start()
@@ -343,9 +363,46 @@ class Window(QMainWindow):
     def log(self, message):
         self.activity.appendPlainText(datetime.now().strftime("%H:%M:%S") + "  " + message)
 
+    def remember_amount(self):
+        try:
+            self.pair_amounts[self.amount_key] = preferences.positive_amount(self.params["amount"].text())
+        except ValueError:
+            pass  # Invalid edits never replace a previously valid per-pair amount.
+
+    def market_changed(self, *_):
+        if not self.quote.currentText():
+            return
+        self.remember_amount()
+        self.amount_key = preferences.pair_key(self.router.currentText(), self.quote.currentText())
+        self.params["amount"].setText(self.pair_amounts.get(self.amount_key, "0.02"))
+        self.invalidate_discovery()
+
+    def invalidate_discovery(self, *_):
+        self.auto_generation += 1
+        self.worker.discovery_generation = self.auto_generation
+        self.autopair_timer.stop()
+
+    def schedule_autopair(self, *_):
+        self.invalidate_discovery()
+        if self.worker.chain is not None and not self.running and len(self.token.text().strip()) == 42:
+            self.autopair_timer.start()
+
+    def auto_discover(self):
+        if self.running or self.worker.chain is None:
+            return
+        if self.busy:
+            self.autopair_timer.start()
+            return
+        self.send("discover", token=self.token.text().strip(), quote=self.quote.currentText(),
+                  router=self.router.currentText())
+
     def send(self, name, **data):
         if self.busy:
             return
+        if name in ("discover", "select", "verify", "connect"):
+            self.invalidate_discovery()
+        if name == "discover":
+            data["generation"] = self.auto_generation
         self.busy = True
         self.update_controls()
         self.worker.submit(name, **data)
@@ -364,7 +421,7 @@ class Window(QMainWindow):
                    "\n\nБудут подписаны и отправлены реальные транзакции, включая необходимые approve. Продолжить?",
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
-        self.send(command, mode=mode, settings={k: v.text().strip() for k, v in self.params.items()},
+        self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
                   interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
@@ -375,6 +432,7 @@ class Window(QMainWindow):
         self.send("sell")
 
     def stop_bot(self):
+        self.invalidate_discovery()
         self.worker.stop_event.set()
         self.log("STOP запрошен. Если сделка отправлена — ожидается receipt; затем закрытие позиции")
 
@@ -417,9 +475,13 @@ class Window(QMainWindow):
     def update_profiles(self, dynamic=None):
         pairs = profiles() | (dynamic if dynamic is not None else self.store.data.get("dynamic_profiles", {}))
         selected = self.quote.currentText() or "WBNB"
+        blocked = self.quote.blockSignals(True)
         self.quote.clear()
         self.quote.addItems(["ALL"] + sorted(pairs, key=str.casefold))
         self.quote.setCurrentText(selected if selected in pairs else "WBNB")
+        self.quote.blockSignals(blocked)
+        if hasattr(self, "amount_key"):
+            self.market_changed()
         self.table.setRowCount(len(pairs))
         for row, (symbol, token) in enumerate(sorted(pairs.items(), key=lambda x: x[0].casefold())):
             for col, value in enumerate([symbol, token, "—"]):
@@ -439,6 +501,11 @@ class Window(QMainWindow):
         self.stop.setEnabled(True)
 
     def on_event(self, name, payload):
+        if name == "discovery_event":
+            generation, event_name, value = payload
+            if generation == self.auto_generation:
+                self.on_event(event_name, value)
+            return
         if name == "busy":
             self.busy = payload
         elif name == "error":
@@ -450,6 +517,9 @@ class Window(QMainWindow):
         elif name == "autopair":
             self.pool_label.setText({"PENDING": "PENDING · ожидается ликвидность; повторите AutoPair",
                                      "NOT_FOUND": "Пулы не найдены",
+                                     "INVALID_CONTRACT": "По адресу нет контракта BSC",
+                                     "CATALOG_TOKEN": "Введена база профиля; нужен целевой токен",
+                                     "UNSUPPORTED_POOL": "Неподдерживаемый пул или базовая пара",
                                      "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
         elif name == "pools":
             self.candidates.clear()
@@ -457,9 +527,27 @@ class Window(QMainWindow):
             for pool in payload:
                 self.candidates.addItem(pool.label, pool)
         elif name == "selected":
+            self.remember_amount()
+            self.router.blockSignals(True)
+            self.quote.blockSignals(True)
+            self.router.setCurrentText(payload.router)
+            names = catalog(self.store, payload.router)
+            pair = next((name for name, token in names.items() if token.lower() == payload.quote.lower()), "ALL")
+            self.quote.setCurrentText(pair)
+            self.router.blockSignals(False)
+            self.quote.blockSignals(False)
+            self.amount_key = preferences.pair_key(payload.router, pair)
+            self.params["amount"].setText(self.pair_amounts.get(self.amount_key, "0.02"))
             self.pool_input.setText(payload.address)
             self.token.setText(payload.token)
             self.pool_label.setText(payload.label + "\nAMOUNT в активе " + payload.quote)
+        elif name == "sweep_report":
+            for token, amount in payload["remaining"].items():
+                self.log(f"SWEEP остаток {token}: {amount} raw")
+            if payload["unknown"]:
+                self.log("SWEEP: балансы не проверены: " + ", ".join(payload["unknown"]))
+            if payload["skipped"]:
+                self.log("SWEEP: пропущены цели; проверьте/выберите их для этого кошелька: " + ", ".join(payload["skipped"]))
         elif name == "wallet":
             self.wallet.setText(payload)
         elif name == "profiles":
@@ -490,13 +578,17 @@ class Window(QMainWindow):
             QMessageBox.information(self, "Сначала STOP", "Остановите BOT и дождитесь завершения текущей операции перед закрытием")
             event.ignore()
             return
+        self.invalidate_discovery()
         self.worker.quit_event.set()
         if not self.worker.wait(1500):
             event.ignore()
             return
         # The worker has exited: saving cannot race its transaction journal.
         try:
+            self.remember_amount()
             preferences.save(self.store, {"version": 1,
+                "selection": {"router": self.router.currentText(), "pair": self.quote.currentText()},
+                "pair_amounts": self.pair_amounts,
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
                 "gas": self.gas.text().strip(), "interval": str(self.interval.value())})
         except (ValueError, OSError):

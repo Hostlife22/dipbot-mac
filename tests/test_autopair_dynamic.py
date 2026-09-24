@@ -62,8 +62,13 @@ def test_worker_invalidates_previous_selection_and_obeys_resolution(tmp_path, ou
         if outcome=='timeout': raise TimeoutError()
         if outcome=='stop': worker.stop_event.set()
         return [candidate(outcome!='pending', 0 if outcome=='pending' else 100)]
-    worker.chain=SimpleNamespace(discover_candidates=discover)
-    chosen=[];worker.select_pool=lambda p: chosen.append(p)
+    from dipbot.discovery import Resolution
+    def resolve(raw,catalogs):
+        rows=discover()
+        state,selected=choose(rows)
+        return Resolution(state,tuple(rows),selected,raw)
+    worker.chain=SimpleNamespace(resolve_address=resolve)
+    chosen=[];worker.select_pool=lambda p,**kwargs: chosen.append(p)
     data={'token':TARGET, 'router':'V3', 'quote':'WBNB'}
     if outcome=='timeout':
         with pytest.raises(TimeoutError): worker.command('discover',data)
@@ -190,8 +195,11 @@ def test_sweep_rpc_failure_restores_router_and_sends_nothing(tmp_path):
     worker.chain=SimpleNamespace(balance=lambda token,owner:100 if token==BASE else 0)
     def fail(*_): raise TimeoutError()
     worker.live.conversion_route=fail
-    with pytest.raises(TimeoutError): worker.sweep()
+    reports=[]
+    worker.event.connect(lambda name,payload: reports.append(payload) if name=='sweep_report' else None)
+    worker.sweep()
     assert worker.live.trade_router=='V2'
+    assert BASE in reports[0]['failed'] and BASE in reports[0]['remaining']
 
 
 def test_wrong_quote_from_factory_is_rejected():

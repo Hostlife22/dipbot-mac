@@ -69,6 +69,18 @@ class Decoder:
             value = raw.decode("utf-8") if tag == "v" else {"bytes": raw.hex()}
         elif tag in "liqI":
             value = self.varint() * (-1 if tag in "qI" else 1)
+        elif tag in "gG":
+            count = self.varint()
+            if count > len(self.data):
+                raise ValueError("Invalid large integer length")
+            value = 0
+            for _ in range(count):
+                part = self.varint()
+                if part >= 2**31:
+                    raise ValueError("Invalid large integer limb")
+                value = (value << 31) | part
+            if tag == "G":
+                value = -value
         elif tag == "f":
             value = struct.unpack("<d", self.take(8))[0]
         elif tag == "Z":

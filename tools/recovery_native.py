@@ -30,24 +30,24 @@ RANGES = {
 }
 
 
-def inspect(exe, disassembly=None):
+def inspect(exe, disassembly=None, *, tables=TABLES, selected=SELECTED, ranges=RANGES):
     data = exe.read_bytes()
     if hashlib.sha256(data).hexdigest() != SHA256:
         raise ValueError('Different release: re-establish native addresses')
-    modules = {name: constants(data, name) for name in TABLES}
+    modules = {name: constants(data, name) for name in tables}
     report = {'sha256': SHA256, 'original_executed': False,
               'decoded_counts': {name: len(rows) for name, rows in modules.items()},
-              'tables': {name: hex(addr) for name, addr in TABLES.items()},
-              'selected_constants': {name: [rows[i] for i in SELECTED[name]]
+              'tables': {name: hex(addr) for name, addr in tables.items()},
+              'selected_constants': {name: [rows[i] for i in selected[name]]
                                      for name, rows in modules.items()}, 'native_ranges': {}}
     if disassembly:
         import capstone
         engine = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
         engine.detail = True
         disassembly.mkdir(parents=True, exist_ok=True)
-        slots = {TABLES[name] + row['index']*8: f"{name}[{row['index']}]={row['value']!r}"
+        slots = {tables[name] + row['index']*8: f"{name}[{row['index']}]={row['value']!r}"
                  for name, rows in modules.items() for row in rows}
-    for name, (start, end) in RANGES.items():
+    for name, (start, end) in ranges.items():
         offset = start - 0x140001000 + 0x400
         code = data[offset:offset + end-start]
         report['native_ranges'][name] = {'va_start': hex(start), 'va_end': hex(end),

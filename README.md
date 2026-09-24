@@ -86,6 +86,7 @@ docs/               Архитектура, разбор, отчёт прове�
 - [Архитектура и поток исполнения](docs/ARCHITECTURE_RU.md)
 - [Участие в разработке](CONTRIBUTING.md)
 - [Работа с чувствительными данными](SECURITY.md)
+- [Последний разбор AutoPair, ADD, Sweep и настроек](docs/WORKFLOW_PARITY_RU.md)
 - [Что удалось восстановить из оригинала](docs/REVERSE_ENGINEERING_RU.md)
 - [Что проверено и что осталось непроверенным](docs/VALIDATION_RU.md)
 

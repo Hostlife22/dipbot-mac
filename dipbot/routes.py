@@ -9,6 +9,13 @@ from importlib.resources import files
 from .chain import address, WBNB, USDT, ETH, FEES
 
 
+def seed_preference(token):
+    entries = json.loads(files('dipbot').joinpath('profiles.json').read_text())
+    profile = next((p for p in entries if address(p['address']) == address(token)), None)
+    return ({'converter_mode': profile['converter_mode'], 'converter_fee': profile.get('converter_fee') or 500}
+            if profile else {'converter_mode': 'via_usdt_v3', 'converter_fee': 500})
+
+
 def conversion_specs(src, dest, preference=None):
     src, dest = address(src), address(dest)
     wrapped = address(WBNB)

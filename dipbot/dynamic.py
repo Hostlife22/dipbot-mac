@@ -1,6 +1,7 @@
 """Mac registry schema; Windows field semantics, without Windows vault migration."""
 from copy import deepcopy
 import time
+import re
 from .chain import address, profiles, WBNB, USDT, ETH, FEES, route_path
 
 MODES = {'direct_v2', 'direct_v3', 'via_usdt_v3', 'via_eth_v3', 'native_wrap'}
@@ -77,7 +78,14 @@ def persist(store, updated):
         raise
 
 
-def upsert(store, pool, route, loss_bps):
+def safe_symbol(raw, token):
+    if isinstance(raw, bytes):
+        raw = raw.rstrip(b"\0").decode("utf-8", "ignore")
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "", str(raw or "")).upper()[:16]
+    return cleaned or "PAIR_" + token[-4:].upper()
+
+
+def upsert(store, pool, route, loss_bps, *, symbol=None):
     old = records(store)
     mode, fee = route_settings(route)
     if route_path(route)[0][-1] != address(pool.quote):
@@ -85,11 +93,16 @@ def upsert(store, pool, route, loss_bps):
     key = pool.router + ':' + pool.quote.lower()
     previous = old.get(key)
     names = set(profiles()) | set(store.data.get('dynamic_profiles', {}))
-    name = previous['name'] if previous else 'CUSTOM-' + pool.quote[2:10] + '-' + pool.router
+    name = previous['name'] if previous else safe_symbol(symbol, pool.quote)
     if not previous:
-        stem, counter = name, 2
-        while name in names:
-            name = stem + '-' + str(counter)
+        occupied = {n.upper() for n in names}
+        stem = name[:19] + "_" + pool.quote[-4:].upper()
+        if name.upper() in occupied:
+            name = stem[:24]
+        counter = 2
+        while name.upper() in occupied:
+            suffix = "_" + str(counter)
+            name = stem[:24-len(suffix)] + suffix
             counter += 1
     now = int(time.time())
     record = {'name': name, 'token_address': pool.quote, 'trade_router': pool.router,
