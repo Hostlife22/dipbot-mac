@@ -9,6 +9,7 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 
 from .strategy import D
+from .rpc import BscHTTPProvider
 
 V2_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
 V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865"
@@ -133,7 +134,7 @@ class Chain:
             raise ValueError("RPC должен быть HTTPS (HTTP допустим для localhost)")
         if not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
             raise ValueError("Некорректный RPC URL")
-        self.w3 = Web3(Web3.HTTPProvider(endpoint, request_kwargs={"timeout": 10},
+        self.w3 = Web3(BscHTTPProvider(endpoint, request_kwargs={"timeout": 10},
                                        exception_retry_configuration=None))
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         self._decimals = {}
@@ -144,7 +145,9 @@ class Chain:
     def call(self, addr, abi, name, *args, block="latest"):
         return getattr(self.contract(addr, abi).functions, name)(*args).call(block_identifier=block)
 
-    def check(self):
+    def check(self, *, force_network=True):
+        if force_network and isinstance(self.w3.provider, BscHTTPProvider):
+            self.w3.provider.invalidate_network()
         if self.w3.eth.chain_id != 56:
             raise ValueError("RPC подключён не к BSC mainnet (chainId 56)")
         block = self.w3.eth.get_block("latest")
@@ -208,7 +211,7 @@ class Chain:
         return pool
 
     def price(self, pool: Pool) -> D:
-        block = self.check()
+        block = self.check(force_network=False)
         with localcontext() as context:
             context.prec = 78
             if pool.router == "V2":
@@ -218,9 +221,14 @@ class Chain:
                 numerator, denominator = (r1, r0) if pool.token_is_0 else (r0, r1)
                 ratio = D(numerator) / D(denominator)
             else:
-                if not self.call(pool.address, POOL_ABI, "liquidity", block=block):
+                from .discovery import batch, request
+                liquidity, slot = batch(self, [request(pool.address, POOL_ABI, name)
+                                               for name in ("liquidity", "slot0")], block)
+                if liquidity is None or slot is None:
+                    raise ValueError("Не удалось прочитать состояние V3 через Multicall")
+                if not liquidity:
                     raise ValueError("WAITING: нулевая ликвидность")
-                sqrt = self.call(pool.address, POOL_ABI, "slot0", block=block)[0]
+                sqrt = slot[0]
                 if sqrt <= 0:
                     raise ValueError("Пустая цена V3")
                 ratio = D(sqrt) ** 2 / D(2) ** 192

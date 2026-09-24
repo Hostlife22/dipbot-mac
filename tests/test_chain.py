@@ -10,7 +10,7 @@ POOL = address("0x" + "12"*20)
 
 def fake_chain(reserves=(2*10**18, 1000*10**6, 0), sqrt=2**96):
     chain = object.__new__(Chain)
-    chain.check = lambda: 123
+    chain.check = lambda **kwargs: 123
     def call(addr, abi, name, *args, **kwargs):
         assert kwargs.get("block") == 123
         return {"getReserves": reserves, "liquidity": 1, "slot0": (sqrt,)}[name]
@@ -26,7 +26,9 @@ def test_v2_price_with_different_decimals_both_orientations():
     assert c.price(inverse) == D("0.002")
 
 
-def test_v3_q96_price_both_orientations():
+def test_v3_q96_price_both_orientations(monkeypatch):
+    monkeypatch.setattr("dipbot.discovery.batch", lambda chain, requests, block: [
+        chain.call(addr, abi, name, *args, block=block) for addr, abi, name, args in requests])
     c = fake_chain(sqrt=2*2**96)
     p = Pool(POOL, "V3", WBNB, USDT, 18, 18, True, 500)
     assert c.price(p) == 4

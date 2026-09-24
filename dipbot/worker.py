@@ -113,6 +113,7 @@ class Worker(QThread):
                     self.log.emit("STOP: " + safe_error(exc))
                 self.status()
             if self.running and time.monotonic() >= next_tick:
+                poll_started = time.monotonic()
                 try:
                     self.observe()
                 except Exception as exc:
@@ -120,7 +121,9 @@ class Worker(QThread):
                     self.running = False
                     self.log.emit("BOT приостановлен: " + safe_error(exc))
                     self.event.emit("error", safe_error(exc))
-                next_tick = time.monotonic() + self.interval
+                # One observation at a time; slow RPC skips missed slots instead
+                # of queuing catch-up requests or adding another full delay.
+                next_tick = max(poll_started + self.interval, time.monotonic())
                 self.status()
 
     def status(self):

@@ -1,0 +1,12 @@
+{
+  "mode": "PAPER",
+  "interval_s": 0.1,
+  "duration_s": 120.01,
+  "price_count": 686,
+  "median_price_ms": 168.17,
+  "max_price_ms": 453.8,
+  "median_observation_gap_ms": 168.25,
+  "gaps_over_550ms": 0,
+  "transactions_sent": 0,
+  "passed": true
+}

@@ -645,13 +645,14 @@ def main():
     parser.add_argument("--paper-acceptance", help="Isolated read-only PAPER check directory")
     parser.add_argument("--acceptance-seconds", type=int, default=600)
     parser.add_argument("--acceptance-resume", action="store_true")
+    parser.add_argument("--acceptance-endpoint", default="https://bsc-dataseed.binance.org")
     args = parser.parse_args()
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
     if args.paper_acceptance:
         from .acceptance import run
-        return run(app, args.paper_acceptance, args.acceptance_seconds, args.acceptance_resume)
+        return run(app, args.paper_acceptance, args.acceptance_seconds, args.acceptance_resume, args.acceptance_endpoint)
     if args.smoke_test:
         import tempfile
         from pathlib import Path
