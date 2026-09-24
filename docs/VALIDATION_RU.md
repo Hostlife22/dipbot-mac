@@ -77,3 +77,15 @@
 - `git diff --check`: без ошибок. Commit/push не выполнялись в этом проходе.
 
 Результаты, исправления и оставшиеся различия: [STATIC_RECOVERY_AUDIT_RU.md](STATIC_RECOVERY_AUDIT_RU.md). Эти проверки не подтверждают Windows runtime parity или LIVE-торговлю.
+
+## AutoPair / dynamic registry — 2026-09-24, после 8228f0a
+
+- `uv run --frozen pytest -q`: **156 passed**, 1 прежнее предупреждение websockets.legacy.
+- Source GUI smoke: exit 0; отдельный тест интерфейса с временным Store и подставной chain подтвердил PENDING → RESOLVED и установку выбранного pool address.
+- `./BUILD_MAC.command`: exit 0, bundle пересобран после последнего изменения исходников.
+- Cocoa smoke готового bundle: exit 0.
+- `codesign --verify --deep --strict`: exit 0.
+- Десять native-диапазонов и выбранные константы воспроизведены по hash-locked EXE; `git diff --check` без ошибок.
+- Все RPC-ответы в новых тестах подставные. Оригинал, реальные транзакции, пользовательские данные и Keychain не использовались.
+
+Scope и оставшиеся ограничения: [AUTOPAIR_PARITY_RU.md](AUTOPAIR_PARITY_RU.md). Runtime parity и LIVE не подтверждены.

@@ -365,7 +365,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, settings={k: v.text().strip() for k, v in self.params.items()},
-                  interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(),
+                  interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -447,6 +447,10 @@ class Window(QMainWindow):
         elif name == "price":
             self.chart.add(payload)
             self.metrics["price"].setText(f"{float(payload):.8g}")
+        elif name == "autopair":
+            self.pool_label.setText({"PENDING": "PENDING · ожидается ликвидность; повторите AutoPair",
+                                     "NOT_FOUND": "Пулы не найдены",
+                                     "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
         elif name == "pools":
             self.candidates.clear()
             self.pool_label.setText("Выберите проверенный маршрут" if payload else "Пул не выбран")

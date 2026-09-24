@@ -426,6 +426,18 @@
     ]
   },
   "native_ranges": {
+    "autopair_sort_key": {
+      "va_start": "0x140868980",
+      "va_end": "0x140868ef5",
+      "file_offset": 8813952,
+      "sha256": "92398b873f957cb7add7938917d8bc68c880869e8d77534fdee54d91ba6bc706"
+    },
+    "autopair_v2_v3_scores": {
+      "va_start": "0x140867430",
+      "va_end": "0x1408676b4",
+      "file_offset": 8808496,
+      "sha256": "8fe88f8bcc889803fd31c247b7db6b63c8338c603117684c36bea6f6ed23f24f"
+    },
     "autopair_route_key": {
       "va_start": "0x1408581a0",
       "va_end": "0x1408584bc",

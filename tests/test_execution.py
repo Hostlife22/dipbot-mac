@@ -120,3 +120,41 @@ def test_approve_is_exact_and_resets_nonzero(trader):
     trader.send = lambda function, label: calls.append(function)
     trader.approve(WBNB, USDT, 100)
     assert calls == [0, 100]
+
+
+@pytest.mark.parametrize('boundary', ['hash', 'receipt'])
+def test_disk_failure_at_send_boundaries_survives_restart(trader, boundary):
+    trader.begin('crash boundary')
+    save = trader.store.save
+    count = 0
+    broadcasts = []
+    broadcast = trader.chain.w3.eth.send_raw_transaction
+    def send(raw):
+        broadcasts.append(raw)
+        return broadcast(raw)
+    trader.chain.w3.eth.send_raw_transaction = send
+    def fault():
+        nonlocal count
+        count += 1
+        if count == (1 if boundary == 'hash' else 2):
+            raise OSError('simulated disk failure')
+        save()
+    trader.store.save = fault
+    with pytest.raises(OSError): trader.send(Function(), 'test')
+    assert len(broadcasts) == (0 if boundary == 'hash' else 1)
+    reloaded = Store(trader.store.path)
+    assert reloaded.data['operation']
+    if boundary == 'receipt':
+        assert reloaded.data['operation']['transactions'][0]['status'] == 'pending'
+    trader.store = reloaded
+    with pytest.raises(UncertainTransaction): trader.begin('duplicate after restart')
+
+
+def test_receipt_timeout_after_accepted_send_never_unlocks(trader):
+    trader.begin('accepted but receipt unknown')
+    def timeout(*args, **kwargs): raise TimeoutError('receipt timeout')
+    trader.chain.w3.eth.wait_for_transaction_receipt = timeout
+    with pytest.raises(UncertainTransaction): trader.send(Function(), 'test')
+    trader.store = Store(trader.store.path)
+    assert trader.store.data['operation']['transactions'][0]['status'] == 'pending'
+    with pytest.raises(UncertainTransaction): trader.begin('duplicate')

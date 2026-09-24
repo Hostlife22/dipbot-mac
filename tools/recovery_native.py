@@ -17,6 +17,8 @@ SELECTED = {'autopair': [15, 16, 17, 18, 19, 83, 143, 144, 145, 146, 147, 218],
             'runtime_config': [6, 9, 10, 11, 12, 15, 38, 41, 42, 43, 45],
             'wallet_sweep': [31, 33, 43, 92, 103, 120, 141, 146, 160, 194, 201, 213]}
 RANGES = {
+    'autopair_sort_key': (0x140868980, 0x140868ef5),
+    'autopair_v2_v3_scores': (0x140867430, 0x1408676b4),
     'autopair_route_key': (0x1408581a0, 0x1408584bc),
     'autopair_choose_candidate': (0x140858fd0, 0x14085a407),
     'dynamic_converter_settings': (0x140bacbf0, 0x140badc32),

@@ -9,6 +9,8 @@ from eth_account import Account
 
 from .chain import Chain, Pool, WBNB, address, profiles
 from .storage import Store, Vault
+from . import dynamic
+from .autopair import choose, ordered
 from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum
 from .trader import LiveTrader, PaperTrader, UncertainTransaction
 
@@ -141,6 +143,8 @@ class Worker(QThread):
                 raise ValueError("Выберите проверенный пул через AutoPair / CHECK + ADD")
             if address(data["token"]) != self.pool.token or address(data["pool"]) != self.pool.address:
                 raise ValueError("Адреса изменились: заново выберите и проверьте пул")
+            if data.get("router", "AUTO") not in ("AUTO", self.pool.router):
+                raise ValueError("Router изменился: повторите AutoPair / CHECK POOL")
             self.chain.verify_pool(self.pool.address, self.pool.token)
         if mode != self.mode and (self.paper.position or self.position()):
             raise ValueError("Закройте текущую позицию перед сменой режима")
@@ -150,6 +154,7 @@ class Worker(QThread):
             if not key:
                 raise ValueError("Сначала сохраните отдельный кошелёк в Keychain")
             live = LiveTrader(self.chain, key, self.store, D(data["gas"]), self.log.emit)
+            live.trade_router = self.pool.router
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")
         if self.pool and self.pool.router == "V3":
@@ -188,21 +193,37 @@ class Worker(QThread):
             self.log.emit("Кошелёк сохранён в macOS Keychain: " + account.address)
         elif name == "discover":
             self.require_chain()
+            # Clear stale selection before RPC: failure/cancellation cannot retain it.
+            self.pool = None
+            self.event.emit("pools", [])
             target = address(data["token"])
-            result = []
-            quote_profiles = profiles() | self.store.data.get("dynamic_profiles", {})
-            quotes = list(quote_profiles.values()) if data["quote"] == "ALL" else [quote_profiles[data["quote"]]]
-            for i, quote in enumerate(quotes):
-                if self.quit_event.is_set() or self.stop_event.is_set():
-                    break
-                self.log.emit(f"AutoPair: {i+1}/{len(quotes)}")
-                result.extend(self.chain.find_pools(target, quote, ("V2", "V3") if data["router"] == "AUTO" else (data["router"],)))
-            self.event.emit("pools", result)
-            if len(result) == 1:
-                self.select_pool(result[0])
-            else:
-                self.pool = None
-                self.log.emit(f"Найдено пулов: {len(result)}. Выберите маршрут явно" if result else "Ликвидных пулов не найдено")
+            candidates = []
+            routers = ("V2", "V3") if data["router"] == "AUTO" else (data["router"],)
+            for router in routers:
+                catalog = dynamic.catalog(self.store, router)
+                if data["quote"] == "ALL":
+                    quotes = list(catalog.items())
+                elif data["quote"] in catalog:
+                    quotes = [(data["quote"], catalog[data["quote"]])]
+                else:
+                    quotes = []
+                for i, (name, quote) in enumerate(quotes):
+                    if self.quit_event.is_set() or self.stop_event.is_set():
+                        self.log.emit("AutoPair отменён; выбор пула сброшен")
+                        return
+                    self.log.emit(f"AutoPair {router}: {i+1}/{len(quotes)}")
+                    candidates.extend(self.chain.discover_candidates(target, quote, router, name))
+            if self.quit_event.is_set() or self.stop_event.is_set():
+                return
+            candidates = ordered(candidates)
+            state, selected = choose(candidates)
+            self.event.emit("pools", [c.pool for c in candidates if c.ready])
+            self.log.emit(f"AutoPair: {state}; найдено {len(candidates)} пулов")
+            if state == "RESOLVED":
+                self.select_pool(selected.pool)
+            elif state == "PENDING":
+                self.log.emit("PENDING: пул найден, ликвидности нет. Повторите AutoPair после её появления")
+            self.event.emit("autopair", state)
         elif name == "verify":
             self.require_chain()
             pool = self.chain.verify_pool(data["pool"], data["token"])
@@ -215,40 +236,48 @@ class Worker(QThread):
             self.require_chain()
             if not self.pool:
                 raise ValueError("Сначала CHECK + ADD или AutoPair")
+            # Recheck target pool too: selection may predate a liquidity change.
+            self.pool = self.chain.verify_pool(self.pool.address, self.pool.token)
             # Quote round trip is checked without a private key or any transaction.
             helper = object.__new__(LiveTrader)
             helper.chain = self.chain
+            helper.store = self.store
+            helper.trade_router = self.pool.router
+            buy_route = None
             sample = 10**16  # 0.01 WBNB
             amount = sample
             if self.pool.quote != address(WBNB):
                 route = helper.conversion_route(WBNB, self.pool.quote, amount)
+                buy_route = route
                 amount = self.chain.quote_route(route, amount)
                 route = helper.conversion_route(self.pool.quote, WBNB, amount)
                 amount = self.chain.quote_route(route, amount)
             if amount < sample * 90 // 100:
                 raise ValueError("Round-trip loss для 0.01 WBNB превышает 10%")
-            symbol = "CUSTOM-" + self.pool.quote[2:10]
             if self.pool.quote not in profiles().values():
-                self.store.data.setdefault("dynamic_profiles", {})[symbol] = self.pool.quote
-                self.store.save()
+                dynamic.upsert(self.store, self.pool, buy_route, max(0, (sample-amount)*10000//sample))
                 self.event.emit("profiles", self.store.data["dynamic_profiles"])
             self.log.emit("ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist")
         elif name == "remove_profile":
             self.require_chain()
             symbol = data["symbol"]
-            dynamic = self.store.data.get("dynamic_profiles", {})
-            if symbol not in dynamic:
+            dynamic_profiles = self.store.data.get("dynamic_profiles", {})
+            if symbol not in dynamic_profiles:
                 raise ValueError("Встроенные профили удалять нельзя")
             owner = address(data["wallet"])
-            token = dynamic[symbol]
+            token = dynamic_profiles[symbol]
             if self.chain.balance(token, owner):
                 raise ValueError("Сначала продайте остаток базового актива")
             for raw in self.store.data.get("known_pools", {}).values():
                 if raw["quote"].lower() == token.lower() and self.chain.balance(raw["token"], owner):
                     raise ValueError("Сначала продайте остаток target этой базы")
-            del dynamic[symbol]
-            self.store.save()
-            self.event.emit("profiles", dynamic)
+            for key, position in self.store.data.get("positions", {}).items():
+                if key.startswith(owner.lower() + ":") and position["pool"]["quote"].lower() == token.lower():
+                    raise ValueError("Сначала закройте сохранённую позицию этой базы")
+            dynamic.remove(self.store, symbol)
+            self.pool = None
+            self.event.emit("pools", [])
+            self.event.emit("profiles", self.store.data.get("dynamic_profiles", {}))
         elif name in ("start", "buy"):
             self.configure(data)
             if self.mode == "LIVE":
@@ -327,7 +356,7 @@ class Worker(QThread):
         if self.paper.position or self.position():
             raise ValueError("Сначала закройте позицию текущего пула")
         self.pool = self.chain.verify_pool(pool.address, pool.token)
-        self.store.data.setdefault("known_pools", {})[pool.token.lower()] = asdict(self.pool)
+        self.store.data.setdefault("known_pools", {})[self.pool.address.lower()] = asdict(self.pool)
         self.store.data["last_pool"] = asdict(self.pool)
         self.store.save()
         self.event.emit("selected", self.pool)
@@ -473,20 +502,33 @@ class Worker(QThread):
             amount = self.chain.balance(token, self.live.owner)
             if not amount:
                 continue
-            # Find route before opening durable operation; missing paths may be skipped.
-            if token != address(WBNB):
-                try:
-                    self.live.conversion_route(token, WBNB, amount)
-                except ValueError:
-                    failures.append(symbol)
-                    self.log.emit("Нет маршрута: " + symbol)
-                    continue
-            if self.stop_event.is_set():
-                self.log.emit("SWEEP остановлен после проверки маршрута")
-                return
-            self.live.begin("SWEEP BASE " + symbol)
-            self.live.convert(token, amount, False, self.strategy.settings.slippage)
-            self.live.finish()
+            # Select registry context per base; a V3-only base must not inherit
+            # an unrelated V2 trading selection. Conflicts require explicit context.
+            registered = [r for r in dynamic.records(self.store).values()
+                          if address(r["token_address"]) == token]
+            original_router = getattr(self.live, "trade_router", None)
+            context = next((r["trade_router"] for r in registered
+                            if r["trade_router"] == original_router), None)
+            if context is None and len(registered) == 1:
+                context = registered[0]["trade_router"]
+            self.live.trade_router = context or original_router
+            try:
+                # Missing route can be skipped only before a durable operation.
+                if token != address(WBNB):
+                    try:
+                        self.live.conversion_route(token, WBNB, amount)
+                    except ValueError:
+                        failures.append(symbol)
+                        self.log.emit("Нет маршрута: " + symbol)
+                        continue
+                if self.stop_event.is_set():
+                    self.log.emit("SWEEP остановлен после проверки маршрута")
+                    return
+                self.live.begin("SWEEP BASE " + symbol)
+                self.live.convert(token, amount, False, self.strategy.settings.slippage)
+                self.live.finish()
+            finally:
+                self.live.trade_router = original_router
         # A skipped target still has an open position and must retain TP/SL.
         position = self.position()
         self.strategy.entry = D(position["entry"]) if position else None

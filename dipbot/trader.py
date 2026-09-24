@@ -9,6 +9,7 @@ from web3.exceptions import ContractLogicError, TransactionNotFound
 from .chain import (Chain, Pool, TOKEN_ABI, V2_ABI, V3_ABI, V2_ROUTER, V3_ROUTER,
                     V2_FACTORY, V3_FACTORY, WBNB, USDT, ETH, address, route_path)
 from .routes import conversion_specs
+from .dynamic import preference
 from .storage import Store
 from .strategy import D, minimum_out
 
@@ -156,7 +157,9 @@ class LiveTrader:
             raise ValueError("Некорректный маршрут / сумма Converter")
         routes = []
         cache = {}
-        for kind, nodes, fees in conversion_specs(src, dest):
+        base = dest if src == address(WBNB) else src
+        preferred = preference(self.store, base, getattr(self, "trade_router", None)) if hasattr(self, "store") else None
+        for kind, nodes, fees in conversion_specs(src, dest, preferred):
             path = []
             for index, (left, right) in enumerate(zip(nodes, nodes[1:])):
                 pair = (left, right)

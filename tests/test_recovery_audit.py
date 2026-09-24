@@ -101,8 +101,9 @@ def test_add_profile_uses_whole_path_quotes(tmp_path, monkeypatch):
     worker = Worker(Store(tmp_path/'state.json'))
     worker.pool = Pool(POOL.address, 'V2', POOL.token, address('0x'+'ab'*20), 18, 18, True)
     calls = []
-    monkeypatch.setattr(LiveTrader, 'conversion_route', lambda self, *args: ['synthetic path'])
-    worker.chain = SimpleNamespace(quote_route=lambda route, amount: calls.append(amount) or amount*99//100)
+    monkeypatch.setattr(LiveTrader, 'conversion_route', lambda self, src, dest, amount: [Pool(POOL.address, 'V2', address(dest), address(src), 18, 18, True)])
+    worker.chain = SimpleNamespace(verify_pool=lambda *_: worker.pool,
+                                  quote_route=lambda route, amount: calls.append(amount) or amount*99//100)
     worker.command('add_profile', {})
     assert calls == [10**16, 99*10**14]
     assert worker.pool.quote in Store(worker.store.path).data['dynamic_profiles'].values()

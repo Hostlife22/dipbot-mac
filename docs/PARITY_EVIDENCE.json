@@ -1185,5 +1185,31 @@
       "tests/test_preferences.py": "50a7aef6ca4b781354196dd4c296978d39783179a25bac72311a23c4b0aaeb0c",
       "tools/recovery_native.py": "fcfac5aeb203da321647f446aba924dd7482abf61711a83a0a5cf54a85cde3ce"
     }
+  },
+  "autopair_dynamic_followup": {
+    "baseline_commit": "8228f0a",
+    "original_executed": false,
+    "public_rpc_used": false,
+    "report": "AUTOPAIR_PARITY_RU.md",
+    "native_evidence": "RECOVERY_EVIDENCE.json",
+    "tests_passed": 156,
+    "source_smoke": "exit 0",
+    "gui_pending_to_resolved": "PASS, synthetic chain",
+    "build": "exit 0",
+    "built_cocoa_smoke": "exit 0",
+    "codesign": "exit 0",
+    "source_sha256": {
+      "dipbot/autopair.py": "2c197ff4218eeb8662a25fa145afeae259065d701938a2159ff7476e325ee751",
+      "dipbot/dynamic.py": "b2b8a0ae7d250d38754d73598a470f67f73cbc9e6f66ae972778c8c072be6d79",
+      "dipbot/chain.py": "06b40a0423274a1604db257e6773e208f0cf7d2d8117928d90dd6d163ffde6d3",
+      "dipbot/worker.py": "953fb6550564b8180d9079f10bb8d9fcfc252323d716b6ad14875acd1e5cf29d",
+      "dipbot/app.py": "7f78c0c11558129c6a548a2799fdbc6674453855b466ed4894dec1a11c92388b",
+      "dipbot/trader.py": "fb8c1d51faac78646175ced38099420faae05610ec72a6de660fdbdb9c26081c",
+      "dipbot/routes.py": "5792fededdd0016d3f7673df521a4638f6949b9f1ccdb4511ba4504903349752",
+      "tests/test_autopair_dynamic.py": "ee9d3788043eedcb172cd01434a22f56bf7385ba99821d5cd41df40add684e40",
+      "tests/test_execution.py": "74fcc5272614e4eb1929fb487cc6a7ba3a790a058d655deec6173f43e2986250",
+      "tests/test_recovery_audit.py": "f56902579ceb91414a50626a773987c59999c6d650f027c8a46c04ab106d678a",
+      "tools/recovery_native.py": "2ee1acc4c5fe7fd8218e7d0e7db18b464687927300da85fc0544c652f99694e7"
+    }
   }
 }

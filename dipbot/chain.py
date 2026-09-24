@@ -167,7 +167,7 @@ class Chain:
     def balance(self, token, owner):
         return self.call(token, TOKEN_ABI, "balanceOf", address(owner))
 
-    def verify_pool(self, pool_address: str, target: str) -> Pool:
+    def verify_pool(self, pool_address: str, target: str, *, require_liquidity=True) -> Pool:
         self.check()
         pool_address, target = address(pool_address), address(target)
         if not self.w3.eth.get_code(pool_address):
@@ -193,7 +193,8 @@ class Chain:
         quote = t1 if t0 == target else t0
         pool = Pool(pool_address, router, target, quote, self.decimals(target),
                     self.decimals(quote), t0 == target, fee)
-        self.price(pool)
+        if require_liquidity:
+            self.price(pool)
         return pool
 
     def price(self, pool: Pool) -> D:
@@ -216,6 +217,36 @@ class Chain:
                 if not pool.token_is_0:
                     ratio = 1 / ratio
             return ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
+
+    def discover_candidates(self, target, quote, router, pair_name):
+        from .autopair import Candidate
+        self.check()
+        target, quote = address(target), address(quote)
+        if target == quote:
+            return []
+        if router == "V2":
+            addresses = [self.call(V2_FACTORY, FACTORY_ABI, "getPair", target, quote)]
+        elif router == "V3":
+            addresses = [self.call(V3_FACTORY, FACTORY_ABI, "getPool", target, quote, fee)
+                         for fee in FEES]
+        else:
+            raise ValueError("Неподдерживаемый router")
+        result, seen = [], set()
+        block = self.check()
+        for raw in addresses:
+            if raw.lower() == ZERO or raw.lower() in seen:
+                continue
+            seen.add(raw.lower())
+            pool = self.verify_pool(raw, target, require_liquidity=False)
+            if pool.router != router or pool.quote != quote:
+                raise ValueError("Factory вернула пул другого маршрута")
+            if router == "V2":
+                r0, r1, _ = self.call(pool.address, POOL_ABI, "getReserves", block=block)
+                score = r0 * r1
+            else:
+                score = self.call(pool.address, POOL_ABI, "liquidity", block=block)
+            result.append(Candidate(pool, pair_name, score > 0, score))
+        return result
 
     def find_pools(self, target: str, quote: str, routers=("V2", "V3")) -> list[Pool]:
         self.check()

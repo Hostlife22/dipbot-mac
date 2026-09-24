@@ -1,15 +1,15 @@
 """Converter candidate order reconstructed from Trader._buy_route_candidates.
 
-Static profiles are public release constants. Dynamic profile preferences remain
-unrecovered; use the direct-V2 preference for unknown bases, with the same fallback
-list. This does not claim to reproduce AutoPair's separate pool selection.
+Static profiles are public release constants. Verified dynamic preferences may
+be supplied by the router-specific Mac registry. Legacy unverified entries retain
+the direct-V2 fallback until explicitly checked again.
 """
 import json
 from importlib.resources import files
 from .chain import address, WBNB, USDT, ETH, FEES
 
 
-def conversion_specs(src, dest):
+def conversion_specs(src, dest, preference=None):
     src, dest = address(src), address(dest)
     wrapped = address(WBNB)
     if (src == wrapped) == (dest == wrapped):
@@ -17,6 +17,8 @@ def conversion_specs(src, dest):
     base = dest if src == wrapped else src
     entries = json.loads(files('dipbot').joinpath('profiles.json').read_text())
     profile = next((p for p in entries if address(p['address']) == base), {})
+    if preference is not None:
+        profile = preference
     mode = profile.get('converter_mode', 'direct_v2')
     fee = profile.get('converter_fee') or 500
     direct = (wrapped, base)
