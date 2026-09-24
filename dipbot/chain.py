@@ -1,0 +1,213 @@
+from dataclasses import dataclass
+from decimal import Decimal, localcontext
+import json
+import time
+from importlib.resources import files
+from urllib.parse import urlsplit
+
+from web3 import Web3
+from web3.middleware import ExtraDataToPOAMiddleware
+
+from .strategy import D
+
+V2_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865"
+V2_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
+V3_ROUTER = "0x1b81D678ffb9C0263b24A97847620C99d213eB14"
+V3_QUOTER = "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
+WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+USDT = "0x55d398326f99059fF775485246999027B3197955"
+ETH = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8"
+ZERO = "0x" + "0" * 40
+FEES = (100, 500, 2500, 10000)
+
+
+def fn(name, inputs=(), outputs=(), mutability="view"):
+    return {"type": "function", "name": name, "stateMutability": mutability,
+            "inputs": [{"name": f"p{i}", "type": t} for i, t in enumerate(inputs)],
+            "outputs": [{"name": f"r{i}", "type": t} for i, t in enumerate(outputs)]}
+
+
+TOKEN_ABI = [fn("decimals", outputs=("uint8",)), fn("symbol", outputs=("string",)),
+             fn("balanceOf", ("address",), ("uint256",)),
+             fn("allowance", ("address", "address"), ("uint256",)),
+             fn("approve", ("address", "uint256"), ("bool",), "nonpayable"),
+             fn("deposit", mutability="payable"),
+             fn("withdraw", ("uint256",), mutability="nonpayable")]
+POOL_ABI = [fn("factory", outputs=("address",)), fn("token0", outputs=("address",)),
+            fn("token1", outputs=("address",)), fn("fee", outputs=("uint24",)),
+            fn("liquidity", outputs=("uint128",)),
+            fn("getReserves", outputs=("uint112", "uint112", "uint32")),
+            fn("slot0", outputs=("uint160", "int24", "uint16", "uint16", "uint16", "uint32", "bool"))]
+FACTORY_ABI = [fn("getPair", ("address", "address"), ("address",)),
+               fn("getPool", ("address", "address", "uint24"), ("address",))]
+V2_ABI = [fn("factory", outputs=("address",)), fn("WETH", outputs=("address",)),
+          fn("getAmountsOut", ("uint256", "address[]"), ("uint256[]",)),
+          fn("swapExactTokensForTokensSupportingFeeOnTransferTokens",
+             ("uint256", "uint256", "address[]", "address", "uint256"), mutability="nonpayable")]
+
+
+def tuple_fn(name, components, outputs):
+    result = fn(name, outputs=outputs, mutability="payable" if name == "exactInputSingle" else "nonpayable")
+    result["inputs"] = [{"name": "params", "type": "tuple",
+                         "components": [{"name": n, "type": t} for n, t in components]}]
+    return result
+
+
+V3_ABI = [fn("factory", outputs=("address",)), fn("WETH9", outputs=("address",)),
+          tuple_fn("exactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
+                   ("fee", "uint24"), ("recipient", "address"), ("deadline", "uint256"),
+                   ("amountIn", "uint256"), ("amountOutMinimum", "uint256"),
+                   ("sqrtPriceLimitX96", "uint160")], ("uint256",))]
+QUOTER_ABI = [tuple_fn("quoteExactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
+                ("amountIn", "uint256"), ("fee", "uint24"), ("sqrtPriceLimitX96", "uint160")],
+                ("uint256", "uint160", "uint32", "uint256"))]
+
+
+def address(value: str) -> str:
+    if not Web3.is_address(value) or value.lower() == ZERO:
+        raise ValueError("Нужен ненулевой адрес 0x… (40 hex символов)")
+    return Web3.to_checksum_address(value)
+
+
+def profiles() -> dict[str, str]:
+    return {p["symbol"]: address(p["address"]) for p in json.loads(files("dipbot").joinpath("profiles.json").read_text())}
+
+
+@dataclass(frozen=True)
+class Pool:
+    address: str
+    router: str
+    token: str
+    quote: str
+    token_decimals: int
+    quote_decimals: int
+    token_is_0: bool
+    fee: int = 0
+
+    @property
+    def label(self):
+        names = {v.lower(): k for k, v in profiles().items()}
+        return f"{self.router} / {names.get(self.quote.lower(), self.quote[:10])} / {self.fee or 2500} · {self.address}"
+
+
+class Chain:
+    def __init__(self, endpoint: str):
+        parsed = urlsplit(endpoint)
+        if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")):
+            raise ValueError("RPC должен быть HTTPS (HTTP допустим для localhost)")
+        if not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+            raise ValueError("Некорректный RPC URL")
+        self.w3 = Web3(Web3.HTTPProvider(endpoint, request_kwargs={"timeout": 10},
+                                       exception_retry_configuration=None))
+        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+        self._decimals = {}
+
+    def contract(self, addr, abi):
+        return self.w3.eth.contract(address=address(addr), abi=abi)
+
+    def call(self, addr, abi, name, *args, block="latest"):
+        return getattr(self.contract(addr, abi).functions, name)(*args).call(block_identifier=block)
+
+    def check(self):
+        if self.w3.eth.chain_id != 56:
+            raise ValueError("RPC подключён не к BSC mainnet (chainId 56)")
+        block = self.w3.eth.get_block("latest")
+        age = time.time() - block["timestamp"]
+        if not -15 <= age <= 30:
+            raise ValueError("RPC возвращает устаревший блок; проверьте узел и часы Mac")
+        return block["number"]
+
+    def decimals(self, token):
+        token = address(token)
+        if token not in self._decimals:
+            if not self.w3.eth.get_code(token):
+                raise ValueError("По адресу токена нет контракта")
+            value = self.call(token, TOKEN_ABI, "decimals")
+            if not 0 <= value <= 36:
+                raise ValueError("Неподдерживаемые decimals")
+            self._decimals[token] = value
+        return self._decimals[token]
+
+    def balance(self, token, owner):
+        return self.call(token, TOKEN_ABI, "balanceOf", address(owner))
+
+    def verify_pool(self, pool_address: str, target: str) -> Pool:
+        self.check()
+        pool_address, target = address(pool_address), address(target)
+        if not self.w3.eth.get_code(pool_address):
+            raise ValueError("Пул не содержит контракта")
+        factory = self.call(pool_address, POOL_ABI, "factory")
+        t0 = address(self.call(pool_address, POOL_ABI, "token0"))
+        t1 = address(self.call(pool_address, POOL_ABI, "token1"))
+        if t0 == t1 or target not in (t0, t1):
+            raise ValueError("TOKEN ADDRESS не является стороной пула")
+        if factory.lower() == V2_FACTORY.lower():
+            canonical = self.call(V2_FACTORY, FACTORY_ABI, "getPair", t0, t1)
+            router, fee = "V2", 0
+        elif factory.lower() == V3_FACTORY.lower():
+            fee = self.call(pool_address, POOL_ABI, "fee")
+            if fee not in FEES:
+                raise ValueError("Неподдерживаемый fee tier")
+            canonical = self.call(V3_FACTORY, FACTORY_ABI, "getPool", t0, t1, fee)
+            router = "V3"
+        else:
+            raise ValueError("Пул не принадлежит официальной PancakeSwap factory")
+        if canonical.lower() != pool_address.lower():
+            raise ValueError("Адрес не совпадает с каноническим пулом factory")
+        quote = t1 if t0 == target else t0
+        pool = Pool(pool_address, router, target, quote, self.decimals(target),
+                    self.decimals(quote), t0 == target, fee)
+        self.price(pool)
+        return pool
+
+    def price(self, pool: Pool) -> D:
+        block = self.check()
+        with localcontext() as context:
+            context.prec = 78
+            if pool.router == "V2":
+                r0, r1, _ = self.call(pool.address, POOL_ABI, "getReserves", block=block)
+                if not r0 or not r1:
+                    raise ValueError("WAITING: нулевая ликвидность")
+                numerator, denominator = (r1, r0) if pool.token_is_0 else (r0, r1)
+                ratio = D(numerator) / D(denominator)
+            else:
+                if not self.call(pool.address, POOL_ABI, "liquidity", block=block):
+                    raise ValueError("WAITING: нулевая ликвидность")
+                sqrt = self.call(pool.address, POOL_ABI, "slot0", block=block)[0]
+                if sqrt <= 0:
+                    raise ValueError("Пустая цена V3")
+                ratio = D(sqrt) ** 2 / D(2) ** 192
+                if not pool.token_is_0:
+                    ratio = 1 / ratio
+            return ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
+
+    def find_pools(self, target: str, quote: str, routers=("V2", "V3")) -> list[Pool]:
+        self.check()
+        target, quote = address(target), address(quote)
+        if target == quote:
+            return []
+        result = []
+        candidates = []
+        if "V2" in routers:
+            candidates.append(self.call(V2_FACTORY, FACTORY_ABI, "getPair", target, quote))
+        if "V3" in routers:
+            candidates.extend(self.call(V3_FACTORY, FACTORY_ABI, "getPool", target, quote, f) for f in FEES)
+        for candidate in candidates:
+            if candidate.lower() != ZERO:
+                try:
+                    result.append(self.verify_pool(candidate, target))
+                except ValueError as exc:
+                    if "WAITING" not in str(exc):
+                        raise
+        return result
+
+    def quote(self, pool: Pool, amount: int, buy: bool):
+        if amount <= 0:
+            raise ValueError("Нулевая сумма")
+        token_in, token_out = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
+        if pool.router == "V2":
+            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, [token_in, token_out])[-1]
+        return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInputSingle",
+                         (token_in, token_out, amount, pool.fee, 0))[0]
+

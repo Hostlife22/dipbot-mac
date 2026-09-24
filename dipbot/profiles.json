@@ -1,0 +1,170 @@
+[
+  {
+    "symbol": "AAPLB",
+    "address": "0x431a3bee82e2ca41e49895cbece5bb0f76a89b7a"
+  },
+  {
+    "symbol": "AMZNB",
+    "address": "0x1a4b499833a79a09ad7cf1d42d7dacf71e92eb00"
+  },
+  {
+    "symbol": "ASTER",
+    "address": "0x000Ae314E2A2172a039B26378814C252734f556A"
+  },
+  {
+    "symbol": "BABAB",
+    "address": "0x4ef9d3062c7f6eba4aae4990c5036598c6eff4ec"
+  },
+  {
+    "symbol": "BMNRB",
+    "address": "0x3548Da95a9eFFE481e8604664d75e95821e557F5"
+  },
+  {
+    "symbol": "BNC4",
+    "address": "0x7c8d5502b544dDAf8852Fc46D1174E34876D545C"
+  },
+  {
+    "symbol": "BTCB",
+    "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+  },
+  {
+    "symbol": "CRCLB",
+    "address": "0x80f3d493ebce97e343c53d29a137942416b4ffc0"
+  },
+  {
+    "symbol": "DJTB",
+    "address": "0xF2ec508422174Ee564de98187db9359D318AFB6b"
+  },
+  {
+    "symbol": "DRAMB",
+    "address": "0x93862d63fd9fd488b1328e9b47717d75e994a84b"
+  },
+  {
+    "symbol": "FLNCB",
+    "address": "0x4af1D41cd9dD950dcA43984b43aaA2A8702714Ac"
+  },
+  {
+    "symbol": "FORM",
+    "address": "0x5b73A93b4E5e4f1FD27D8b3F8C97D69908b5E284"
+  },
+  {
+    "symbol": "GMEB",
+    "address": "0x46ceefda28dd7207059ed19b0acdc026955bb15c"
+  },
+  {
+    "symbol": "GOOGLB",
+    "address": "0x3f53de71c126bdabae20f9cd64848d317f6c3238"
+  },
+  {
+    "symbol": "HOODB",
+    "address": "0xA394dCEa3fd3847fD793afBFd163E2e3858B7c65"
+  },
+  {
+    "symbol": "INTCB",
+    "address": "0xe614e2fc6c787035ff51f452e8e826bfd32d5283"
+  },
+  {
+    "symbol": "METAB",
+    "address": "0x7425889fe94f9d693e8daefe88bcced6acfef4c0"
+  },
+  {
+    "symbol": "MRNAB",
+    "address": "0x5fd86da9B05abE396fe9d02a4A213A7c00556503"
+  },
+  {
+    "symbol": "MSFTB",
+    "address": "0x80106cb3EAD06659A5ad19DF39D9b4733863B9b0"
+  },
+  {
+    "symbol": "MSTRB",
+    "address": "0xe87afb3076aeb0f9b14e368de8145ae6a2826a14"
+  },
+  {
+    "symbol": "MUB",
+    "address": "0xcdf2f3e0fa43c47a6662a91c9e4a7c5f69762699"
+  },
+  {
+    "symbol": "NFLXB",
+    "address": "0xd6829ea836b6fa224d099d40e54b31262f874631"
+  },
+  {
+    "symbol": "NOKB",
+    "address": "0x7c4d7a180d737dd5a70d8065a90e6746a69c37ea"
+  },
+  {
+    "symbol": "NVDAB",
+    "address": "0x02Fca66C1D1aFB4E2A7884261eB00F63598a7436"
+  },
+  {
+    "symbol": "QQQB",
+    "address": "0x205812CdBed920aFf76C6580abD681a46D11efc7"
+  },
+  {
+    "symbol": "SKHYB",
+    "address": "0xca750eF65f295BBECd685Abf54e82CAf297BDB61"
+  },
+  {
+    "symbol": "SNDKB",
+    "address": "0x3ee4df61bd4f867e349beae8bfe07bc31b4850fb"
+  },
+  {
+    "symbol": "SNXXB",
+    "address": "0x9e82e3da8f1115B73d24bB24113ab836FfDAb6b6"
+  },
+  {
+    "symbol": "SOXLB",
+    "address": "0xd97d097a89113fa59b76c572e5b2eb647e8eefaf"
+  },
+  {
+    "symbol": "SOXSB",
+    "address": "0xe28cd11c99af2df76bb8ada4cd0ef3904378280f"
+  },
+  {
+    "symbol": "SPCXB",
+    "address": "0xbe9D156892E55e7154BcD3cB0FEA677F9D3103E1"
+  },
+  {
+    "symbol": "SPYB",
+    "address": "0x7138b48df7D98D7e3cc221BfE7192D0a178182D8"
+  },
+  {
+    "symbol": "SQQQB",
+    "address": "0x25e572B466D152604D9E6C3e53B432B978825342"
+  },
+  {
+    "symbol": "SOL",
+    "address": "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF"
+  },
+  {
+    "symbol": "TQQQB",
+    "address": "0x462B5F13B7C7748279358962925c5De83BB9E598"
+  },
+  {
+    "symbol": "TSLAB",
+    "address": "0x5b1910eAaD6450E50f816082Aa078C41F10C292f"
+  },
+  {
+    "symbol": "TSMB",
+    "address": "0xab78b89b5bb00236be0b4b20704cbfa04efc711c"
+  },
+  {
+    "symbol": "U",
+    "address": "0xcE24439F2D9C6a2289F741120FE202248B666666"
+  },
+  {
+    "symbol": "USDT",
+    "address": "0x55d398326f99059fF775485246999027B3197955"
+  },
+  {
+    "symbol": "USDT1",
+    "address": "0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d"
+  },
+  {
+    "symbol": "WBNB",
+    "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+  },
+  {
+    "symbol": "XAUt",
+    "address": "0x21cAef8A43163Eea865baeE23b9C2E327696A3bf"
+  }
+]
