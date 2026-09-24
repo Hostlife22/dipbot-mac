@@ -1,0 +1,209 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "windows_available": false,
+  "capa": {
+    "scope": "selected functions; non-recursive; incomplete caller/callee contexts",
+    "mode": "capa",
+    "functions": {
+      "gui_close": {
+        "address": "0x140f37a90",
+        "features": 99,
+        "rules": [],
+        "internal_subscope_matches": 15
+      },
+      "gui_stop": {
+        "address": "0x140f56f10",
+        "features": 85,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "gui_events": {
+        "address": "0x140f3b270",
+        "features": 307,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "commercial_close": {
+        "address": "0x140922010",
+        "features": 92,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "autopair_error": {
+        "address": "0x14090fd90",
+        "features": 132,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "sweep_error": {
+        "address": "0x14091a140",
+        "features": 82,
+        "rules": [],
+        "internal_subscope_matches": 11
+      },
+      "optional_trader_close": {
+        "address": "0x142093c20",
+        "features": 81,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "remove_live_pair": {
+        "address": "0x140907240",
+        "features": 205,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 13
+      },
+      "trader_init": {
+        "address": "0x141e55f60",
+        "features": 195,
+        "rules": [],
+        "internal_subscope_matches": 15
+      },
+      "converter_slippage": {
+        "address": "0x141e76010",
+        "features": 122,
+        "rules": [],
+        "internal_subscope_matches": 13
+      },
+      "read_protected_json": {
+        "address": "0x141dce190",
+        "features": 162,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "write_protected_json": {
+        "address": "0x141dcd550",
+        "features": 134,
+        "rules": [],
+        "internal_subscope_matches": 12
+      }
+    },
+    "completed": true
+  },
+  "floss": {
+    "scope": "selected functions; non-recursive; incomplete caller/callee contexts",
+    "mode": "floss",
+    "functions": {
+      "gui_close": {
+        "address": "0x140f37a90",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "gui_stop": {
+        "address": "0x140f56f10",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "gui_events": {
+        "address": "0x140f3b270",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "commercial_close": {
+        "address": "0x140922010",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "autopair_error": {
+        "address": "0x14090fd90",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "sweep_error": {
+        "address": "0x14091a140",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "optional_trader_close": {
+        "address": "0x142093c20",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "remove_live_pair": {
+        "address": "0x140907240",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "trader_init": {
+        "address": "0x141e55f60",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "converter_slippage": {
+        "address": "0x141e76010",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "read_protected_json": {
+        "address": "0x141dce190",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      },
+      "write_protected_json": {
+        "address": "0x141dcd550",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 0
+      }
+    },
+    "completed": true
+  },
+  "ghidra": {
+    "prototypes": [
+      "142911880 pointer inferred_method_call0(pointer tstate, pointer receiver, pointer name) (GhidraScript)  ",
+      "1429119e0 pointer inferred_method_call1(pointer tstate, pointer receiver, pointer name, pointer argument) (GhidraScript)  ",
+      "1429125c0 pointer inferred_get_attribute(pointer unused_context, pointer receiver, pointer name) (GhidraScript)  ",
+      "1428fccf0 pointer inferred_getattr_default(pointer tstate, pointer receiver, pointer name, pointer fallback) (GhidraScript)  "
+    ],
+    "exports": [
+      "gui_close 140f37a90 body=1320 (GhidraScript)  ",
+      "gui_stop 140f56f10 body=721 (GhidraScript)  ",
+      "commercial_close 140922010 body=1346 (GhidraScript)  ",
+      "autopair_error 14090fd90 body=2537 (GhidraScript)  ",
+      "sweep_error 14091a140 body=1037 (GhidraScript)  ",
+      "optional_trader_close 142093c20 body=884 (GhidraScript)  ",
+      "converter_slippage 141e76010 body=1616 (GhidraScript)  "
+    ],
+    "files": {
+      "autopair_error.c": "6a4aea1937f374ebcd0108baf419a059290ebf64741d1749be06b036dd2a5b28",
+      "commercial_close.c": "81caddd421780825814e30a4e753c11f39b52e1b024938624cbe4a322747ef3e",
+      "converter_slippage.c": "91792e68f3c600256a0788df26b51b5eb8680acd29a033dc0537b0f40c072126",
+      "gui_close.c": "9f3827daf29504388be4180e210761679aa4889646019d6ae20c6c374315b09a",
+      "gui_stop.c": "e36f401b46e1663a7a7a8187fe7b0eadb28c759a05af9151867763a63c523235",
+      "optional_trader_close.c": "20f1338646d92882c49362bbd5bad97a358fb1b5338885c23eef88eb4b6bd098",
+      "sweep_error.c": "1fad239fbdc37b13a6530eef58691bf507286621d49f06014e45e13459bcfcfc"
+    }
+  },
+  "limitations": [
+    "No recursive callee analysis",
+    "No recovered decoding callers: all direct_code_refs are zero",
+    "No whole-program absence proof",
+    "Helper names/types are manual inferences, not debug symbols"
+  ]
+}

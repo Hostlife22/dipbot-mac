@@ -1,0 +1,281 @@
+{
+  "original_executed": false,
+  "artifacts_sha256": {
+    "capa-expanded.json": "1bf70a9b655ddeca2c86bf3649af790631d32c9a6acede1a8a6b15061e49f371",
+    "floss-expanded.json": "3bad19a5cd186b844817ec2e4da5146941cc7dc00bf594b92bd58dfea2ded848",
+    "floss-context-counts.json": "91bfa169d076b31b5c04c46853a3702eb275102e22d21ac25cc2115485e87995",
+    "floss.log": "12281e6baf3581832ec5443d99e69436a01510dfded966134b0e6c632b89ef7f",
+    "ghidra.log": "3fefe0b4d30d83934b8706d709c1dbaf9635ad045e80d7d6774d177d9624a595",
+    "rpc.json": "6cf4790106fd8b08222c024b9ae502fea1f2be38f410c7b2d1699c08aac491e4"
+  },
+  "capa": {
+    "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+    "scope": "selected functions; non-recursive; incomplete caller/callee contexts",
+    "mode": "capa",
+    "functions": {
+      "gui_close": {
+        "address": "0x140f37a90",
+        "features": 99,
+        "rules": [],
+        "internal_subscope_matches": 15
+      },
+      "gui_stop": {
+        "address": "0x140f56f10",
+        "features": 85,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "gui_events": {
+        "address": "0x140f3b270",
+        "features": 307,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "commercial_close": {
+        "address": "0x140922010",
+        "features": 92,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "autopair_error": {
+        "address": "0x14090fd90",
+        "features": 132,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "sweep_error": {
+        "address": "0x14091a140",
+        "features": 82,
+        "rules": [],
+        "internal_subscope_matches": 11
+      },
+      "optional_trader_close": {
+        "address": "0x142093c20",
+        "features": 81,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "remove_live_pair": {
+        "address": "0x140907240",
+        "features": 205,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 13
+      },
+      "trader_init": {
+        "address": "0x141e55f60",
+        "features": 195,
+        "rules": [],
+        "internal_subscope_matches": 15
+      },
+      "converter_slippage": {
+        "address": "0x141e76010",
+        "features": 122,
+        "rules": [],
+        "internal_subscope_matches": 13
+      },
+      "read_protected_json": {
+        "address": "0x141dce190",
+        "features": 162,
+        "rules": [],
+        "internal_subscope_matches": 14
+      },
+      "write_protected_json": {
+        "address": "0x141dcd550",
+        "features": 134,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "schedule_autopair": {
+        "address": "0x1409093b0",
+        "features": 184,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 20
+      },
+      "autopair_worker": {
+        "address": "0x14090ab20",
+        "features": 140,
+        "rules": [],
+        "internal_subscope_matches": 11
+      },
+      "holdings_error": {
+        "address": "0x1409143f0",
+        "features": 93,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "sweep_worker": {
+        "address": "0x140917680",
+        "features": 127,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "finish_sweep_ui": {
+        "address": "0x1409187e0",
+        "features": 92,
+        "rules": [],
+        "internal_subscope_matches": 11
+      },
+      "sweep_complete": {
+        "address": "0x140918d60",
+        "features": 176,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 15
+      },
+      "registry_remove": {
+        "address": "0x140bc0c60",
+        "features": 139,
+        "rules": [],
+        "internal_subscope_matches": 13
+      },
+      "method_call0": {
+        "address": "0x142911880",
+        "features": 70,
+        "rules": [],
+        "internal_subscope_matches": 8
+      },
+      "method_call1": {
+        "address": "0x1429119e0",
+        "features": 69,
+        "rules": [],
+        "internal_subscope_matches": 8
+      },
+      "get_attribute": {
+        "address": "0x1429125c0",
+        "features": 45,
+        "rules": [],
+        "internal_subscope_matches": 4
+      },
+      "getattr_default": {
+        "address": "0x1428fccf0",
+        "features": 78,
+        "rules": [],
+        "internal_subscope_matches": 12
+      },
+      "has_attribute": {
+        "address": "0x1429128d0",
+        "features": 55,
+        "rules": [],
+        "internal_subscope_matches": 7
+      },
+      "set_attribute": {
+        "address": "0x142912980",
+        "features": 68,
+        "rules": [],
+        "internal_subscope_matches": 9
+      },
+      "call0": {
+        "address": "0x142905d20",
+        "features": 142,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 14
+      },
+      "call1": {
+        "address": "0x142906280",
+        "features": 168,
+        "rules": [
+          "contain loop"
+        ],
+        "internal_subscope_matches": 16
+      }
+    },
+    "completed": true
+  },
+  "floss": {
+    "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+    "scope": "selected functions; non-recursive; incomplete caller/callee contexts",
+    "mode": "floss",
+    "functions": {
+      "method_call0": {
+        "address": "0x142911880",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 21
+      },
+      "method_call1": {
+        "address": "0x1429119e0",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 27
+      },
+      "get_attribute": {
+        "address": "0x1429125c0",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 246
+      },
+      "getattr_default": {
+        "address": "0x1428fccf0",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 2
+      },
+      "has_attribute": {
+        "address": "0x1429128d0",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 2
+      },
+      "set_attribute": {
+        "address": "0x142912980",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 55
+      },
+      "call0": {
+        "address": "0x142905d20",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 25
+      },
+      "call1": {
+        "address": "0x142906280",
+        "stack_strings": 0,
+        "tight_strings": 0,
+        "decoded_strings": 0,
+        "direct_code_refs": 57
+      }
+    },
+    "completed": true
+  },
+  "floss_context_counts": {
+    "0x142911880": 21,
+    "0x1429119e0": 27,
+    "0x1429125c0": 245,
+    "0x1428fccf0": 2,
+    "0x1429128d0": 2,
+    "0x142912980": 55,
+    "0x142905d20": 8,
+    "0x142906280": 1
+  },
+  "floss_hook_restore_failures": 74,
+  "limitations": [
+    "Context objects do not establish valid Python runtime state; decoding yielded no strings with emulation warnings.",
+    "Only explicit non-recursive function graph; not whole-program analysis.",
+    "Attribute names are not runtime receiver identities."
+  ],
+  "dispatch": {
+    "ranges": 48,
+    "helper_calls": 1164,
+    "attribute_names": 922
+  },
+  "ghidra": {
+    "prototypes": 8,
+    "successful_exports": 7,
+    "script_errors": 0
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "scope": "native function construction, not runtime module binding or activation",
+  "initializer_hashes": {
+    "runtime_config": "c9e2159399a7eefad451e4b5ae681d69b3eb870f872a894f25e0645f5f14e5d6",
+    "secure_store": "79e8fc564880a79cf73cb7e71bafbfb20052b92e0093f27287f6839c540f1660"
+  },
+  "definitions": [
+    {
+      "module": "runtime_config",
+      "name": "get_worker_id",
+      "body": "0x141dbf2a0",
+      "constructor_site": "0x141dc229c"
+    },
+    {
+      "module": "runtime_config",
+      "name": "get_ui_state_path",
+      "body": "0x141dbf780",
+      "constructor_site": "0x141dc2301"
+    },
+    {
+      "module": "runtime_config",
+      "name": "get_user_settings_path",
+      "body": "0x141dbfa70",
+      "constructor_site": "0x141dc2366"
+    },
+    {
+      "module": "runtime_config",
+      "name": "load_runtime_settings",
+      "body": "0x141dbfd60",
+      "constructor_site": "0x141dc244a"
+    },
+    {
+      "module": "runtime_config",
+      "name": "reload_runtime_settings",
+      "body": "0x141dc0230",
+      "constructor_site": "0x141dc2510"
+    },
+    {
+      "module": "runtime_config",
+      "name": "get_embedded_defaults",
+      "body": "0x141dc04b0",
+      "constructor_site": "0x141dc2575"
+    },
+    {
+      "module": "runtime_config",
+      "name": "save_runtime_credentials",
+      "body": "0x141dc0700",
+      "constructor_site": "0x141dc25da"
+    },
+    {
+      "module": "runtime_config",
+      "name": "save_user_settings",
+      "body": "0x141dc0d20",
+      "constructor_site": "0x141dc263f"
+    },
+    {
+      "module": "runtime_config",
+      "name": "reset_user_settings",
+      "body": "0x141dc1260",
+      "constructor_site": "0x141dc26a4"
+    },
+    {
+      "module": "runtime_config",
+      "name": "masked_rpc",
+      "body": "0x141dc15e0",
+      "constructor_site": "0x141dc2709"
+    },
+    {
+      "module": "secure_store",
+      "name": "_entropy_for_purpose",
+      "body": "0x141dc4550",
+      "constructor_site": "0x141dd3713"
+    },
+    {
+      "module": "secure_store",
+      "name": "_is_test_mode",
+      "body": "0x141dc4c70",
+      "constructor_site": "0x141dd3778"
+    },
+    {
+      "module": "secure_store",
+      "name": "_force_portable_test_store",
+      "body": "0x141dc5070",
+      "constructor_site": "0x141dd37dd"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_app_root",
+      "body": "0x141dc5440",
+      "constructor_site": "0x141dd3842"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_vault_path",
+      "body": "0x141dc5cb0",
+      "constructor_site": "0x141dd38a7"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_license_path",
+      "body": "0x141dc5f00",
+      "constructor_site": "0x141dd390c"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_clock_guard_path",
+      "body": "0x141dc6150",
+      "constructor_site": "0x141dd3971"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_ui_state_path",
+      "body": "0x141dc63a0",
+      "constructor_site": "0x141dd39d6"
+    },
+    {
+      "module": "secure_store",
+      "name": "get_authority_root",
+      "body": "0x141dc65f0",
+      "constructor_site": "0x141dd3a3b"
+    },
+    {
+      "module": "secure_store",
+      "name": "_blob",
+      "body": "0x141dc6da0",
+      "constructor_site": "0x141dd3aa0"
+    },
+    {
+      "module": "secure_store",
+      "name": "_windows_dpapi",
+      "body": "0x141dc7630",
+      "constructor_site": "0x141dd3b05"
+    },
+    {
+      "module": "secure_store",
+      "name": "_test_key",
+      "body": "0x141dc97a0",
+      "constructor_site": "0x141dd3b6a"
+    },
+    {
+      "module": "secure_store",
+      "name": "_portable_test_crypto",
+      "body": "0x141dc9f30",
+      "constructor_site": "0x141dd3bcf"
+    },
+    {
+      "module": "secure_store",
+      "name": "protect_bytes",
+      "body": "0x141dcaf40",
+      "constructor_site": "0x141dd3c34"
+    },
+    {
+      "module": "secure_store",
+      "name": "unprotect_bytes",
+      "body": "0x141dcb520",
+      "constructor_site": "0x141dd3c99"
+    },
+    {
+      "module": "secure_store",
+      "name": "_atomic_write_bytes",
+      "body": "0x141dcbb00",
+      "constructor_site": "0x141dd3cfe"
+    },
+    {
+      "module": "secure_store",
+      "name": "write_protected_json",
+      "body": "0x141dcd550",
+      "constructor_site": "0x141dd3d63"
+    },
+    {
+      "module": "secure_store",
+      "name": "read_protected_json",
+      "body": "0x141dce190",
+      "constructor_site": "0x141dd3dc8"
+    },
+    {
+      "module": "secure_store",
+      "name": "validate_runtime_settings",
+      "body": "0x141dcf0d0",
+      "constructor_site": "0x141dd3e2d"
+    },
+    {
+      "module": "secure_store",
+      "name": "save_secure_settings",
+      "body": "0x141dcff30",
+      "constructor_site": "0x141dd3e92"
+    },
+    {
+      "module": "secure_store",
+      "name": "load_secure_settings",
+      "body": "0x141dd0600",
+      "constructor_site": "0x141dd3ef7"
+    },
+    {
+      "module": "secure_store",
+      "name": "secure_settings_exist",
+      "body": "0x141dd1420",
+      "constructor_site": "0x141dd3f5c"
+    },
+    {
+      "module": "secure_store",
+      "name": "delete_secure_settings",
+      "body": "0x141dd1670",
+      "constructor_site": "0x141dd3fc1"
+    }
+  ]
+}

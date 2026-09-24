@@ -1,0 +1,2403 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "scope": "direct reachable instructions only; no exception table edges or callees; ui_trade_defaults begins mid-function and has no proven incoming arguments",
+  "closures": {
+    "ui_trade_defaults": {
+      "entry": "0x140f144a0",
+      "original_end": "0x140f14b90",
+      "instructions": 6552,
+      "added_instructions": 6102,
+      "unresolved": [],
+      "instruction_bytes_sha256": "f55a54562a72991525261fce4baae42264c10ae03e93de5534eac28501d95dd6",
+      "references": [
+        {
+          "site": "0x140f144eb",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f1452d",
+          "name": "amount"
+        },
+        {
+          "site": "0x140f1457b",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f145bd",
+          "name": "trade_dip_caption"
+        },
+        {
+          "site": "0x140f1460b",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f1464d",
+          "name": "dip"
+        },
+        {
+          "site": "0x140f1469b",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f146dd",
+          "name": "trade_tp_caption"
+        },
+        {
+          "site": "0x140f1472b",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f1476d",
+          "name": "tp"
+        },
+        {
+          "site": "0x140f147bb",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f147fd",
+          "name": "trade_slippage_caption"
+        },
+        {
+          "site": "0x140f1484b",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f1488d",
+          "name": "slippage"
+        },
+        {
+          "site": "0x140f148db",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f1491d",
+          "name": "trade_dynamic_caption"
+        },
+        {
+          "site": "0x140f1496b",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f149ad",
+          "name": "dynamic"
+        },
+        {
+          "site": "0x140f149eb",
+          "name": "dynamic"
+        },
+        {
+          "site": "0x140f14a1f",
+          "name": "setToolTip"
+        },
+        {
+          "site": "0x140f14a84",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f14ac6",
+          "name": "trade_sl_caption"
+        },
+        {
+          "site": "0x140f14b14",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f14b56",
+          "name": "sl"
+        },
+        {
+          "site": "0x140f14ba4",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f14be6",
+          "name": "dynamic_hint"
+        },
+        {
+          "site": "0x140f14c24",
+          "name": "dynamic_hint"
+        },
+        {
+          "site": "0x140f14c4e",
+          "name": "hide"
+        },
+        {
+          "site": "0x140f14ca2",
+          "name": "trade_router_caption"
+        },
+        {
+          "site": "0x140f14cf0",
+          "name": "router_selector"
+        },
+        {
+          "site": "0x140f14db0",
+          "name": "trade_pair_caption"
+        },
+        {
+          "site": "0x140f14dfa",
+          "name": "pair_selector"
+        },
+        {
+          "site": "0x140f14e85",
+          "name": "trade_token_caption"
+        },
+        {
+          "site": "0x140f14ecf",
+          "name": "token"
+        },
+        {
+          "site": "0x140f14f5a",
+          "name": "amount_label"
+        },
+        {
+          "site": "0x140f14fa4",
+          "name": "amount"
+        },
+        {
+          "site": "0x140f1502f",
+          "name": "trade_dip_caption"
+        },
+        {
+          "site": "0x140f15079",
+          "name": "dip"
+        },
+        {
+          "site": "0x140f15104",
+          "name": "trade_tp_caption"
+        },
+        {
+          "site": "0x140f1514e",
+          "name": "tp"
+        },
+        {
+          "site": "0x140f151d9",
+          "name": "trade_slippage_caption"
+        },
+        {
+          "site": "0x140f15223",
+          "name": "slippage"
+        },
+        {
+          "site": "0x140f152ae",
+          "name": "trade_dynamic_caption"
+        },
+        {
+          "site": "0x140f152f8",
+          "name": "dynamic"
+        },
+        {
+          "site": "0x140f15383",
+          "name": "trade_sl_caption"
+        },
+        {
+          "site": "0x140f153ca",
+          "name": "sl"
+        },
+        {
+          "site": "0x140f15799",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f157d8",
+          "name": "trade_layout"
+        },
+        {
+          "site": "0x140f15809",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f1587a",
+          "name": "token"
+        },
+        {
+          "site": "0x140f15902",
+          "name": "trade_layout"
+        },
+        {
+          "site": "0x140f15921",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f15b30",
+          "name": "trade_layout"
+        },
+        {
+          "site": "0x140f15b69",
+          "name": "setColumnStretch"
+        },
+        {
+          "site": "0x140f15c52",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f15dfe",
+          "name": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f15e3c",
+          "name": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f15e70",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f15ed5",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f15f13",
+          "name": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f15f51",
+          "name": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f15f85",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f1605f",
+          "name": "trade_widgets"
+        },
+        {
+          "site": "0x140f160ac",
+          "name": "QGroupBox"
+        },
+        {
+          "site": "0x140f160ea",
+          "name": "asset_box"
+        },
+        {
+          "site": "0x140f1613b",
+          "name": "QGridLayout"
+        },
+        {
+          "site": "0x140f16155",
+          "name": "asset_box"
+        },
+        {
+          "site": "0x140f161af",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f161ff",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f16243",
+          "name": "current_profile"
+        },
+        {
+          "site": "0x140f16260",
+          "name": "symbol"
+        },
+        {
+          "site": "0x140f1637d",
+          "name": "converter_amount_label"
+        },
+        {
+          "site": "0x140f163bb",
+          "name": "converter_amount_label"
+        },
+        {
+          "site": "0x140f163f3",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f16458",
+          "name": "QLineEdit"
+        },
+        {
+          "site": "0x140f16496",
+          "name": "converter_amount"
+        },
+        {
+          "site": "0x140f164e7",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f1652b",
+          "name": "current_profile"
+        },
+        {
+          "site": "0x140f16548",
+          "name": "symbol"
+        },
+        {
+          "site": "0x140f16656",
+          "name": "wrap_btn"
+        },
+        {
+          "site": "0x140f16694",
+          "name": "wrap_btn"
+        },
+        {
+          "site": "0x140f166cc",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f16734",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f16778",
+          "name": "current_profile"
+        },
+        {
+          "site": "0x140f16795",
+          "name": "symbol"
+        },
+        {
+          "site": "0x140f168c2",
+          "name": "unwrap_btn"
+        },
+        {
+          "site": "0x140f16900",
+          "name": "unwrap_btn"
+        },
+        {
+          "site": "0x140f16938",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f1698d",
+          "name": "converter_amount"
+        },
+        {
+          "site": "0x140f169c1",
+          "name": "setToolTip"
+        },
+        {
+          "site": "0x140f16a16",
+          "name": "wrap_btn"
+        },
+        {
+          "site": "0x140f16a39",
+          "name": "setToolTip"
+        },
+        {
+          "site": "0x140f16aa3",
+          "name": "current_profile"
+        },
+        {
+          "site": "0x140f16ac0",
+          "name": "symbol"
+        },
+        {
+          "site": "0x140f16c9d",
+          "name": "unwrap_btn"
+        },
+        {
+          "site": "0x140f16cbd",
+          "name": "setToolTip"
+        },
+        {
+          "site": "0x140f16d27",
+          "name": "current_profile"
+        },
+        {
+          "site": "0x140f16d44",
+          "name": "symbol"
+        },
+        {
+          "site": "0x140f16ed7",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f16ef7",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f16f32",
+          "name": "converter_amount_label"
+        },
+        {
+          "site": "0x140f17014",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f17037",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f17072",
+          "name": "converter_amount"
+        },
+        {
+          "site": "0x140f17154",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f17177",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f171b2",
+          "name": "wrap_btn"
+        },
+        {
+          "site": "0x140f17294",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f172b7",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f172f2",
+          "name": "unwrap_btn"
+        },
+        {
+          "site": "0x140f17460",
+          "name": "asset_layout"
+        },
+        {
+          "site": "0x140f17499",
+          "name": "setColumnStretch"
+        },
+        {
+          "site": "0x140f1756e",
+          "name": "converter_amount_label"
+        },
+        {
+          "site": "0x140f175b8",
+          "name": "converter_amount"
+        },
+        {
+          "site": "0x140f175f8",
+          "name": "wrap_btn"
+        },
+        {
+          "site": "0x140f17638",
+          "name": "unwrap_btn"
+        },
+        {
+          "site": "0x140f17678",
+          "name": "asset_widgets"
+        },
+        {
+          "site": "0x140f176d4",
+          "name": "QGroupBox"
+        },
+        {
+          "site": "0x140f17716",
+          "name": "control_box"
+        },
+        {
+          "site": "0x140f17767",
+          "name": "QGridLayout"
+        },
+        {
+          "site": "0x140f17781",
+          "name": "control_box"
+        },
+        {
+          "site": "0x140f177db",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f17828",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f17866",
+          "name": "start_bot_btn"
+        },
+        {
+          "site": "0x140f178a4",
+          "name": "start_bot_btn"
+        },
+        {
+          "site": "0x140f178d8",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f1793d",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f1797b",
+          "name": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f179b9",
+          "name": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f179ed",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f17a52",
+          "name": "QPushButton"
+        },
+        {
+          "site": "0x140f17a90",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17ace",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17b02",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f17b57",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17b8b",
+          "name": "setProperty"
+        },
+        {
+          "site": "0x140f17be0",
+          "name": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f17c14",
+          "name": "setEnabled"
+        },
+        {
+          "site": "0x140f17c69",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17c9d",
+          "name": "setEnabled"
+        },
+        {
+          "site": "0x140f17d02",
+          "name": "QFrame"
+        },
+        {
+          "site": "0x140f17d39",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f17d77",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f17dab",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f17e00",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f17e23",
+          "name": "setFrameShape"
+        },
+        {
+          "site": "0x140f17e6e",
+          "name": "QFrame"
+        },
+        {
+          "site": "0x140f17e80",
+          "name": "HLine"
+        },
+        {
+          "site": "0x140f17f3d",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f17f60",
+          "name": "setFrameShadow"
+        },
+        {
+          "site": "0x140f17fab",
+          "name": "QFrame"
+        },
+        {
+          "site": "0x140f17fc3",
+          "name": "Plain"
+        },
+        {
+          "site": "0x140f18062",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f18085",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f180c0",
+          "name": "start_bot_btn"
+        },
+        {
+          "site": "0x140f181a2",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f181c5",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f18200",
+          "name": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f182cc",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f182ef",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f1832a",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f183f6",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f18419",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f18454",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f18536",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f18559",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f18594",
+          "name": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f18676",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f18699",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f186d4",
+          "name": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f18840",
+          "name": "controls_layout"
+        },
+        {
+          "site": "0x140f18879",
+          "name": "setColumnStretch"
+        },
+        {
+          "site": "0x140f1894e",
+          "name": "start_bot_btn"
+        },
+        {
+          "site": "0x140f18998",
+          "name": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f189d8",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f18a18",
+          "name": "control_divider"
+        },
+        {
+          "site": "0x140f18a58",
+          "name": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f18a98",
+          "name": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f18ad8",
+          "name": "control_widgets"
+        },
+        {
+          "site": "0x140f18b34",
+          "name": "QGroupBox"
+        },
+        {
+          "site": "0x140f18b76",
+          "name": "log_box"
+        },
+        {
+          "site": "0x140f18bc7",
+          "name": "QVBoxLayout"
+        },
+        {
+          "site": "0x140f18be1",
+          "name": "log_box"
+        },
+        {
+          "site": "0x140f18c3b",
+          "name": "log_layout"
+        },
+        {
+          "site": "0x140f18c88",
+          "name": "QTextEdit"
+        },
+        {
+          "site": "0x140f18cbf",
+          "name": "log"
+        },
+        {
+          "site": "0x140f18cfd",
+          "name": "log"
+        },
+        {
+          "site": "0x140f18d31",
+          "name": "setObjectName"
+        },
+        {
+          "site": "0x140f18d86",
+          "name": "log"
+        },
+        {
+          "site": "0x140f18dba",
+          "name": "setReadOnly"
+        },
+        {
+          "site": "0x140f18e0f",
+          "name": "log"
+        },
+        {
+          "site": "0x140f18e39",
+          "name": "document"
+        },
+        {
+          "site": "0x140f18e81",
+          "name": "setMaximumBlockCount"
+        },
+        {
+          "site": "0x140f18ed6",
+          "name": "log_layout"
+        },
+        {
+          "site": "0x140f18ef9",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f18f34",
+          "name": "log"
+        },
+        {
+          "site": "0x140f18ff4",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f19017",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f19052",
+          "name": "trade_box"
+        },
+        {
+          "site": "0x140f19134",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f19157",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f19192",
+          "name": "asset_box"
+        },
+        {
+          "site": "0x140f1927b",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f1929e",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f192d9",
+          "name": "control_box"
+        },
+        {
+          "site": "0x140f193bb",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f193de",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f19419",
+          "name": "log_box"
+        },
+        {
+          "site": "0x140f19590",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f195c9",
+          "name": "setColumnStretch"
+        },
+        {
+          "site": "0x140f1969e",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f196d6",
+          "name": "setRowStretch"
+        },
+        {
+          "site": "0x140f1972b",
+          "name": "trade_box"
+        },
+        {
+          "site": "0x140f19775",
+          "name": "asset_box"
+        },
+        {
+          "site": "0x140f197a9",
+          "name": "control_box"
+        },
+        {
+          "site": "0x140f197dd",
+          "name": "log_box"
+        },
+        {
+          "site": "0x140f19811",
+          "name": "body_widgets"
+        },
+        {
+          "site": "0x140f19860",
+          "name": "addLayout"
+        },
+        {
+          "site": "0x140f19881",
+          "name": "body_layout"
+        },
+        {
+          "site": "0x140f19936",
+          "name": "bot_scroll"
+        },
+        {
+          "site": "0x140f1995f",
+          "name": "addWidget"
+        },
+        {
+          "site": "0x140f19983",
+          "name": "bot_content"
+        },
+        {
+          "site": "0x140f19a25",
+          "name": "tabs"
+        },
+        {
+          "site": "0x140f19a48",
+          "name": "addTab"
+        },
+        {
+          "site": "0x140f19a83",
+          "name": "bot_tab"
+        },
+        {
+          "site": "0x140f19ab1",
+          "name": "BOT"
+        },
+        {
+          "site": "0x140f19b51",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f19b8c",
+          "name": "market_title"
+        },
+        {
+          "site": "0x140f19bda",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f19c11",
+          "name": "price"
+        },
+        {
+          "site": "0x140f19c5f",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f19c96",
+          "name": "base_level"
+        },
+        {
+          "site": "0x140f19ce4",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f19d1b",
+          "name": "dip_live"
+        },
+        {
+          "site": "0x140f19d69",
+          "name": "QLabel"
+        },
+        {
+          "site": "0x140f19da3",
+          "name": "status"
+        },
+        {
+          "site": "0x140f19df3",
+          "name": "set_position_ui"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x140f144ad",
+          "helper": "set_attribute"
+        },
+        {
+          "site": "0x140f1453d",
+          "helper": "set_attribute",
+          "attribute": "amount"
+        },
+        {
+          "site": "0x140f145cd",
+          "helper": "set_attribute",
+          "attribute": "trade_dip_caption"
+        },
+        {
+          "site": "0x140f1465d",
+          "helper": "set_attribute",
+          "attribute": "dip"
+        },
+        {
+          "site": "0x140f146ed",
+          "helper": "set_attribute",
+          "attribute": "trade_tp_caption"
+        },
+        {
+          "site": "0x140f1477d",
+          "helper": "set_attribute",
+          "attribute": "tp"
+        },
+        {
+          "site": "0x140f1480d",
+          "helper": "set_attribute",
+          "attribute": "trade_slippage_caption"
+        },
+        {
+          "site": "0x140f1489d",
+          "helper": "set_attribute",
+          "attribute": "slippage"
+        },
+        {
+          "site": "0x140f1492d",
+          "helper": "set_attribute",
+          "attribute": "trade_dynamic_caption"
+        },
+        {
+          "site": "0x140f149bd",
+          "helper": "set_attribute",
+          "attribute": "dynamic"
+        },
+        {
+          "site": "0x140f149f8",
+          "helper": "get_attribute",
+          "attribute": "dynamic"
+        },
+        {
+          "site": "0x140f14a2a",
+          "helper": "method_call1",
+          "attribute": "setToolTip"
+        },
+        {
+          "site": "0x140f14ad6",
+          "helper": "set_attribute",
+          "attribute": "trade_sl_caption"
+        },
+        {
+          "site": "0x140f14b66",
+          "helper": "set_attribute",
+          "attribute": "sl"
+        },
+        {
+          "site": "0x140f14bf6",
+          "helper": "set_attribute",
+          "attribute": "dynamic_hint"
+        },
+        {
+          "site": "0x140f14c31",
+          "helper": "get_attribute",
+          "attribute": "dynamic_hint"
+        },
+        {
+          "site": "0x140f14c58",
+          "helper": "method_call0",
+          "attribute": "hide"
+        },
+        {
+          "site": "0x140f14caf",
+          "helper": "get_attribute",
+          "attribute": "trade_router_caption"
+        },
+        {
+          "site": "0x140f14cfd",
+          "helper": "get_attribute",
+          "attribute": "router_selector"
+        },
+        {
+          "site": "0x140f14dbd",
+          "helper": "get_attribute",
+          "attribute": "trade_pair_caption"
+        },
+        {
+          "site": "0x140f14e07",
+          "helper": "get_attribute",
+          "attribute": "pair_selector"
+        },
+        {
+          "site": "0x140f14e92",
+          "helper": "get_attribute",
+          "attribute": "trade_token_caption"
+        },
+        {
+          "site": "0x140f14edc",
+          "helper": "get_attribute",
+          "attribute": "token"
+        },
+        {
+          "site": "0x140f14f67",
+          "helper": "get_attribute",
+          "attribute": "amount_label"
+        },
+        {
+          "site": "0x140f14fb1",
+          "helper": "get_attribute",
+          "attribute": "amount"
+        },
+        {
+          "site": "0x140f1503c",
+          "helper": "get_attribute",
+          "attribute": "trade_dip_caption"
+        },
+        {
+          "site": "0x140f15086",
+          "helper": "get_attribute",
+          "attribute": "dip"
+        },
+        {
+          "site": "0x140f15111",
+          "helper": "get_attribute",
+          "attribute": "trade_tp_caption"
+        },
+        {
+          "site": "0x140f1515b",
+          "helper": "get_attribute",
+          "attribute": "tp"
+        },
+        {
+          "site": "0x140f151e6",
+          "helper": "get_attribute",
+          "attribute": "trade_slippage_caption"
+        },
+        {
+          "site": "0x140f15230",
+          "helper": "get_attribute",
+          "attribute": "slippage"
+        },
+        {
+          "site": "0x140f152bb",
+          "helper": "get_attribute",
+          "attribute": "trade_dynamic_caption"
+        },
+        {
+          "site": "0x140f15305",
+          "helper": "get_attribute",
+          "attribute": "dynamic"
+        },
+        {
+          "site": "0x140f15390",
+          "helper": "get_attribute",
+          "attribute": "trade_sl_caption"
+        },
+        {
+          "site": "0x140f153d7",
+          "helper": "get_attribute",
+          "attribute": "sl"
+        },
+        {
+          "site": "0x140f157a4",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f157e2",
+          "helper": "get_attribute",
+          "attribute": "trade_layout"
+        },
+        {
+          "site": "0x140f15887",
+          "helper": "get_attribute",
+          "attribute": "token"
+        },
+        {
+          "site": "0x140f15910",
+          "helper": "get_attribute",
+          "attribute": "trade_layout"
+        },
+        {
+          "site": "0x140f1592e",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f15b3d",
+          "helper": "get_attribute",
+          "attribute": "trade_layout"
+        },
+        {
+          "site": "0x140f15e0e",
+          "helper": "set_attribute",
+          "attribute": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f15e49",
+          "helper": "get_attribute",
+          "attribute": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f15e7b",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f15f23",
+          "helper": "set_attribute",
+          "attribute": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f15f5e",
+          "helper": "get_attribute",
+          "attribute": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f15f90",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f1606f",
+          "helper": "set_attribute",
+          "attribute": "trade_widgets"
+        },
+        {
+          "site": "0x140f160fa",
+          "helper": "set_attribute",
+          "attribute": "asset_box"
+        },
+        {
+          "site": "0x140f1615f",
+          "helper": "get_attribute",
+          "attribute": "asset_box"
+        },
+        {
+          "site": "0x140f16182",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f161bf",
+          "helper": "set_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f16250",
+          "helper": "get_attribute",
+          "attribute": "current_profile"
+        },
+        {
+          "site": "0x140f1626a",
+          "helper": "get_attribute",
+          "attribute": "symbol"
+        },
+        {
+          "site": "0x140f1634f",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f1638d",
+          "helper": "set_attribute",
+          "attribute": "converter_amount_label"
+        },
+        {
+          "site": "0x140f163c8",
+          "helper": "get_attribute",
+          "attribute": "converter_amount_label"
+        },
+        {
+          "site": "0x140f163fe",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f164a6",
+          "helper": "set_attribute",
+          "attribute": "converter_amount"
+        },
+        {
+          "site": "0x140f16538",
+          "helper": "get_attribute",
+          "attribute": "current_profile"
+        },
+        {
+          "site": "0x140f16552",
+          "helper": "get_attribute",
+          "attribute": "symbol"
+        },
+        {
+          "site": "0x140f16628",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f16666",
+          "helper": "set_attribute",
+          "attribute": "wrap_btn"
+        },
+        {
+          "site": "0x140f166a1",
+          "helper": "get_attribute",
+          "attribute": "wrap_btn"
+        },
+        {
+          "site": "0x140f166d7",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f16785",
+          "helper": "get_attribute",
+          "attribute": "current_profile"
+        },
+        {
+          "site": "0x140f1679f",
+          "helper": "get_attribute",
+          "attribute": "symbol"
+        },
+        {
+          "site": "0x140f16894",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f168d2",
+          "helper": "set_attribute",
+          "attribute": "unwrap_btn"
+        },
+        {
+          "site": "0x140f1690d",
+          "helper": "get_attribute",
+          "attribute": "unwrap_btn"
+        },
+        {
+          "site": "0x140f16943",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f1699a",
+          "helper": "get_attribute",
+          "attribute": "converter_amount"
+        },
+        {
+          "site": "0x140f169cc",
+          "helper": "method_call1",
+          "attribute": "setToolTip"
+        },
+        {
+          "site": "0x140f16a23",
+          "helper": "get_attribute",
+          "attribute": "wrap_btn"
+        },
+        {
+          "site": "0x140f16a46",
+          "helper": "get_attribute",
+          "attribute": "setToolTip"
+        },
+        {
+          "site": "0x140f16ab0",
+          "helper": "get_attribute",
+          "attribute": "current_profile"
+        },
+        {
+          "site": "0x140f16aca",
+          "helper": "get_attribute",
+          "attribute": "symbol"
+        },
+        {
+          "site": "0x140f16c2f",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f16ca7",
+          "helper": "get_attribute",
+          "attribute": "unwrap_btn"
+        },
+        {
+          "site": "0x140f16cca",
+          "helper": "get_attribute",
+          "attribute": "setToolTip"
+        },
+        {
+          "site": "0x140f16d34",
+          "helper": "get_attribute",
+          "attribute": "current_profile"
+        },
+        {
+          "site": "0x140f16d4e",
+          "helper": "get_attribute",
+          "attribute": "symbol"
+        },
+        {
+          "site": "0x140f16e69",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f16ee1",
+          "helper": "get_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f16f04",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f16f3f",
+          "helper": "get_attribute",
+          "attribute": "converter_amount_label"
+        },
+        {
+          "site": "0x140f17021",
+          "helper": "get_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f17044",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f1707f",
+          "helper": "get_attribute",
+          "attribute": "converter_amount"
+        },
+        {
+          "site": "0x140f17161",
+          "helper": "get_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f17184",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f171bf",
+          "helper": "get_attribute",
+          "attribute": "wrap_btn"
+        },
+        {
+          "site": "0x140f172a1",
+          "helper": "get_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f172c4",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f172ff",
+          "helper": "get_attribute",
+          "attribute": "unwrap_btn"
+        },
+        {
+          "site": "0x140f1746d",
+          "helper": "get_attribute",
+          "attribute": "asset_layout"
+        },
+        {
+          "site": "0x140f1757b",
+          "helper": "get_attribute",
+          "attribute": "converter_amount_label"
+        },
+        {
+          "site": "0x140f175c5",
+          "helper": "get_attribute",
+          "attribute": "converter_amount"
+        },
+        {
+          "site": "0x140f17605",
+          "helper": "get_attribute",
+          "attribute": "wrap_btn"
+        },
+        {
+          "site": "0x140f17645",
+          "helper": "get_attribute",
+          "attribute": "unwrap_btn"
+        },
+        {
+          "site": "0x140f17688",
+          "helper": "set_attribute",
+          "attribute": "asset_widgets"
+        },
+        {
+          "site": "0x140f17726",
+          "helper": "set_attribute",
+          "attribute": "control_box"
+        },
+        {
+          "site": "0x140f1778b",
+          "helper": "get_attribute",
+          "attribute": "control_box"
+        },
+        {
+          "site": "0x140f177ae",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f177eb",
+          "helper": "set_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f17876",
+          "helper": "set_attribute",
+          "attribute": "start_bot_btn"
+        },
+        {
+          "site": "0x140f178b1",
+          "helper": "get_attribute",
+          "attribute": "start_bot_btn"
+        },
+        {
+          "site": "0x140f178e3",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f1798b",
+          "helper": "set_attribute",
+          "attribute": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f179c6",
+          "helper": "get_attribute",
+          "attribute": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f179f8",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f17aa0",
+          "helper": "set_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17adb",
+          "helper": "get_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17b0d",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f17b64",
+          "helper": "get_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17bed",
+          "helper": "get_attribute",
+          "attribute": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f17c1f",
+          "helper": "method_call1",
+          "attribute": "setEnabled"
+        },
+        {
+          "site": "0x140f17c76",
+          "helper": "get_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f17ca8",
+          "helper": "method_call1",
+          "attribute": "setEnabled"
+        },
+        {
+          "site": "0x140f17d28",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f17d49",
+          "helper": "set_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f17d84",
+          "helper": "get_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f17db6",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f17e0d",
+          "helper": "get_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f17e30",
+          "helper": "get_attribute",
+          "attribute": "setFrameShape"
+        },
+        {
+          "site": "0x140f17e8a",
+          "helper": "get_attribute",
+          "attribute": "HLine"
+        },
+        {
+          "site": "0x140f17ed6",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f17f4a",
+          "helper": "get_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f17f6d",
+          "helper": "get_attribute",
+          "attribute": "setFrameShadow"
+        },
+        {
+          "site": "0x140f17fcd",
+          "helper": "get_attribute",
+          "attribute": "Plain"
+        },
+        {
+          "site": "0x140f17ffb",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f1806f",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f18092",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f180cd",
+          "helper": "get_attribute",
+          "attribute": "start_bot_btn"
+        },
+        {
+          "site": "0x140f181af",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f181d2",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f1820d",
+          "helper": "get_attribute",
+          "attribute": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f182d9",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f182fc",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f18337",
+          "helper": "get_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f18403",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f18426",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f18461",
+          "helper": "get_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f18543",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f18566",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f185a1",
+          "helper": "get_attribute",
+          "attribute": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f18683",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f186a6",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f186e1",
+          "helper": "get_attribute",
+          "attribute": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f1884d",
+          "helper": "get_attribute",
+          "attribute": "controls_layout"
+        },
+        {
+          "site": "0x140f1895b",
+          "helper": "get_attribute",
+          "attribute": "start_bot_btn"
+        },
+        {
+          "site": "0x140f189a5",
+          "helper": "get_attribute",
+          "attribute": "bot_sell_btn"
+        },
+        {
+          "site": "0x140f189e5",
+          "helper": "get_attribute",
+          "attribute": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f18a25",
+          "helper": "get_attribute",
+          "attribute": "control_divider"
+        },
+        {
+          "site": "0x140f18a65",
+          "helper": "get_attribute",
+          "attribute": "manual_buy_btn"
+        },
+        {
+          "site": "0x140f18aa5",
+          "helper": "get_attribute",
+          "attribute": "manual_sell_btn"
+        },
+        {
+          "site": "0x140f18ae8",
+          "helper": "set_attribute",
+          "attribute": "control_widgets"
+        },
+        {
+          "site": "0x140f18b86",
+          "helper": "set_attribute",
+          "attribute": "log_box"
+        },
+        {
+          "site": "0x140f18beb",
+          "helper": "get_attribute",
+          "attribute": "log_box"
+        },
+        {
+          "site": "0x140f18c0e",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f18c4b",
+          "helper": "set_attribute",
+          "attribute": "log_layout"
+        },
+        {
+          "site": "0x140f18cae",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f18ccf",
+          "helper": "set_attribute",
+          "attribute": "log"
+        },
+        {
+          "site": "0x140f18d0a",
+          "helper": "get_attribute",
+          "attribute": "log"
+        },
+        {
+          "site": "0x140f18d3c",
+          "helper": "method_call1",
+          "attribute": "setObjectName"
+        },
+        {
+          "site": "0x140f18d93",
+          "helper": "get_attribute",
+          "attribute": "log"
+        },
+        {
+          "site": "0x140f18dc5",
+          "helper": "method_call1",
+          "attribute": "setReadOnly"
+        },
+        {
+          "site": "0x140f18e1c",
+          "helper": "get_attribute",
+          "attribute": "log"
+        },
+        {
+          "site": "0x140f18e43",
+          "helper": "method_call0",
+          "attribute": "document"
+        },
+        {
+          "site": "0x140f18e8c",
+          "helper": "method_call1",
+          "attribute": "setMaximumBlockCount"
+        },
+        {
+          "site": "0x140f18ee3",
+          "helper": "get_attribute",
+          "attribute": "log_layout"
+        },
+        {
+          "site": "0x140f18f06",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f18f41",
+          "helper": "get_attribute",
+          "attribute": "log"
+        },
+        {
+          "site": "0x140f18f8d",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f19001",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f19024",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f1905f",
+          "helper": "get_attribute",
+          "attribute": "trade_box"
+        },
+        {
+          "site": "0x140f19141",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f19164",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f1919f",
+          "helper": "get_attribute",
+          "attribute": "asset_box"
+        },
+        {
+          "site": "0x140f19288",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f192ab",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f192e6",
+          "helper": "get_attribute",
+          "attribute": "control_box"
+        },
+        {
+          "site": "0x140f193c8",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f193eb",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f19426",
+          "helper": "get_attribute",
+          "attribute": "log_box"
+        },
+        {
+          "site": "0x140f1959d",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f196ab",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f19738",
+          "helper": "get_attribute",
+          "attribute": "trade_box"
+        },
+        {
+          "site": "0x140f19782",
+          "helper": "get_attribute",
+          "attribute": "asset_box"
+        },
+        {
+          "site": "0x140f197b6",
+          "helper": "get_attribute",
+          "attribute": "control_box"
+        },
+        {
+          "site": "0x140f197ea",
+          "helper": "get_attribute",
+          "attribute": "log_box"
+        },
+        {
+          "site": "0x140f19821",
+          "helper": "set_attribute",
+          "attribute": "body_widgets"
+        },
+        {
+          "site": "0x140f1986b",
+          "helper": "get_attribute",
+          "attribute": "addLayout"
+        },
+        {
+          "site": "0x140f1988e",
+          "helper": "get_attribute",
+          "attribute": "body_layout"
+        },
+        {
+          "site": "0x140f19940",
+          "helper": "set_attribute",
+          "attribute": "bot_scroll"
+        },
+        {
+          "site": "0x140f1996d",
+          "helper": "get_attribute",
+          "attribute": "addWidget"
+        },
+        {
+          "site": "0x140f19990",
+          "helper": "get_attribute",
+          "attribute": "bot_content"
+        },
+        {
+          "site": "0x140f199be",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140f19a32",
+          "helper": "get_attribute",
+          "attribute": "tabs"
+        },
+        {
+          "site": "0x140f19a55",
+          "helper": "get_attribute",
+          "attribute": "addTab"
+        },
+        {
+          "site": "0x140f19a90",
+          "helper": "get_attribute",
+          "attribute": "bot_tab"
+        },
+        {
+          "site": "0x140f19b7b",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f19b9c",
+          "helper": "set_attribute",
+          "attribute": "market_title"
+        },
+        {
+          "site": "0x140f19c00",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f19c21",
+          "helper": "set_attribute",
+          "attribute": "price"
+        },
+        {
+          "site": "0x140f19c85",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f19ca6",
+          "helper": "set_attribute",
+          "attribute": "base_level"
+        },
+        {
+          "site": "0x140f19d0a",
+          "helper": "call0"
+        },
+        {
+          "site": "0x140f19d2b",
+          "helper": "set_attribute",
+          "attribute": "dip_live"
+        },
+        {
+          "site": "0x140f19db3",
+          "helper": "set_attribute",
+          "attribute": "status"
+        },
+        {
+          "site": "0x140f19dfe",
+          "helper": "method_call1",
+          "attribute": "set_position_ui"
+        }
+      ]
+    },
+    "runtime_reset": {
+      "entry": "0x141dc1260",
+      "original_end": "0x141dc147d",
+      "instructions": 247,
+      "added_instructions": 110,
+      "unresolved": [],
+      "instruction_bytes_sha256": "954b044d7cf12eb06fdf9b497009bd2246d03a2dd686ffaeca946892e90db5c0",
+      "references": [
+        {
+          "site": "0x141dc1323",
+          "name": "delete_secure_settings"
+        },
+        {
+          "site": "0x141dc136b",
+          "name": "delete_secure_settings"
+        },
+        {
+          "site": "0x141dc1394",
+          "name": "delete_secure_settings"
+        },
+        {
+          "site": "0x141dc13b1",
+          "name": "delete_secure_settings"
+        },
+        {
+          "site": "0x141dc13d1",
+          "name": "delete_secure_settings"
+        },
+        {
+          "site": "0x141dc1431",
+          "name": "load_runtime_settings"
+        },
+        {
+          "site": "0x141dc1459",
+          "name": "cache_clear"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x141dc13ff",
+          "helper": "call0"
+        },
+        {
+          "site": "0x141dc1460",
+          "helper": "method_call0",
+          "attribute": "cache_clear"
+        }
+      ]
+    },
+    "gui_stop": {
+      "entry": "0x140f56f10",
+      "original_end": "0x140f571e1",
+      "instructions": 324,
+      "added_instructions": 125,
+      "unresolved": [],
+      "instruction_bytes_sha256": "659ec78f1f354540da9c8639b511ad6156501817490140a9ea81cc9c6ccdd6ae",
+      "references": [
+        {
+          "site": "0x140f56f93",
+          "name": "bot"
+        },
+        {
+          "site": "0x140f57006",
+          "name": "bot"
+        },
+        {
+          "site": "0x140f5702d",
+          "name": "stop"
+        },
+        {
+          "site": "0x140f5707a",
+          "name": "bot"
+        },
+        {
+          "site": "0x140f5709b",
+          "name": "running"
+        },
+        {
+          "site": "0x140f5712a",
+          "name": "stop_bot_btn"
+        },
+        {
+          "site": "0x140f5715b",
+          "name": "setText"
+        },
+        {
+          "site": "0x140f571bb",
+          "name": "append_log"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x140f56f9d",
+          "helper": "get_attribute",
+          "receiver": "arg[0]",
+          "attribute": "bot",
+          "expression": "arg[0].bot"
+        },
+        {
+          "site": "0x140f57010",
+          "helper": "get_attribute",
+          "receiver": "arg[0]",
+          "attribute": "bot",
+          "expression": "arg[0].bot"
+        },
+        {
+          "site": "0x140f57037",
+          "helper": "method_call0",
+          "receiver": "arg[0].bot",
+          "attribute": "stop",
+          "expression": "arg[0].bot.stop"
+        },
+        {
+          "site": "0x140f57084",
+          "helper": "get_attribute",
+          "receiver": "arg[0]",
+          "attribute": "bot",
+          "expression": "arg[0].bot"
+        },
+        {
+          "site": "0x140f570a5",
+          "helper": "get_attribute",
+          "receiver": "arg[0].bot",
+          "attribute": "running",
+          "expression": "arg[0].bot.running"
+        },
+        {
+          "site": "0x140f57134",
+          "helper": "get_attribute",
+          "receiver": "arg[0]",
+          "attribute": "stop_bot_btn",
+          "expression": "arg[0].stop_bot_btn"
+        },
+        {
+          "site": "0x140f57166",
+          "helper": "method_call1",
+          "receiver": "arg[0].stop_bot_btn",
+          "attribute": "setText",
+          "expression": "arg[0].stop_bot_btn.setText"
+        },
+        {
+          "site": "0x140f571c6",
+          "helper": "method_call1",
+          "receiver": "arg[0]",
+          "attribute": "append_log",
+          "expression": "arg[0].append_log"
+        }
+      ]
+    },
+    "getattr_default_prefix_only": {
+      "entry": "0x1428fccf0",
+      "original_end": "0x1428fcd25",
+      "instructions": 81,
+      "added_instructions": 70,
+      "unresolved": [],
+      "instruction_bytes_sha256": "cfb98a377e7a3b69c823540ee27a4e721836e1f7fb663325312846dd6f85b571",
+      "references": [],
+      "calls": []
+    },
+    "load_config_values": {
+      "entry": "0x140f2bf40",
+      "original_end": "0x140f2c011",
+      "instructions": 172,
+      "added_instructions": 118,
+      "unresolved": [],
+      "instruction_bytes_sha256": "a8b58afe9cc61b1476ac7fcd1c7582148ab707d9864240502a4102d8631d8fca",
+      "references": [
+        {
+          "site": "0x140f2bfd6",
+          "name": "reload_runtime_settings"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x140f2bff8",
+          "helper": "call0"
+        }
+      ]
+    },
+    "runtime_reload": {
+      "entry": "0x141dc0230",
+      "original_end": "0x141dc036d",
+      "instructions": 180,
+      "added_instructions": 99,
+      "unresolved": [],
+      "instruction_bytes_sha256": "1f2751843e56f3d73255c7aed8c3c07211d647a20c3a0629848a4cb582af7e76",
+      "references": [
+        {
+          "site": "0x141dc02c4",
+          "name": "load_runtime_settings"
+        },
+        {
+          "site": "0x141dc02ef",
+          "name": "cache_clear"
+        },
+        {
+          "site": "0x141dc0328",
+          "name": "load_runtime_settings"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x141dc02f6",
+          "helper": "method_call0",
+          "attribute": "cache_clear"
+        },
+        {
+          "site": "0x141dc0350",
+          "helper": "call0"
+        }
+      ]
+    },
+    "runtime_load": {
+      "entry": "0x141dbfd60",
+      "original_end": "0x141dc022c",
+      "instructions": 337,
+      "added_instructions": 0,
+      "unresolved": [],
+      "instruction_bytes_sha256": "e597c10189a5dee30fdd2a24dda4147c8d6fbffef62a877e9fc13a350b691ec1",
+      "references": [
+        {
+          "site": "0x141dbfe3f",
+          "name": "load_secure_settings"
+        },
+        {
+          "site": "0x141dbfe85",
+          "name": "load_secure_settings"
+        },
+        {
+          "site": "0x141dbfeae",
+          "name": "load_secure_settings"
+        },
+        {
+          "site": "0x141dbfeca",
+          "name": "load_secure_settings"
+        },
+        {
+          "site": "0x141dbfeea",
+          "name": "load_secure_settings"
+        },
+        {
+          "site": "0x141dbffa0",
+          "name": "get_worker_id"
+        },
+        {
+          "site": "0x141dbffe1",
+          "name": "get_worker_id"
+        },
+        {
+          "site": "0x141dc000a",
+          "name": "get_worker_id"
+        },
+        {
+          "site": "0x141dc0026",
+          "name": "get_worker_id"
+        },
+        {
+          "site": "0x141dc0046",
+          "name": "get_worker_id"
+        },
+        {
+          "site": "0x141dc01b4",
+          "name": "WORKER_ID"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x141dbff18",
+          "helper": "call0"
+        },
+        {
+          "site": "0x141dc0071",
+          "helper": "call0"
+        }
+      ]
+    },
+    "secure_settings_load": {
+      "entry": "0x141dd0600",
+      "original_end": "0x141dd1415",
+      "instructions": 994,
+      "added_instructions": 0,
+      "unresolved": [],
+      "instruction_bytes_sha256": "392b93e2c5b121133155e5ffd124b9840ceb98db0151c0017538aff4cf82ca1e",
+      "references": [
+        {
+          "site": "0x141dd06d1",
+          "name": "get_vault_path"
+        },
+        {
+          "site": "0x141dd072c",
+          "name": "exists"
+        },
+        {
+          "site": "0x141dd07ad",
+          "name": "SecureStoreError"
+        },
+        {
+          "site": "0x141dd0876",
+          "name": "read_protected_json"
+        },
+        {
+          "site": "0x141dd08be",
+          "name": "read_protected_json"
+        },
+        {
+          "site": "0x141dd08e7",
+          "name": "read_protected_json"
+        },
+        {
+          "site": "0x141dd0904",
+          "name": "read_protected_json"
+        },
+        {
+          "site": "0x141dd0924",
+          "name": "read_protected_json"
+        },
+        {
+          "site": "0x141dd098a",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd0a46",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd0b42",
+          "name": "validate_runtime_settings"
+        },
+        {
+          "site": "0x141dd0b64",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd0bbf",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd0c69",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd0d41",
+          "name": "get"
+        },
+        {
+          "site": "0x141dd102f",
+          "name": "SecureStoreError"
+        },
+        {
+          "site": "0x141dd11b2",
+          "name": "SecureStoreError"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x141dd06fb",
+          "helper": "call0"
+        },
+        {
+          "site": "0x141dd0739",
+          "helper": "method_call0",
+          "attribute": "exists"
+        },
+        {
+          "site": "0x141dd099b",
+          "helper": "get_attribute",
+          "attribute": "get"
+        },
+        {
+          "site": "0x141dd0a50",
+          "helper": "get_attribute",
+          "attribute": "get"
+        },
+        {
+          "site": "0x141dd0b6e",
+          "helper": "get_attribute",
+          "attribute": "get"
+        },
+        {
+          "site": "0x141dd0bc9",
+          "helper": "get_attribute",
+          "attribute": "get"
+        },
+        {
+          "site": "0x141dd0c73",
+          "helper": "get_attribute",
+          "attribute": "get"
+        },
+        {
+          "site": "0x141dd0d4b",
+          "helper": "get_attribute",
+          "attribute": "get"
+        }
+      ]
+    }
+  }
+}

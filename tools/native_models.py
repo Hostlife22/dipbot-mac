@@ -25,3 +25,15 @@ def purpose_entropy(purpose, *, default_prefix, owner_prefix, owner_purposes):
     # Prefix values are injected for synthetic tests; no vault/license access.
     prefix = owner_prefix if purpose in owner_purposes else default_prefix
     return (prefix + purpose).encode('utf-8')
+
+
+def roundtrip_loss_bps(amount_in, reverse_out):
+    """Recovered integer-input path, not a model of arbitrary Python coercions."""
+    if type(amount_in) is not int or type(reverse_out) is not int:
+        raise ValueError('audit model accepts integer raw units only')
+    reverse_out = max(0, reverse_out)
+    if amount_in <= 0:
+        return 10000
+    if reverse_out >= amount_in:
+        return 0
+    return (amount_in - reverse_out) * 10000 // amount_in

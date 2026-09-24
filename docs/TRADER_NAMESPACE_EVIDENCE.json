@@ -1,0 +1,228 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "start": "0x141e84d3e",
+  "end": "0x141e86cb1",
+  "sha256": "065efe557adda8b8d04b13706bb507fa7fcb329ee288ea5a90cf2ef74cdf04ff",
+  "namespace_writes": [
+    {
+      "site": "0x141e84d72",
+      "name": "__module__"
+    },
+    {
+      "site": "0x141e84d88",
+      "name": "__qualname__"
+    },
+    {
+      "site": "0x141e84e5c",
+      "name": "__init__"
+    },
+    {
+      "site": "0x141e84ec1",
+      "name": "_balance_call_data"
+    },
+    {
+      "site": "0x141e84ffb",
+      "name": "_read_two_balances"
+    },
+    {
+      "site": "0x141e85060",
+      "name": "_get_v3_pool_contract"
+    },
+    {
+      "site": "0x141e850aa",
+      "name": "erc20"
+    },
+    {
+      "site": "0x141e850f4",
+      "name": "token_decimals"
+    },
+    {
+      "site": "0x141e8513e",
+      "name": "get_pair_contract"
+    },
+    {
+      "site": "0x141e8522c",
+      "name": "get_market_feed_metadata"
+    },
+    {
+      "site": "0x141e85366",
+      "name": "snapshot_from_pair_reserves"
+    },
+    {
+      "site": "0x141e85489",
+      "name": "snapshot_from_v3_sqrt_price"
+    },
+    {
+      "site": "0x141e85595",
+      "name": "get_price_from_reserves"
+    },
+    {
+      "site": "0x141e85623",
+      "name": "v2_amount_out_from_reserves"
+    },
+    {
+      "site": "0x141e85696",
+      "name": "min_out_from_quote"
+    },
+    {
+      "site": "0x141e856e0",
+      "name": "v2_min_out_from_reserves"
+    },
+    {
+      "site": "0x141e8573d",
+      "name": "buy_min_out_from_snapshot"
+    },
+    {
+      "site": "0x141e85787",
+      "name": "prepare_trade_target"
+    },
+    {
+      "site": "0x141e857d1",
+      "name": "_next_nonce"
+    },
+    {
+      "site": "0x141e8581b",
+      "name": "_sync_nonce_from_network"
+    },
+    {
+      "site": "0x141e85865",
+      "name": "tx_base"
+    },
+    {
+      "site": "0x141e858af",
+      "name": "send"
+    },
+    {
+      "site": "0x141e8590c",
+      "name": "wait"
+    },
+    {
+      "site": "0x141e85969",
+      "name": "allowance"
+    },
+    {
+      "site": "0x141e859c6",
+      "name": "ensure_approve_max"
+    },
+    {
+      "site": "0x141e85a23",
+      "name": "fast_buy_wbnb_token"
+    },
+    {
+      "site": "0x141e85a80",
+      "name": "fast_sell_token_wbnb"
+    },
+    {
+      "site": "0x141e85aca",
+      "name": "token_balance_raw"
+    },
+    {
+      "site": "0x141e85b14",
+      "name": "token_amount_to_raw"
+    },
+    {
+      "site": "0x141e85b5e",
+      "name": "token_raw_to_amount"
+    },
+    {
+      "site": "0x141e85ba8",
+      "name": "quote_amount_to_raw"
+    },
+    {
+      "site": "0x141e85bf2",
+      "name": "quote_raw_to_amount"
+    },
+    {
+      "site": "0x141e85c2a",
+      "name": "balances"
+    },
+    {
+      "site": "0x141e85c74",
+      "name": "_v3_path"
+    },
+    {
+      "site": "0x141e85d5b",
+      "name": "_route_key"
+    },
+    {
+      "site": "0x141e85ea9",
+      "name": "_reverse_route"
+    },
+    {
+      "site": "0x141e85f67",
+      "name": "_route_label"
+    },
+    {
+      "site": "0x141e8600c",
+      "name": "_preferred_buy_route"
+    },
+    {
+      "site": "0x141e8611c",
+      "name": "_buy_route_candidates"
+    },
+    {
+      "site": "0x141e861f1",
+      "name": "_quote_route"
+    },
+    {
+      "site": "0x141e8627f",
+      "name": "_roundtrip_loss_bps"
+    },
+    {
+      "site": "0x141e862f2",
+      "name": "_converter_slippage_bps"
+    },
+    {
+      "site": "0x141e86474",
+      "name": "_select_safe_route"
+    },
+    {
+      "site": "0x141e86566",
+      "name": "preview_bnb_to_quote"
+    },
+    {
+      "site": "0x141e86658",
+      "name": "preview_quote_to_bnb"
+    },
+    {
+      "site": "0x141e86716",
+      "name": "converter_quote_summary"
+    },
+    {
+      "site": "0x141e867f1",
+      "name": "execute_bnb_to_quote"
+    },
+    {
+      "site": "0x141e868cc",
+      "name": "execute_quote_to_bnb"
+    },
+    {
+      "site": "0x141e869b0",
+      "name": "wrap_bnb"
+    },
+    {
+      "site": "0x141e86a0d",
+      "name": "unwrap_wbnb"
+    }
+  ],
+  "unresolved_setters": [],
+  "shared_empty_bases": {
+    "slot": "0x1429a02a0",
+    "serialized_tag": "T",
+    "length": 0
+  },
+  "anchors": {
+    "namespace_empty_dict": "0x141e84d50",
+    "namespace_register": "r14",
+    "metaclass_import_PyType_Type": "0x141e86a2e",
+    "bases_load": "0x141e86a62",
+    "namespace_tuple_item_2": "0x141e86a95",
+    "type_call": "0x141e86ab5",
+    "module_Trader_assignment": "0x141e86c17"
+  },
+  "limitations": [
+    "linear setter-site inventory, not an arbitrary heap mutation proof",
+    "fresh built-in type construction only; later monkey-patching and alternate Trader bindings unresolved"
+  ]
+}

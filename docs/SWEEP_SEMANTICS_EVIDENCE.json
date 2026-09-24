@@ -1,0 +1,216 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "decoded_counts": {
+    "wallet_sweep": 343,
+    "commercial_features": 642,
+    "dynamic_pairs": 323,
+    "gui": 1040,
+    "secure_store": 245
+  },
+  "tables": {
+    "wallet_sweep": "0x142a6fd50",
+    "commercial_features": "0x1429db320",
+    "dynamic_pairs": "0x1429ed8b0",
+    "gui": "0x142a0cf60",
+    "secure_store": "0x142a5aa10"
+  },
+  "selected_constants": {
+    "wallet_sweep": [
+      {
+        "index": 78,
+        "file_offset": 52310415,
+        "value": "append"
+      },
+      {
+        "index": 125,
+        "file_offset": 52311141,
+        "value": "balance_reader"
+      },
+      {
+        "index": 183,
+        "file_offset": 52312237,
+        "value": {
+          "type": ":",
+          "values": [
+            -6,
+            null,
+            null
+          ]
+        }
+      },
+      {
+        "index": 185,
+        "file_offset": 52312250,
+        "value": "failed"
+      },
+      {
+        "index": 210,
+        "file_offset": 52312705,
+        "value": "remaining"
+      },
+      {
+        "index": 211,
+        "file_offset": 52312716,
+        "value": ": final balance could not be verified"
+      }
+    ],
+    "commercial_features": [
+      {
+        "index": 99,
+        "file_offset": 50791352,
+        "value": "token"
+      },
+      {
+        "index": 101,
+        "file_offset": 50791372,
+        "value": "_schedule_autopair"
+      },
+      {
+        "index": 173,
+        "file_offset": 50793194,
+        "value": "text"
+      }
+    ],
+    "dynamic_pairs": [],
+    "gui": [
+      {
+        "index": 126,
+        "file_offset": 51189793,
+        "value": [
+          "trade_router"
+        ]
+      },
+      {
+        "index": 634,
+        "file_offset": 51205934,
+        "value": {
+          "dict": [
+            [
+              "ensure_ascii",
+              true
+            ],
+            [
+              "indent",
+              2
+            ]
+          ]
+        }
+      },
+      {
+        "index": 635,
+        "file_offset": 51205961,
+        "value": {
+          "dict": [
+            [
+              "encoding",
+              "utf-8"
+            ]
+          ]
+        }
+      },
+      {
+        "index": 840,
+        "file_offset": 51210101,
+        "value": [
+          "trader",
+          "token",
+          "amount_wbnb",
+          "dip_pct",
+          "tp_pct",
+          "sl_pct",
+          "slippage_pct",
+          "dynamic_dip_factor",
+          "callback"
+        ]
+      }
+    ],
+    "secure_store": [
+      {
+        "index": 151,
+        "file_offset": 52125431,
+        "value": "validate_runtime_settings"
+      },
+      {
+        "index": 156,
+        "file_offset": 52125535,
+        "value": "runtime-settings"
+      },
+      {
+        "index": 158,
+        "file_offset": 52125561,
+        "value": [
+          "Secure wallet/node setup has not been completed"
+        ]
+      }
+    ]
+  },
+  "native_ranges": {
+    "final_balance_classification": {
+      "va_start": "0x14209e420",
+      "va_end": "0x14209e4c5",
+      "file_offset": 34199584,
+      "sha256": "41c49835b9f61e0a2b91bb83504f1e27f7e2e6e27e47ccf4c0d013924c0bb1fc"
+    },
+    "remaining_dedup_append": {
+      "va_start": "0x14209e76f",
+      "va_end": "0x14209e881",
+      "file_offset": 34200431,
+      "sha256": "c52e706c088028fa7fde69a51853228bed80b5c85f2e4bc429b0900bf7a86f2b"
+    },
+    "unknown_balance_failure": {
+      "va_start": "0x14209e881",
+      "va_end": "0x14209ea7a",
+      "file_offset": 34200705,
+      "sha256": "0d20f24d97cbb71057a7c5a374b2e12cb3f514a98fdc615b39f1b933ba74d311"
+    },
+    "remove_schedule_again": {
+      "va_start": "0x140908d9a",
+      "va_end": "0x140908ea9",
+      "file_offset": 9470362,
+      "sha256": "97d2a969508f8039eaec5233a9ae79bd2b0e08e9d1c2559ddf1e6ca0fc12ebcd"
+    },
+    "registry_remove_save_failure": {
+      "va_start": "0x140bc126e",
+      "va_end": "0x140bc15e5",
+      "file_offset": 12322414,
+      "sha256": "aef4fabe9b969b8c4383e32803467dfe17ba407f7855790bd133615e6d0a7e3f"
+    },
+    "trader_constructor": {
+      "va_start": "0x140f0c002",
+      "va_end": "0x140f0c114",
+      "file_offset": 15774722,
+      "sha256": "57eeed680d16033f8094cbe263f4cd63a35dc03ccfe88a2d46e8025b942084bb"
+    },
+    "bot_constructor": {
+      "va_start": "0x140f54faa",
+      "va_end": "0x140f55106",
+      "file_offset": 16073642,
+      "sha256": "ff9092d88fa56ff6c9166887a0fc13c82201846e5f15ec52e22d4c69249ccc64"
+    },
+    "secure_missing_file": {
+      "va_start": "0x141dd072c",
+      "va_end": "0x141dd0833",
+      "file_offset": 31259436,
+      "sha256": "f9a6c26697f63a4b1cef8a0282b82ee958cd702371f96839b938ca21483d62bb"
+    },
+    "secure_payload_checks": {
+      "va_start": "0x141dd0949",
+      "va_end": "0x141dd0b64",
+      "file_offset": 31259977,
+      "sha256": "04e9845df1b25f4b20c8e7e75dfeb3bdf60d26804c5793816db4ba9eca451a43"
+    }
+  },
+  "scope": "bounded instruction windows; not complete functions, exception graph or runtime comparison",
+  "observations": {
+    "unknown_final_balance": [
+      "0x14209e494: comparison against None; None bypasses numeric comparison",
+      "0x14209e7c6: existing remaining label skips duplicate append",
+      "0x14209e881: None-specific branch adds failure message after remaining"
+    ],
+    "missing_settings": "Absent file branch constructs SecureStoreError at 0x141dd07e2; outer fallback not resolved",
+    "remove_retry": "0x140908e60 calls _schedule_autopair with current token.text()",
+    "save_failure": "0x140bc1279 branches on non-null _save result; null goes into exception cleanup at 0x140bc127f; full rollback not proven",
+    "representation_difference": "Windows remaining is a deduplicated list of labels; Mac separates measured remaining amounts from unknown tokens"
+  }
+}

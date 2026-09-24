@@ -1,0 +1,1392 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "scope": "short factory ranges calling 0x1428ed190, single RIP-relative RCX code pointer; not dynamic dispatch proof",
+  "definitions": [
+    {
+      "qualified_name": "CommercialGUI._converter_seed_profile",
+      "name_reference": "0x140922577",
+      "factory": "0x140922560",
+      "body": "0x1408fed60",
+      "factory_sha256": "dc0e9c5a7b1aefe87354a7b0aeeca80e421c5d7fd7d169f044d58d0cf568c94e"
+    },
+    {
+      "qualified_name": "CommercialGUI._probe_live_pair_converter",
+      "name_reference": "0x1409225d7",
+      "factory": "0x1409225c0",
+      "body": "0x1408ff890",
+      "factory_sha256": "0636bb2028a3ac5825dd8cc770f28ae36c4552a8819e11f0ab0c93e8d32aa0da"
+    },
+    {
+      "qualified_name": "CommercialGUI._live_pair_worker",
+      "name_reference": "0x140922637",
+      "factory": "0x140922620",
+      "body": "0x140900e90",
+      "factory_sha256": "25982e4c8ccc848f5ccebb2f33bd555ba27a39baeee089ff10b767658a8296a6"
+    },
+    {
+      "qualified_name": "CommercialGUI._finish_live_pair_ui",
+      "name_reference": "0x140922697",
+      "factory": "0x140922680",
+      "body": "0x140902870",
+      "factory_sha256": "9ed0c34c112075d250ee3ec9084d33a9c261fa830eedd28abe8440eb99c64c69"
+    },
+    {
+      "qualified_name": "CommercialGUI._refresh_pair_selector_catalog",
+      "name_reference": "0x14092270b",
+      "factory": "0x1409226e0",
+      "body": "0x140902bb0",
+      "factory_sha256": "5aed654e6b9d069fee24a1de1b303cf33051980f2da1c829bd8d05315e57eb17"
+    },
+    {
+      "qualified_name": "CommercialGUI._select_live_pair",
+      "name_reference": "0x140922757",
+      "factory": "0x140922740",
+      "body": "0x140903700",
+      "factory_sha256": "4eef73f9c913fffc022ef9e7882add64ada90eac3a81824c79270da76bf61a6f"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_live_pair_result",
+      "name_reference": "0x1409227b7",
+      "factory": "0x1409227a0",
+      "body": "0x140904000",
+      "factory_sha256": "1d90397b7ef6d5cbd2f4e82b6590e1bd3685d5d06b2473056d2c512c2e633bb0"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_live_pair_error",
+      "name_reference": "0x140922817",
+      "factory": "0x140922800",
+      "body": "0x140906b20",
+      "factory_sha256": "3e0a0abf1f1aee6d0dbdab1cc11688a66ba293d24ee4ad9b80e8a000754ab600"
+    },
+    {
+      "qualified_name": "CommercialGUI.remove_current_live_pair",
+      "name_reference": "0x140922877",
+      "factory": "0x140922860",
+      "body": "0x140907240",
+      "factory_sha256": "634296f1057fe3cb9c4aafff63c845e29a40b1e252c6745f86e6bb0bba45ce95"
+    },
+    {
+      "qualified_name": "CommercialGUI._schedule_autopair",
+      "name_reference": "0x1409228d7",
+      "factory": "0x1409228c0",
+      "body": "0x1409093b0",
+      "factory_sha256": "dc7a31459d8e5d516d21d9b65d0a5a402e5a02fc70d525bd43e4e294d503ead4"
+    },
+    {
+      "qualified_name": "CommercialGUI._start_autopair_resolution",
+      "name_reference": "0x140922987",
+      "factory": "0x140922970",
+      "body": "0x140909fa0",
+      "factory_sha256": "724cb5d6cb5d3058da39f8afd7329294608cf9e4ae431219b8ebfa5e9b39db73"
+    },
+    {
+      "qualified_name": "CommercialGUI._autopair_worker",
+      "name_reference": "0x1409229e7",
+      "factory": "0x1409229d0",
+      "body": "0x14090ab20",
+      "factory_sha256": "17b627a66132cef756c745ff34840a576bce2e510434a28f1ed435650620bc15"
+    },
+    {
+      "qualified_name": "CommercialGUI._rewrite_pool_to_token",
+      "name_reference": "0x140922a47",
+      "factory": "0x140922a30",
+      "body": "0x14090bbd0",
+      "factory_sha256": "cfd524d87cb971e9a26c3b05aa3dfb6d2e1e5c94e9810b35104d98b22907f5e8"
+    },
+    {
+      "qualified_name": "CommercialGUI._apply_autopair_selection",
+      "name_reference": "0x140922aa7",
+      "factory": "0x140922a90",
+      "body": "0x14090c110",
+      "factory_sha256": "f57e3e1480893b67cbe98f6135c3c9a250d3035c306ce4572cecbb40db9d513a"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_autopair_result",
+      "name_reference": "0x140922b07",
+      "factory": "0x140922af0",
+      "body": "0x14090cac0",
+      "factory_sha256": "d896d118c2183e08cdf9f7d18a0219f92301dd65df7386c3c241247b66df7b7e"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_autopair_error",
+      "name_reference": "0x140922b67",
+      "factory": "0x140922b50",
+      "body": "0x14090fd90",
+      "factory_sha256": "a70c303537d28331e5ab8940d8ff2ccf5472ad2e1998ec104cbbad16ec373298"
+    },
+    {
+      "qualified_name": "CommercialGUI.handle_event",
+      "name_reference": "0x140922bd3",
+      "factory": "0x140922bb0",
+      "body": "0x140910780",
+      "factory_sha256": "a11d159e2d45f23ecbd210ac0a214db0dd0c607c061dc321625d92f8d25b609c"
+    },
+    {
+      "qualified_name": "CommercialGUI._confirm_manual_selection",
+      "name_reference": "0x140922c27",
+      "factory": "0x140922c10",
+      "body": "0x140911150",
+      "factory_sha256": "839e607bbd0c23f40193f44fcb3e1e926dcd10d5e5f2a043fbe44bd1ca2aadd0"
+    },
+    {
+      "qualified_name": "CommercialGUI._register_wallet_token",
+      "name_reference": "0x140922c87",
+      "factory": "0x140922c70",
+      "body": "0x1409118f0",
+      "factory_sha256": "142531167df29d548833dfeeb95daedcc5a35e16d693ebc3f6019612a96942e4"
+    },
+    {
+      "qualified_name": "CommercialGUI._register_current_wallet_token",
+      "name_reference": "0x140922ce7",
+      "factory": "0x140922cd0",
+      "body": "0x140912290",
+      "factory_sha256": "5605e89de20177e1a536caf9c792e73d7e59b9df5963f7d4765bce69c57399b1"
+    },
+    {
+      "qualified_name": "CommercialGUI.__init__",
+      "name_reference": "0x140922d47",
+      "factory": "0x140922d30",
+      "body": "0x1408f5f80",
+      "factory_sha256": "7bb7765cba7d1bef99a84f49b0416293547cdbc673e4e758fc0ec372b84a7ec7"
+    },
+    {
+      "qualified_name": "CommercialGUI._request_pair_holdings_refresh",
+      "name_reference": "0x140922da7",
+      "factory": "0x140922d90",
+      "body": "0x140912710",
+      "factory_sha256": "44eec8f7e29b1513ca2543f61170183b5cf937a5b05ae49c4974a96da97ef776"
+    },
+    {
+      "qualified_name": "CommercialGUI._pair_holdings_worker",
+      "name_reference": "0x140922e07",
+      "factory": "0x140922df0",
+      "body": "0x140912fe0",
+      "factory_sha256": "b05fab9848515e71fa538baf9758c8ca9c3d2d1782f6f862685f11492634554a"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_pair_holdings_snapshot",
+      "name_reference": "0x140922e67",
+      "factory": "0x140922e50",
+      "body": "0x140913b50",
+      "factory_sha256": "7cdcb2c5d6edb6aeedbe0bdced5bd8dbbaddd9e3e5ebba9d8f5fdb7b220b756d"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_pair_holdings_error",
+      "name_reference": "0x140922ec7",
+      "factory": "0x140922eb0",
+      "body": "0x1409143f0",
+      "factory_sha256": "cf0ffba578c010885f14983cee7a3a80cbea30d36b8430cd07a26f6fae9e2256"
+    },
+    {
+      "qualified_name": "CommercialGUI._set_sweep_controls_locked",
+      "name_reference": "0x140922f27",
+      "factory": "0x140922f10",
+      "body": "0x140914870",
+      "factory_sha256": "f6329efd86c3813b51608d7ba70abb67246a772fe0c03e5458413e3ce63ad096"
+    },
+    {
+      "qualified_name": "CommercialGUI.sell_wallet_to_bnb",
+      "name_reference": "0x140922f87",
+      "factory": "0x140922f70",
+      "body": "0x140916600",
+      "factory_sha256": "6dc7ed1eb754e03d90388851d20d146d0a97e07f232fb493681146d337472746"
+    },
+    {
+      "qualified_name": "CommercialGUI._wallet_sweep_worker",
+      "name_reference": "0x140922fe7",
+      "factory": "0x140922fd0",
+      "body": "0x140917680",
+      "factory_sha256": "d38f1b5fde0b7992b7d2532ff9a354d5ec10435e78379509eb11938229de63b4"
+    },
+    {
+      "qualified_name": "CommercialGUI._finish_wallet_sweep_ui",
+      "name_reference": "0x140923047",
+      "factory": "0x140923030",
+      "body": "0x1409187e0",
+      "factory_sha256": "b9a57b83b0fc4dd177364f3afd84f0db6c14dc2f2df338e4fb17d6f279863129"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_wallet_sweep_complete",
+      "name_reference": "0x1409230a7",
+      "factory": "0x140923090",
+      "body": "0x140918d60",
+      "factory_sha256": "6d5adf4719909326b24aab63f965b5213b88147162e4cadf76bb2bb26d83ae3b"
+    },
+    {
+      "qualified_name": "CommercialGUI._handle_wallet_sweep_error",
+      "name_reference": "0x140923107",
+      "factory": "0x1409230f0",
+      "body": "0x14091a140",
+      "factory_sha256": "44ef9da57328a014737f8ff3dd83b96a0a359cf4ee16d766c4b4ce8dcef487a4"
+    },
+    {
+      "qualified_name": "CommercialGUI._set_autopair_status",
+      "name_reference": "0x14092317b",
+      "factory": "0x140923150",
+      "body": "0x1408f9c50",
+      "factory_sha256": "406f336ea3c7b71db4e2f6d9041baebb30896cd1359480e5ca3e1f507005d612"
+    },
+    {
+      "qualified_name": "CommercialGUI._confirm_manual_pair",
+      "name_reference": "0x1409231c7",
+      "factory": "0x1409231b0",
+      "body": "0x14091a550",
+      "factory_sha256": "c6aab0ae8f188df46e45dbde16ea29b81fdc6c574f78882af443ff32554aa6c0"
+    },
+    {
+      "qualified_name": "CommercialGUI._confirm_manual_router",
+      "name_reference": "0x140923227",
+      "factory": "0x140923210",
+      "body": "0x14091a7e0",
+      "factory_sha256": "c432e4e81ff8cdf3c17455cd25c84b659d1d382db8d334faf4988f846128767f"
+    },
+    {
+      "qualified_name": "CommercialGUI.change_trade_router",
+      "name_reference": "0x140923293",
+      "factory": "0x140923270",
+      "body": "0x14091aa70",
+      "factory_sha256": "dfccb17560a5e27790991a66c3b13fe0e435e5109c13f4d509648771e7bbccc2"
+    },
+    {
+      "qualified_name": "CommercialGUI.change_pair",
+      "name_reference": "0x1409232f3",
+      "factory": "0x1409232d0",
+      "body": "0x14091b050",
+      "factory_sha256": "bcd486a6e71351e3dd51b2309914641f41b7c2e4954beaf4f2e40a3717fffdc2"
+    },
+    {
+      "qualified_name": "CommercialGUI._autopair_trade_guard",
+      "name_reference": "0x140923347",
+      "factory": "0x140923330",
+      "body": "0x14091b630",
+      "factory_sha256": "f8a6122e364abfa8711ce8471aa9431eee7048feed77472af20fd3bf6af21d5c"
+    },
+    {
+      "qualified_name": "CommercialGUI._read_common_inputs",
+      "name_reference": "0x1409233a7",
+      "factory": "0x140923390",
+      "body": "0x14091c8a0",
+      "factory_sha256": "f19a235b539831758d0a97c087ef09ae567897eda416f7cb3ad1a1f1fe56e29b"
+    },
+    {
+      "qualified_name": "CommercialGUI.manual_sell",
+      "name_reference": "0x140923407",
+      "factory": "0x1409233f0",
+      "body": "0x14091cbd0",
+      "factory_sha256": "cd9f0f276ef651515c639b11e6f32eb8518cf78a40e91971782fedcd360b2cf5"
+    },
+    {
+      "qualified_name": "CommercialGUI._place_wallet_sweep_button",
+      "name_reference": "0x140923467",
+      "factory": "0x140923450",
+      "body": "0x14091d450",
+      "factory_sha256": "6cb4d7d51e89a273c814d46d20fa69bc08fdfb51d5405efb6da4ffeaec75069f"
+    },
+    {
+      "qualified_name": "CommercialGUI._apply_responsive_layout",
+      "name_reference": "0x1409234df",
+      "factory": "0x1409234b0",
+      "body": "0x140920500",
+      "factory_sha256": "2a4fb464790fa920d1c3f32eb9a0156e4658cb88df6d4cc1ec2c6f972fd036d6"
+    },
+    {
+      "qualified_name": "CommercialGUI._recreate_trader_after_settings_change",
+      "name_reference": "0x140923527",
+      "factory": "0x140923510",
+      "body": "0x140921950",
+      "factory_sha256": "ce4e930e65fe821f48c80f00012a963365e2e3d5f2d0be43a7b25524d14718cd"
+    },
+    {
+      "qualified_name": "CommercialGUI._place_autopair_status",
+      "name_reference": "0x140923587",
+      "factory": "0x140923570",
+      "body": "0x1408faad0",
+      "factory_sha256": "7fdccbd76977de9795d9dbb29277780d64dcd1473a0e176455ec59a1a344a5b4"
+    },
+    {
+      "qualified_name": "CommercialGUI.closeEvent",
+      "name_reference": "0x1409235e7",
+      "factory": "0x1409235d0",
+      "body": "0x140922010",
+      "factory_sha256": "bed65be1b720bba9488a5bcc037464924c5bbf68d85f522064d4d6b89043cb72"
+    },
+    {
+      "qualified_name": "CommercialGUI._short_public_address",
+      "name_reference": "0x140923647",
+      "factory": "0x140923630",
+      "body": "0x1408fb000",
+      "factory_sha256": "e63614d2cad5e334255fed7cbe27017d7d62106ee421c32276a94a414f2951a9"
+    },
+    {
+      "qualified_name": "CommercialGUI._try_checksum_address",
+      "name_reference": "0x1409236a7",
+      "factory": "0x140923690",
+      "body": "0x1408fb500",
+      "factory_sha256": "493a6487bffcbec2291ac0d0af956dabac26adf1732087cabf131500e9cb8a40"
+    },
+    {
+      "qualified_name": "CommercialGUI._set_live_pair_status",
+      "name_reference": "0x14092371b",
+      "factory": "0x1409236f0",
+      "body": "0x1408fbdd0",
+      "factory_sha256": "28b6e4fbcbdf49dfacee98e66d36379d70906d704b751267e39d39152b489ce2"
+    },
+    {
+      "qualified_name": "CommercialGUI._refresh_live_pair_delete_state",
+      "name_reference": "0x140923767",
+      "factory": "0x140923750",
+      "body": "0x1408fce00",
+      "factory_sha256": "085f4ba2a85920fcd7cc61fe99bbee0460cc09ca907f233cbe2592ebb8c2c6e1"
+    },
+    {
+      "qualified_name": "CommercialGUI.add_live_pair",
+      "name_reference": "0x1409237c7",
+      "factory": "0x1409237b0",
+      "body": "0x1408fdae0",
+      "factory_sha256": "b0ac68fbe29a6a7a7795809ea9febd222d77cd411df9ad6690f7fe58bc60af22"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.__init__",
+      "name_reference": "0x140bc2517",
+      "factory": "0x140bc2500",
+      "body": "0x140bb4e60",
+      "factory_sha256": "6d0343ee20bd96f8b996ab5a417763cc7ca8beead191ebe6ffcde10ea0dd111f"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry._key",
+      "name_reference": "0x140bc2577",
+      "factory": "0x140bc2560",
+      "body": "0x140bb5430",
+      "factory_sha256": "a8f0e22c12cb97326cd23a4168d4c3bea9a7bf9ef5b554d5968556f0b00895d9"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry._record_from_dict",
+      "name_reference": "0x140bc25d7",
+      "factory": "0x140bc25c0",
+      "body": "0x140bb58e0",
+      "factory_sha256": "ea6201ce0c9531bf087d0dfc8c878703df3a903d45124bab3c4108fcf5908424"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry._load",
+      "name_reference": "0x140bc2637",
+      "factory": "0x140bc2620",
+      "body": "0x140bb7420",
+      "factory_sha256": "2cbdfb174bb616b637863aae4e76ee3c132b061da8b89c8613764a8f8257023e"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry._save",
+      "name_reference": "0x140bc2697",
+      "factory": "0x140bc2680",
+      "body": "0x140bb9150",
+      "factory_sha256": "79ecf61f563901ffc95ace32e86d1d7a60d3528df4cb2a17aed7995a489e31b8"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.records",
+      "name_reference": "0x140bc26f7",
+      "factory": "0x140bc26e0",
+      "body": "0x140bba010",
+      "factory_sha256": "2832244fee921335fb76bcef17836ab8546dd3e4125e3fe2728d4fa372394ae7"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.profiles_by_router",
+      "name_reference": "0x140bc2757",
+      "factory": "0x140bc2740",
+      "body": "0x140bbac90",
+      "factory_sha256": "b1c3967f9b1623706803326fc5e31060ceb7b6dd15bc2de488725dae5264b5d3"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.record_for",
+      "name_reference": "0x140bc27b7",
+      "factory": "0x140bc27a0",
+      "body": "0x140bbb370",
+      "factory_sha256": "186992d04e3384c38c6ceb530a8318ba293bbc707bf9edad1d66487f8b2ea258"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry._unique_name",
+      "name_reference": "0x140bc2817",
+      "factory": "0x140bc2800",
+      "body": "0x140bbbcd0",
+      "factory_sha256": "acca3ba7adf4ad39c97f09de2f7883333f61305e1b723e73981c96d8bcac2339"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.upsert",
+      "name_reference": "0x140bc2877",
+      "factory": "0x140bc2860",
+      "body": "0x140bbee40",
+      "factory_sha256": "a13768f212b671464d50ab198481f4765e7ed6b9e1da470e3a8ca07595fa7781"
+    },
+    {
+      "qualified_name": "DynamicPairRecord.profile",
+      "name_reference": "0x140bc28d7",
+      "factory": "0x140bc28c0",
+      "body": "0x140bab5e0",
+      "factory_sha256": "b42d3f87c43c929c9c8ec5dd8515d3575b14e64115ee150f227cb17cd68a4f98"
+    },
+    {
+      "qualified_name": "DynamicPairRegistry.remove",
+      "name_reference": "0x140bc2937",
+      "factory": "0x140bc2920",
+      "body": "0x140bc0c60",
+      "factory_sha256": "3e5ee95868fbdb19731b91de2353eb21e7aa147c0ce4fa08eb1d01f830d07305"
+    },
+    {
+      "qualified_name": "DynamicPairResolver.__init__",
+      "name_reference": "0x140bc2ad7",
+      "factory": "0x140bc2ac0",
+      "body": "0x140bae640",
+      "factory_sha256": "38479f2cde47d1b63d1160066ce5d95d8e1a1a52a14459a1a45d84b2b61bac21"
+    },
+    {
+      "qualified_name": "DynamicPairResolver._checksum",
+      "name_reference": "0x140bc2b37",
+      "factory": "0x140bc2b20",
+      "body": "0x140baf2e0",
+      "factory_sha256": "4f65b5cf3f40f10227a08c43111769f7fb5c267f4897e2f6aa0a713b2c1261c2"
+    },
+    {
+      "qualified_name": "DynamicPairResolver._token_metadata",
+      "name_reference": "0x140bc2b97",
+      "factory": "0x140bc2b80",
+      "body": "0x140baf5f0",
+      "factory_sha256": "a69ed2083fd43806f5b7fd2da3b49c384c5c77d5292dcd0723690a21edfe9a52"
+    },
+    {
+      "qualified_name": "DynamicPairResolver.resolve",
+      "name_reference": "0x140bc2bf7",
+      "factory": "0x140bc2be0",
+      "body": "0x140bb0800",
+      "factory_sha256": "93a8ff69facd94fd3f48767bb7ea581be36ca5fea7e564d0282336879b39cf10"
+    },
+    {
+      "qualified_name": "GUI.__init__",
+      "name_reference": "0x140f57827",
+      "factory": "0x140f57810",
+      "body": "0x140f0b550",
+      "factory_sha256": "9aa747a3e651e06071d964c564cba61280d7580d91d8004d0b523fcb43c5d9bb"
+    },
+    {
+      "qualified_name": "GUI._build_ui",
+      "name_reference": "0x140f57887",
+      "factory": "0x140f57870",
+      "body": "0x140f0ca70",
+      "factory_sha256": "f1f0777f0f4eac0836073cc19e8cd47428d1dd2695673d398adf71e9a916862b"
+    },
+    {
+      "qualified_name": "GUI._build_bot_tab",
+      "name_reference": "0x140f578e7",
+      "factory": "0x140f578d0",
+      "body": "0x140f0d180",
+      "factory_sha256": "ae8a71b614048c7bf8fe7530c59c7bd7f32c400953cd336790f0311d37adf106"
+    },
+    {
+      "qualified_name": "GUI._apply_responsive_layout",
+      "name_reference": "0x140f5795b",
+      "factory": "0x140f57930",
+      "body": "0x140f1b0e0",
+      "factory_sha256": "f9c17837e220f1e541f23ff4f2afca46f7ae568c2a1c8ae7f90693f652e8c413"
+    },
+    {
+      "qualified_name": "GUI._set_header_connection_state",
+      "name_reference": "0x140f579a7",
+      "factory": "0x140f57990",
+      "body": "0x140f239b0",
+      "factory_sha256": "a97d6c27b34e2691d22e23456266581cc0dec8c60e00e17cb970a77c8e90451b"
+    },
+    {
+      "qualified_name": "GUI._refresh_header_connection_density",
+      "name_reference": "0x140f57a07",
+      "factory": "0x140f579f0",
+      "body": "0x140f24470",
+      "factory_sha256": "a3907d9f66bdfc826609a52b1ea4264903df618664da165e609f0691ac123a5b"
+    },
+    {
+      "qualified_name": "GUI._set_diagnostic_text",
+      "name_reference": "0x140f57a67",
+      "factory": "0x140f57a50",
+      "body": "0x140f25420",
+      "factory_sha256": "fd05233a0607046263c177403b5576b88d96f338ef7d712d1637feb4fbc34cf7"
+    },
+    {
+      "qualified_name": "GUI._render_diagnostic_label",
+      "name_reference": "0x140f57ac7",
+      "factory": "0x140f57ab0",
+      "body": "0x140f25800",
+      "factory_sha256": "b1c8269896121c2abd1450f67b9cd4a1588f28c68b8c5514024943c19764abe4"
+    },
+    {
+      "qualified_name": "GUI._refresh_diagnostic_density",
+      "name_reference": "0x140f57b27",
+      "factory": "0x140f57b10",
+      "body": "0x140f266f0",
+      "factory_sha256": "920d2131b58cac9b2a2ba57d11e57e5c12e0f2d3d0c46860425ec2bcd9224053"
+    },
+    {
+      "qualified_name": "GUI.resizeEvent",
+      "name_reference": "0x140f57b87",
+      "factory": "0x140f57b70",
+      "body": "0x140f270f0",
+      "factory_sha256": "648c1baa72d169c5a3919f1e7dc52b68d5d1942eac89dc3dfdb8623a42cc6ecc"
+    },
+    {
+      "qualified_name": "PairGridComboBox.__init__",
+      "name_reference": "0x140f57bf3",
+      "factory": "0x140f57bd0",
+      "body": "0x140f04230",
+      "factory_sha256": "9fa49de1879554fb9983291712911264ab672ea5a752109dbb674d6d353f5213"
+    },
+    {
+      "qualified_name": "GUI._build_settings_tab",
+      "name_reference": "0x140f57c47",
+      "factory": "0x140f57c30",
+      "body": "0x140f27520",
+      "factory_sha256": "1d859c1c58d67518c7f36628bfa7c9a12156deb0e1059a45ed09c7a9e5c9ea66"
+    },
+    {
+      "qualified_name": "GUI._apply_theme",
+      "name_reference": "0x140f57ca7",
+      "factory": "0x140f57c90",
+      "body": "0x140f29fe0",
+      "factory_sha256": "8c24a73795e3ff3251b41a94d1fac9533f689a0e1ccfd6e1bc73485818a9c4f3"
+    },
+    {
+      "qualified_name": "GUI._bind_actions",
+      "name_reference": "0x140f57d07",
+      "factory": "0x140f57cf0",
+      "body": "0x140f2a240",
+      "factory_sha256": "9e4ba23e86d636f4149634980c6e78e6dcfbdf377761ce63866e2a98fe3282ce"
+    },
+    {
+      "qualified_name": "GUI._load_config_values",
+      "name_reference": "0x140f57d67",
+      "factory": "0x140f57d50",
+      "body": "0x140f2bf40",
+      "factory_sha256": "081e5ea45d2129dd93c9753846342bb61223ac6ae9b8a6cb5b3ed88b3a9b7731"
+    },
+    {
+      "qualified_name": "GUI._load_settings_from_config",
+      "name_reference": "0x140f57dc7",
+      "factory": "0x140f57db0",
+      "body": "0x140f2c190",
+      "factory_sha256": "ff0f105f7f0f88a1a346af3ffbc2078733df8376debe51ac7632611ca7a945d8"
+    },
+    {
+      "qualified_name": "GUI._reload_saved_settings",
+      "name_reference": "0x140f57e27",
+      "factory": "0x140f57e10",
+      "body": "0x140f2d290",
+      "factory_sha256": "0a5a3f070e778c09af5efab5ce431eb0e1d01844f2856da43d563478dfbc0992"
+    },
+    {
+      "qualified_name": "GUI._settings_change_is_safe",
+      "name_reference": "0x140f57e87",
+      "factory": "0x140f57e70",
+      "body": "0x140f2db00",
+      "factory_sha256": "d8d1eac43093cb41d1528b78765e93fdb31f5dfe05c511e059703c47a56a252e"
+    },
+    {
+      "qualified_name": "GUI._recreate_trader_after_settings_change",
+      "name_reference": "0x140f57ee7",
+      "factory": "0x140f57ed0",
+      "body": "0x140f2dfd0",
+      "factory_sha256": "6ddfcd5bbdb9b8b49d467cf63e99129ebb806346c4a99af9560d18575b6d0e5a"
+    },
+    {
+      "qualified_name": "GUI._save_settings_to_config",
+      "name_reference": "0x140f57f47",
+      "factory": "0x140f57f30",
+      "body": "0x140f2eaf0",
+      "factory_sha256": "9120906173a0bf7022351c0a9d29a89e7db06f3a7e7701743c93ba1243fcd77e"
+    },
+    {
+      "qualified_name": "GUI._reset_settings_to_defaults",
+      "name_reference": "0x140f57fa7",
+      "factory": "0x140f57f90",
+      "body": "0x140f2fef0",
+      "factory_sha256": "020774aeed45f8592e3db0a59adbcd608ff55879b05358d5486929042e60a274"
+    },
+    {
+      "qualified_name": "PairGridComboBox.setHeldPairs",
+      "name_reference": "0x140f58007",
+      "factory": "0x140f57ff0",
+      "body": "0x140f04660",
+      "factory_sha256": "ae2fde473683628711e29beaee922b57c7d7d5002d5074ddb6fb905b39e49ff9"
+    },
+    {
+      "qualified_name": "GUI._pair_amount_key",
+      "name_reference": "0x140f58067",
+      "factory": "0x140f58050",
+      "body": "0x140f30970",
+      "factory_sha256": "180d9fd23f42f3b2781afa8f832b138b6f83fd3d3f9933943fbc3fa78b5c5bd2"
+    },
+    {
+      "qualified_name": "GUI._normalize_amount_memory",
+      "name_reference": "0x140f580c7",
+      "factory": "0x140f580b0",
+      "body": "0x140f30dc0",
+      "factory_sha256": "b3f287baaf8115372cf58d8eb269fe26f55ec3171cdca90ab7cc676254972e0e"
+    },
+    {
+      "qualified_name": "GUI._remember_pair_amount",
+      "name_reference": "0x140f58127",
+      "factory": "0x140f58110",
+      "body": "0x140f31540",
+      "factory_sha256": "bc70800e4e8d78c10d7fb7d6aed62bb383163ff90f5270baa8993d58e3bdfbbe"
+    },
+    {
+      "qualified_name": "GUI._remember_current_pair_amount",
+      "name_reference": "0x140f58187",
+      "factory": "0x140f58170",
+      "body": "0x140f31b60",
+      "factory_sha256": "d79364a523a4caeb832e29a18a40792d514ce216cab384eaacdad1f221f8291c"
+    },
+    {
+      "qualified_name": "GUI._restore_current_pair_amount",
+      "name_reference": "0x140f581fb",
+      "factory": "0x140f581d0",
+      "body": "0x140f31ff0",
+      "factory_sha256": "74d1992ac52f02a2a973da7ab75f2c7d34e8e875a25c843e170a612bc4374011"
+    },
+    {
+      "qualified_name": "GUI._persist_current_pair_amount",
+      "name_reference": "0x140f58247",
+      "factory": "0x140f58230",
+      "body": "0x140f32730",
+      "factory_sha256": "54b399e45434caa795c368e4d3b9f4c03cb06bc1c8cf7c863673fde404b53c87"
+    },
+    {
+      "qualified_name": "GUI._load_ui_state",
+      "name_reference": "0x140f582a7",
+      "factory": "0x140f58290",
+      "body": "0x140f32a00",
+      "factory_sha256": "4cecdab05a495d5f1792b4324807598e6e37a9935fc502fc5d7f8ec9fde10df8"
+    },
+    {
+      "qualified_name": "GUI._save_ui_state",
+      "name_reference": "0x140f58307",
+      "factory": "0x140f582f0",
+      "body": "0x140f35db0",
+      "factory_sha256": "64103567fe51d3b866686cc84dcb6a3d38ad46d2f9d4e53e4d2cd91a90124084"
+    },
+    {
+      "qualified_name": "GUI.append_log",
+      "name_reference": "0x140f58367",
+      "factory": "0x140f58350",
+      "body": "0x140f374a0",
+      "factory_sha256": "d629a211038f53453f5aef551d7a34b6b5695a24cc5841639e204762a4db7631"
+    },
+    {
+      "qualified_name": "GUI.closeEvent",
+      "name_reference": "0x140f583c7",
+      "factory": "0x140f583b0",
+      "body": "0x140f37a90",
+      "factory_sha256": "7745c23d3a37f3007d784d7b212ba15775cf21e334b9c36cbe987f943db018d5"
+    },
+    {
+      "qualified_name": "PairGridComboBox.heldPairs",
+      "name_reference": "0x140f58427",
+      "factory": "0x140f58410",
+      "body": "0x140f05c30",
+      "factory_sha256": "61886b7140965ba66a25757b555ec80c04340a87b1ab5af68814d76a2c690b97"
+    },
+    {
+      "qualified_name": "GUI.update_balance",
+      "name_reference": "0x140f58487",
+      "factory": "0x140f58470",
+      "body": "0x140f37fc0",
+      "factory_sha256": "6b785aad1661eff35852faec2038b2fb7439345859f3f1c26c8583d523bf2494"
+    },
+    {
+      "qualified_name": "GUI._balance_worker",
+      "name_reference": "0x140f584e7",
+      "factory": "0x140f584d0",
+      "body": "0x140f38860",
+      "factory_sha256": "f8dcbc04b5d4fce18e46e64da8b5bf19edfa7b47bb16a4626ef24810cf711625"
+    },
+    {
+      "qualified_name": "GUI.callback",
+      "name_reference": "0x140f58547",
+      "factory": "0x140f58530",
+      "body": "0x140f396c0",
+      "factory_sha256": "8a31bd3d04116947130559a70d0bcbc32221ff7d2e6fa5f4756ccdc44be82641"
+    },
+    {
+      "qualified_name": "GUI._set_sell_position_indicator",
+      "name_reference": "0x140f585a7",
+      "factory": "0x140f58590",
+      "body": "0x140f39a70",
+      "factory_sha256": "de80740f3bf4d7cfcc234f69819c5bd443d0b8195c99e383a5339683211a7dcb"
+    },
+    {
+      "qualified_name": "GUI._set_stop_bot_activity",
+      "name_reference": "0x140f58607",
+      "factory": "0x140f585f0",
+      "body": "0x140f3a3c0",
+      "factory_sha256": "87018589aa9a30dc72acccff32afebbd55a591e4f12aaca4e86670dc339b88ec"
+    },
+    {
+      "qualified_name": "GUI.set_position_ui",
+      "name_reference": "0x140f58667",
+      "factory": "0x140f58650",
+      "body": "0x140f3ac70",
+      "factory_sha256": "1f3fdefe586cac8a3eccc9367a46d5a170a80e21c3c7bb6d0309761602960309"
+    },
+    {
+      "qualified_name": "GUI.handle_event",
+      "name_reference": "0x140f586c7",
+      "factory": "0x140f586b0",
+      "body": "0x140f3b270",
+      "factory_sha256": "835c92dd474eb741ebbb218ef1f8b6d1de0f6258859276a11f3b78a411313e05"
+    },
+    {
+      "qualified_name": "GUI.change_trade_router",
+      "name_reference": "0x140f58727",
+      "factory": "0x140f58710",
+      "body": "0x140f40220",
+      "factory_sha256": "fdb46772a942011917e1ce8ca714b189fda6a9c071470d07f6cc1dff675bb561"
+    },
+    {
+      "qualified_name": "GUI._refresh_pair_labels",
+      "name_reference": "0x140f58787",
+      "factory": "0x140f58770",
+      "body": "0x140f42b20",
+      "factory_sha256": "6fc5fc083b43764ced02cd65eeafd5c01379e33a1d83a0c98a65ecf9f7c48624"
+    },
+    {
+      "qualified_name": "GUI._reset_market_display",
+      "name_reference": "0x140f587e7",
+      "factory": "0x140f587d0",
+      "body": "0x140f44670",
+      "factory_sha256": "cacef6909a4f2ade6bde0e115d25e0b73410f2451f154a628cc518f7cab98c9d"
+    },
+    {
+      "qualified_name": "PairGridComboBox._forget_grid_popup",
+      "name_reference": "0x140f58847",
+      "factory": "0x140f58830",
+      "body": "0x140f05ed0",
+      "factory_sha256": "627abc6d6c10dce08ae9fc0296f2218044be278f54095617d9b7d134a97ecc2c"
+    },
+    {
+      "qualified_name": "GUI._reset_execution_metrics",
+      "name_reference": "0x140f588a7",
+      "factory": "0x140f58890",
+      "body": "0x140f44c90",
+      "factory_sha256": "72226c8c5aee23bd479a576a5bb3e1786fc87b7886f7e2f1b70145f073a3fbdb"
+    },
+    {
+      "qualified_name": "GUI.change_pair",
+      "name_reference": "0x140f58907",
+      "factory": "0x140f588f0",
+      "body": "0x140f45230",
+      "factory_sha256": "8a1547ac3af41517d58865b90fde5a13faca29c7af77602c756bed7139547d2e"
+    },
+    {
+      "qualified_name": "GUI._read_common_inputs",
+      "name_reference": "0x140f58967",
+      "factory": "0x140f58950",
+      "body": "0x140f46db0",
+      "factory_sha256": "0c0a10a54af04b61b97682a8508b6804ba79062a5d90ad28cf2461d0c6fd204c"
+    },
+    {
+      "qualified_name": "GUI._prepare_approvals",
+      "name_reference": "0x140f589c7",
+      "factory": "0x140f589b0",
+      "body": "0x140f477f0",
+      "factory_sha256": "ae6357f9085d02a1ef77550701fd69b271615e68aa0d82d59859fb807a3bf65e"
+    },
+    {
+      "qualified_name": "GUI._require_entry_license",
+      "name_reference": "0x140f58a27",
+      "factory": "0x140f58a10",
+      "body": "0x140f47ec0",
+      "factory_sha256": "c6d06c75aefddaa91a94f3a64ec95f095b25793cd3725e566d1c37e9a73a0afd"
+    },
+    {
+      "qualified_name": "GUI.manual_buy",
+      "name_reference": "0x140f58a87",
+      "factory": "0x140f58a70",
+      "body": "0x140f48ab0",
+      "factory_sha256": "5205afb90e20f6db6b265805ef2a4d01f87790b4b6acc99782f4551dcb77c57b"
+    },
+    {
+      "qualified_name": "GUI._manual_buy_worker",
+      "name_reference": "0x140f58ae7",
+      "factory": "0x140f58ad0",
+      "body": "0x140f49c10",
+      "factory_sha256": "98faf876ac2983a41975f74fb3831f028fb845d7791bfff1ba8ee33f67e1f07c"
+    },
+    {
+      "qualified_name": "GUI.manual_sell",
+      "name_reference": "0x140f58b47",
+      "factory": "0x140f58b30",
+      "body": "0x140f4c1e0",
+      "factory_sha256": "4d9c3369959857511769063c833b1ca1060c8a39aedbcfe647e34d0a99fc5ad6"
+    },
+    {
+      "qualified_name": "GUI._manual_sell_worker",
+      "name_reference": "0x140f58ba7",
+      "factory": "0x140f58b90",
+      "body": "0x140f4cca0",
+      "factory_sha256": "99461c101547edfc7040543809cbc2a644fc9702fd93d89ee3f5163604141d2b"
+    },
+    {
+      "qualified_name": "GUI.wrap_bnb",
+      "name_reference": "0x140f58c07",
+      "factory": "0x140f58bf0",
+      "body": "0x140f4e810",
+      "factory_sha256": "4b87fb25c3f35fd94b63c759f2998e177a5718dd5511e4522d12350c928f42f3"
+    },
+    {
+      "qualified_name": "PairGridComboBox._close_grid_popup",
+      "name_reference": "0x140f58c67",
+      "factory": "0x140f58c50",
+      "body": "0x140f061f0",
+      "factory_sha256": "4aba89783ee92e3e47142d5441d670075918eed5de69eeccc45ba47a8c4417d5"
+    },
+    {
+      "qualified_name": "GUI._wrap_worker",
+      "name_reference": "0x140f58cc7",
+      "factory": "0x140f58cb0",
+      "body": "0x140f4f460",
+      "factory_sha256": "884a2b5c4e6a30ef3791512a42df952b44d3b1897ab701bd400ffaa40a78aad3"
+    },
+    {
+      "qualified_name": "GUI.unwrap_wbnb",
+      "name_reference": "0x140f58d27",
+      "factory": "0x140f58d10",
+      "body": "0x140f513e0",
+      "factory_sha256": "9c03113e497c6b2b4ed9df705126811c17c8e27127065eeb1d8096ee6caa356e"
+    },
+    {
+      "qualified_name": "GUI._unwrap_worker",
+      "name_reference": "0x140f58d87",
+      "factory": "0x140f58d70",
+      "body": "0x140f51f30",
+      "factory_sha256": "3e6c783d4e4b75e5c704a587bbe1ffb30c5c001d5130a3951a56bc8ecf0167e0"
+    },
+    {
+      "qualified_name": "GUI.start_bot",
+      "name_reference": "0x140f58de7",
+      "factory": "0x140f58dd0",
+      "body": "0x140f54250",
+      "factory_sha256": "4b814989d94f4f0cc7fc19fc1010be00395ec893e3b1307498cc43f07750448d"
+    },
+    {
+      "qualified_name": "GUI._run_bot_thread",
+      "name_reference": "0x140f58e47",
+      "factory": "0x140f58e30",
+      "body": "0x140f55f70",
+      "factory_sha256": "e8268446112bb8f4e335a7b6441d282bfa9675631a31260306efbf409f2cda17"
+    },
+    {
+      "qualified_name": "GUI.bot_sell_now",
+      "name_reference": "0x140f58ea7",
+      "factory": "0x140f58e90",
+      "body": "0x140f56b40",
+      "factory_sha256": "716b5eb3aee15df97cc60de0dd0b9ee9fd4ddd91d0df40dca00729f72fde461c"
+    },
+    {
+      "qualified_name": "GUI.stop_bot",
+      "name_reference": "0x140f58f07",
+      "factory": "0x140f58ef0",
+      "body": "0x140f56f10",
+      "factory_sha256": "80346ace0024bc28a4a5cb076270605f77631db0983c6bc370f5a22d4542200b"
+    },
+    {
+      "qualified_name": "PairGridComboBox.hidePopup",
+      "name_reference": "0x140f58fb7",
+      "factory": "0x140f58fa0",
+      "body": "0x140f06740",
+      "factory_sha256": "81acec9328e8aed22fa8f1f0c8a7a3306f2b77f30998af4f55c25644b698891b"
+    },
+    {
+      "qualified_name": "PairGridComboBox.wheelEvent",
+      "name_reference": "0x140f59017",
+      "factory": "0x140f59000",
+      "body": "0x140f06990",
+      "factory_sha256": "89e8f7f340b6438d624669f72be5899ead8cd1a48b6eba2cdd6e9cf8b7ef844f"
+    },
+    {
+      "qualified_name": "PairGridComboBox._select_pair_from_grid",
+      "name_reference": "0x140f59077",
+      "factory": "0x140f59060",
+      "body": "0x140f06c20",
+      "factory_sha256": "eb8ec51a4f0a21d99e440ee99a80fa0cac2c7bcb79b349c0edf633ce45e36660"
+    },
+    {
+      "qualified_name": "PairGridComboBox.showPopup",
+      "name_reference": "0x140f590d7",
+      "factory": "0x140f590c0",
+      "body": "0x140f07240",
+      "factory_sha256": "5b3365152b0a8169cc64a52c197f79770d35cfb075790e1a3b5a6f2855d61335"
+    },
+    {
+      "qualified_name": "Trader.snapshot_from_pair_reserves",
+      "name_reference": "0x141e81e37",
+      "factory": "0x141e81e20",
+      "body": "0x141e5ecc0",
+      "factory_sha256": "0e1ddf387e5213eab833564083a63d9ff1976a4f8323d05bddf7b00d03af62ac"
+    },
+    {
+      "qualified_name": "Trader.snapshot_from_v3_sqrt_price",
+      "name_reference": "0x141e81e97",
+      "factory": "0x141e81e80",
+      "body": "0x141e5fdf0",
+      "factory_sha256": "cd3e7e8bf0bc6394747dcdf44908f64eef7fd50cc9d272845685cf9375f84837"
+    },
+    {
+      "qualified_name": "Trader.get_price_from_reserves",
+      "name_reference": "0x141e81ef7",
+      "factory": "0x141e81ee0",
+      "body": "0x141e610c0",
+      "factory_sha256": "6f8543c3732f0beddcc7f9486abbcd082da057de44d648fa9ed92e6ba2a7f60f"
+    },
+    {
+      "qualified_name": "Trader.v2_amount_out_from_reserves",
+      "name_reference": "0x141e81f57",
+      "factory": "0x141e81f40",
+      "body": "0x141e62990",
+      "factory_sha256": "345b9065eeec4f43fa2bb797720b785c112010fbe0d17584b2c56ad7f27f78fd"
+    },
+    {
+      "qualified_name": "Trader.min_out_from_quote",
+      "name_reference": "0x141e81fb7",
+      "factory": "0x141e81fa0",
+      "body": "0x141e631a0",
+      "factory_sha256": "1f6e2bf9aaf3d0ecd4dbc402ef255984b7b7ce14e2704d21fe8713e28886334e"
+    },
+    {
+      "qualified_name": "Trader.v2_min_out_from_reserves",
+      "name_reference": "0x141e82017",
+      "factory": "0x141e82000",
+      "body": "0x141e63850",
+      "factory_sha256": "62dce82bb561f5f7e481a591933dd7ee1508e0603603bbdb60c49c295a5e6cd9"
+    },
+    {
+      "qualified_name": "Trader.buy_min_out_from_snapshot",
+      "name_reference": "0x141e8208b",
+      "factory": "0x141e82060",
+      "body": "0x141e63dc0",
+      "factory_sha256": "9fb94147abd50ebe3ff7ea3a471882d6407e331602427e6d50b78cd6975494a1"
+    },
+    {
+      "qualified_name": "Trader.prepare_trade_target",
+      "name_reference": "0x141e820d7",
+      "factory": "0x141e820c0",
+      "body": "0x141e65580",
+      "factory_sha256": "01b51ef8173ae6b6e2c43d21fc2e46b4fafefcb0206a0ec414bf494a7cdc94be"
+    },
+    {
+      "qualified_name": "Trader._next_nonce",
+      "name_reference": "0x141e82137",
+      "factory": "0x141e82120",
+      "body": "0x141e65a10",
+      "factory_sha256": "a2b402df3a673c02d5b1bf0896ac509fd08b0a993dd653dab7d60467f37e031d"
+    },
+    {
+      "qualified_name": "Trader._sync_nonce_from_network",
+      "name_reference": "0x141e82197",
+      "factory": "0x141e82180",
+      "body": "0x141e662a0",
+      "factory_sha256": "5ccdb13df3bcd713b4f6ca64fb0f3cbd357eaa86a6b0e7ad675f08d7e07657ae"
+    },
+    {
+      "qualified_name": "Trader.tx_base",
+      "name_reference": "0x141e82247",
+      "factory": "0x141e82230",
+      "body": "0x141e66c10",
+      "factory_sha256": "3d1e9a3c14732a332c55da0fbaf1fe6af8cb6a8b258b08572eb4d5c141ed8a6d"
+    },
+    {
+      "qualified_name": "Trader.send",
+      "name_reference": "0x141e822a7",
+      "factory": "0x141e82290",
+      "body": "0x141e670f0",
+      "factory_sha256": "71474e3e33736969b9b921a6e256fa41e6cc13d09bb5943ec4280419ae0f99d6"
+    },
+    {
+      "qualified_name": "Trader.wait",
+      "name_reference": "0x141e8231b",
+      "factory": "0x141e822f0",
+      "body": "0x141e67d00",
+      "factory_sha256": "aa01bb1fbcbd6541c958632b5e2843811fd66380875d069fba8e5f475de07c2d"
+    },
+    {
+      "qualified_name": "Trader.allowance",
+      "name_reference": "0x141e8237b",
+      "factory": "0x141e82350",
+      "body": "0x141e682a0",
+      "factory_sha256": "9b6fe9183f1d0f6faee040274fa33dc6bf8e0dd2464202b5b7389553d46b61ad"
+    },
+    {
+      "qualified_name": "Trader.ensure_approve_max",
+      "name_reference": "0x141e823db",
+      "factory": "0x141e823b0",
+      "body": "0x141e68760",
+      "factory_sha256": "e02a123ab0a46ccab421b60bcc2b261491adc01ea7819d7d03a6d5d277ff49fc"
+    },
+    {
+      "qualified_name": "Trader.fast_buy_wbnb_token",
+      "name_reference": "0x141e8243b",
+      "factory": "0x141e82410",
+      "body": "0x141e692a0",
+      "factory_sha256": "a18d9dba61988dabc205cdd344fa063e1c0cbb34101a6666cfc47134aceb2508"
+    },
+    {
+      "qualified_name": "Trader.fast_sell_token_wbnb",
+      "name_reference": "0x141e8249b",
+      "factory": "0x141e82470",
+      "body": "0x141e6a8f0",
+      "factory_sha256": "6e90fcfbb5b09f2829b6032f76366bdfa6c07a44756b386a6736f6c62f5500a4"
+    },
+    {
+      "qualified_name": "Trader.token_balance_raw",
+      "name_reference": "0x141e824e7",
+      "factory": "0x141e824d0",
+      "body": "0x141e6c030",
+      "factory_sha256": "474c1bf4316bf73c24fa47de57d87f9e0f566fff23b6ad0579a60c0a2d7cea90"
+    },
+    {
+      "qualified_name": "Trader.token_amount_to_raw",
+      "name_reference": "0x141e82547",
+      "factory": "0x141e82530",
+      "body": "0x141e6c3e0",
+      "factory_sha256": "dd0c7aa850981a83e96feae129b73aa4ee4759b79bd652e6e809cb6965e6ecda"
+    },
+    {
+      "qualified_name": "Trader.token_raw_to_amount",
+      "name_reference": "0x141e825a7",
+      "factory": "0x141e82590",
+      "body": "0x141e6c8e0",
+      "factory_sha256": "09c9920cb44a2f8505049044e24280a780f35b5a25e1b79a84d7fe493913a6df"
+    },
+    {
+      "qualified_name": "Trader.__init__",
+      "name_reference": "0x141e8261b",
+      "factory": "0x141e825f0",
+      "body": "0x141e55f60",
+      "factory_sha256": "a050ee88fcdcef825b16d6a7a5adf1d439fb520a6f5beacec7b0be3c819e106d"
+    },
+    {
+      "qualified_name": "Trader.quote_amount_to_raw",
+      "name_reference": "0x141e82667",
+      "factory": "0x141e82650",
+      "body": "0x141e6ce20",
+      "factory_sha256": "0a496c293f39ad64ed8e407431b8a5e214df16226ce11ab96f3e868dea00df1c"
+    },
+    {
+      "qualified_name": "Trader.quote_raw_to_amount",
+      "name_reference": "0x141e826c7",
+      "factory": "0x141e826b0",
+      "body": "0x141e6d160",
+      "factory_sha256": "bbffd78139cefa21fc0cbf64607f621f0960bdc6d6ebe91d4ac875b2edf6e7d3"
+    },
+    {
+      "qualified_name": "Trader.balances",
+      "name_reference": "0x141e82727",
+      "factory": "0x141e82710",
+      "body": "0x141e6d4a0",
+      "factory_sha256": "bae6b7ac6c97e5516da047ca2a263f07bdd08392f2a4c83a80dddbb52bd1792d"
+    },
+    {
+      "qualified_name": "Trader._v3_path",
+      "name_reference": "0x141e82787",
+      "factory": "0x141e82770",
+      "body": "0x141e6ef30",
+      "factory_sha256": "36742998a08b06c8d75d217a742bc31f1134b24c2b754ff298f006b977bc9613"
+    },
+    {
+      "qualified_name": "Trader._route_key",
+      "name_reference": "0x141e827e7",
+      "factory": "0x141e827d0",
+      "body": "0x141e6fb30",
+      "factory_sha256": "d7fb8579220bfd22fa461b2c15268ce139d0a597ed7faebadcd32be9b10c6b25"
+    },
+    {
+      "qualified_name": "Trader._reverse_route",
+      "name_reference": "0x141e82847",
+      "factory": "0x141e82830",
+      "body": "0x141e70910",
+      "factory_sha256": "867fb2836a514ab0051883041f485ea329ff9acc82566fabe03517bffbaa1e33"
+    },
+    {
+      "qualified_name": "Trader._route_label",
+      "name_reference": "0x141e828a7",
+      "factory": "0x141e82890",
+      "body": "0x141e70d90",
+      "factory_sha256": "6934482687accb1f6097a627dcb75bbbddd257db0b316b4c8ad5f09aef678720"
+    },
+    {
+      "qualified_name": "Trader._preferred_buy_route",
+      "name_reference": "0x141e82907",
+      "factory": "0x141e828f0",
+      "body": "0x141e71fb0",
+      "factory_sha256": "683a93ec90307cfbb6a477ac3a910a0505e4f7b351c0e640d7a54abac43c8668"
+    },
+    {
+      "qualified_name": "Trader._buy_route_candidates",
+      "name_reference": "0x141e82967",
+      "factory": "0x141e82950",
+      "body": "0x141e72ab0",
+      "factory_sha256": "482f6bffae54c549391beb556e8de91d24ac8c290f99a826755c852f7bdbd053"
+    },
+    {
+      "qualified_name": "Trader._quote_route",
+      "name_reference": "0x141e829c7",
+      "factory": "0x141e829b0",
+      "body": "0x141e74280",
+      "factory_sha256": "51966ebc7a240686f416878800ccd93b377274b719818f468b573791289e92cb"
+    },
+    {
+      "qualified_name": "Trader._balance_call_data",
+      "name_reference": "0x141e82a27",
+      "factory": "0x141e82a10",
+      "body": "0x141e58090",
+      "factory_sha256": "98969e41afef4175b9cc4ecfbf8e9bca85792915f02dc057487526fe8a7c7e80"
+    },
+    {
+      "qualified_name": "Trader._roundtrip_loss_bps",
+      "name_reference": "0x141e82a87",
+      "factory": "0x141e82a70",
+      "body": "0x141e75b60",
+      "factory_sha256": "413563d26c33072a23f669726334cdbacfa57b5836ad44454055374fd0ec0104"
+    },
+    {
+      "qualified_name": "Trader._converter_slippage_bps",
+      "name_reference": "0x141e82ae7",
+      "factory": "0x141e82ad0",
+      "body": "0x141e76010",
+      "factory_sha256": "15e9fad812b1c6910a9338221ce41b1a7a96bb445b0fa3de47f02e8368bb2840"
+    },
+    {
+      "qualified_name": "Trader._select_safe_route",
+      "name_reference": "0x141e82b47",
+      "factory": "0x141e82b30",
+      "body": "0x141e76660",
+      "factory_sha256": "c8f55d42ba9017b2d7971ce4a77233fff295771c75a25e76daa571ae47d22304"
+    },
+    {
+      "qualified_name": "Trader.preview_bnb_to_quote",
+      "name_reference": "0x141e82c1b",
+      "factory": "0x141e82bf0",
+      "body": "0x141e7a170",
+      "factory_sha256": "0d01a5ba14f833b63b3a59e3c71a0ace3c23fd4e5d8e8660184b69aa628ede98"
+    },
+    {
+      "qualified_name": "Trader.preview_quote_to_bnb",
+      "name_reference": "0x141e82c7b",
+      "factory": "0x141e82c50",
+      "body": "0x141e7a950",
+      "factory_sha256": "99e8dc31ac38f1ac43a68de6106d9536a970afb83cfa775d22d82faecc809455"
+    },
+    {
+      "qualified_name": "Trader.converter_quote_summary",
+      "name_reference": "0x141e82cc7",
+      "factory": "0x141e82cb0",
+      "body": "0x141e7b630",
+      "factory_sha256": "fddb71b89f4dbee63c84535808c8b930c83d8c17a6844c277524d38f5d2f527b"
+    },
+    {
+      "qualified_name": "Trader.execute_bnb_to_quote",
+      "name_reference": "0x141e82d27",
+      "factory": "0x141e82d10",
+      "body": "0x141e7c400",
+      "factory_sha256": "54155279bb8821feb93f995c0e34b36cf428c650e81f38618460869009009af3"
+    },
+    {
+      "qualified_name": "Trader.execute_quote_to_bnb",
+      "name_reference": "0x141e82d87",
+      "factory": "0x141e82d70",
+      "body": "0x141e7e6c0",
+      "factory_sha256": "7bdd4215e6554dabf3f3adad6e711138db259a94d3837654770b438ed4e02f6c"
+    },
+    {
+      "qualified_name": "Trader.wrap_bnb",
+      "name_reference": "0x141e82dfb",
+      "factory": "0x141e82dd0",
+      "body": "0x141e81270",
+      "factory_sha256": "681912a707af21df7d5d40927807eda117cff60ff62e8e3df65ea8be69f075dc"
+    },
+    {
+      "qualified_name": "Trader.unwrap_wbnb",
+      "name_reference": "0x141e82e5b",
+      "factory": "0x141e82e30",
+      "body": "0x141e81670",
+      "factory_sha256": "f48b821ac0834f4331a80a1dbf528b1382769970f3e721e308732bb787937de1"
+    },
+    {
+      "qualified_name": "Trader._read_two_balances",
+      "name_reference": "0x141e82ea7",
+      "factory": "0x141e82e90",
+      "body": "0x141e58400",
+      "factory_sha256": "cbc411eacfe7d3dd40cb61709b2c6e109f9f7efef1f1f962e50876bffca8dc27"
+    },
+    {
+      "qualified_name": "Trader._get_v3_pool_contract",
+      "name_reference": "0x141e82f07",
+      "factory": "0x141e82ef0",
+      "body": "0x141e59860",
+      "factory_sha256": "b49829763f9df4d1e76d0639c42521be7b06f056d0f3ad337181e85771ec8daf"
+    },
+    {
+      "qualified_name": "Trader.erc20",
+      "name_reference": "0x141e82f67",
+      "factory": "0x141e82f50",
+      "body": "0x141e5bdd0",
+      "factory_sha256": "fb36ea448233b5f3783b6f8782a1f36849a65d75b7e9c30afaacf21d3817c4bc"
+    },
+    {
+      "qualified_name": "Trader.token_decimals",
+      "name_reference": "0x141e82fc7",
+      "factory": "0x141e82fb0",
+      "body": "0x141e5c320",
+      "factory_sha256": "28047cff70fb66dca39646ee2231ab20e06cc9654ef87f45b157dd1041f28e55"
+    },
+    {
+      "qualified_name": "Trader.get_pair_contract",
+      "name_reference": "0x141e83027",
+      "factory": "0x141e83010",
+      "body": "0x141e5c880",
+      "factory_sha256": "54038e71795e5a4d5c3a67772e4d6cd53e0ec421a1c188faa4f38b532f8aabe6"
+    },
+    {
+      "qualified_name": "Trader.get_market_feed_metadata",
+      "name_reference": "0x141e83087",
+      "factory": "0x141e83070",
+      "body": "0x141e5d930",
+      "factory_sha256": "d7ce1e045f1cd828acc8d8199e94f1005a04c832e2aa5bd0955acc5c336f3741"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry.route_for",
+      "name_reference": "0x1420a0967",
+      "factory": "0x1420a0950",
+      "body": "0x14208a510",
+      "factory_sha256": "531f0f11650ed000cd7cde4b7e10e8b95d77455bb08b550f133a5d70075efe87"
+    },
+    {
+      "qualified_name": "WalletSweepReport.converted_count",
+      "name_reference": "0x1420a0b57",
+      "factory": "0x1420a0b40",
+      "body": "0x142092870",
+      "factory_sha256": "0439fd78067cde86a802abfb7e3bd081ddf4a4338eee530279b66983219f67b9"
+    },
+    {
+      "qualified_name": "WalletSweepEngine.__init__",
+      "name_reference": "0x1420a0bcb",
+      "factory": "0x1420a0ba0",
+      "body": "0x142092c40",
+      "factory_sha256": "a1e680c8dbd8adf39d0de8de48be49da475aab167b06dbeabfc2d42b83f8e74c"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._emit",
+      "name_reference": "0x1420a0c17",
+      "factory": "0x1420a0c00",
+      "body": "0x1420933f0",
+      "factory_sha256": "6344d0406427133b7de98bc20bf05f6880f4ba3e40e9398f6b91df19299452b8"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._make_trader",
+      "name_reference": "0x1420a0c77",
+      "factory": "0x1420a0c60",
+      "body": "0x142093750",
+      "factory_sha256": "44f2ac1356803ec3c86a90dd33f0a7dbc409acd60d8cdd4eff25e258a13252fb"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._close_trader",
+      "name_reference": "0x1420a0d27",
+      "factory": "0x1420a0d10",
+      "body": "0x142093c20",
+      "factory_sha256": "b02b294b388a0cdacb699d0708f8515f9e48f72ab09872cad2595d24decb5165"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._resolver",
+      "name_reference": "0x1420a0d87",
+      "factory": "0x1420a0d70",
+      "body": "0x142093fa0",
+      "factory_sha256": "eecd103589cbf4579192ddc1f7364c8f57c3ef5bdd0b22f9f55337e845cf909d"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._target_min_out",
+      "name_reference": "0x1420a0de7",
+      "factory": "0x1420a0dd0",
+      "body": "0x1420945f0",
+      "factory_sha256": "a080af3e470e1078fb17df97024bd19d420bd7c1246e05280710470b9b6ec896"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._simulate_target_sell",
+      "name_reference": "0x1420a0e47",
+      "factory": "0x1420a0e30",
+      "body": "0x142095fc0",
+      "factory_sha256": "bd047c2fe2fece8238c1e2933b0778efb38e73b3bfdaf3433ccf3366129c4564"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._sell_target",
+      "name_reference": "0x1420a0ea7",
+      "factory": "0x1420a0e90",
+      "body": "0x142097550",
+      "factory_sha256": "c9fa302028e6ea1b0081d19ca09a2054c6d8347087a139eb5450b18176e29013"
+    },
+    {
+      "qualified_name": "WalletSweepEngine._convert_base",
+      "name_reference": "0x1420a0f07",
+      "factory": "0x1420a0ef0",
+      "body": "0x142098890",
+      "factory_sha256": "82c2ec4b9b7fcf8a74663a15e95da417527b16141b2159065cfdb5e4f324de35"
+    },
+    {
+      "qualified_name": "WalletSweepEngine.run",
+      "name_reference": "0x1420a0f67",
+      "factory": "0x1420a0f50",
+      "body": "0x142099f30",
+      "factory_sha256": "e1077d152353fb963ec54def1332c88580241bf16727b300683f0dea20a10001"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry.__init__",
+      "name_reference": "0x1420a1077",
+      "factory": "0x1420a1060",
+      "body": "0x142084030",
+      "factory_sha256": "06399780f64d4f8a8563ec8f0e643714476bb256282ea96f83d2a554bfff5724"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry.wallet_key",
+      "name_reference": "0x1420a10d7",
+      "factory": "0x1420a10c0",
+      "body": "0x1420846b0",
+      "factory_sha256": "5408aa78706a1ab9d0bbe7b8f8afb3e495cdbe2f33bf69f746c929ce0858dc32"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry._load",
+      "name_reference": "0x1420a1137",
+      "factory": "0x1420a1120",
+      "body": "0x142084980",
+      "factory_sha256": "f96bf1fae92251ffd4fde85013c9db51800c5abe7ff52e1b7e6b796028286a68"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry._read_document",
+      "name_reference": "0x1420a1197",
+      "factory": "0x1420a1180",
+      "body": "0x1420867c0",
+      "factory_sha256": "75c169a177d48edcc6564f7e19652eec16eeddee9fe9f03d02a7a4bfa87be492"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry._save",
+      "name_reference": "0x1420a11f7",
+      "factory": "0x1420a11e0",
+      "body": "0x142086ef0",
+      "factory_sha256": "16a10515bdd08badc7965aca59a68420bee1a841706c0865171fbf7067b5292d"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry.register",
+      "name_reference": "0x1420a126b",
+      "factory": "0x1420a1240",
+      "body": "0x1420886b0",
+      "factory_sha256": "353cd45237b740b98fb1a6ea41a610e4776082c8cd0dceee665e99f758b4affe"
+    },
+    {
+      "qualified_name": "WalletTokenRegistry.records",
+      "name_reference": "0x1420a12b7",
+      "factory": "0x1420a12a0",
+      "body": "0x142089760",
+      "factory_sha256": "c87e56d2d591acb64bef127084ad8275873cd8298f0d95927b79c35987f70855"
+    }
+  ]
+}

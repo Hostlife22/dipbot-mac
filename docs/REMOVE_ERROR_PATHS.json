@@ -1,0 +1,832 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "paths": {
+    "save_failure": {
+      "entry": "0x140bc127f",
+      "instructions": 476,
+      "unresolved_direct_edges": [],
+      "sha256": "7a67ae187a518cc3e61b2103dccd2f6ca31089b5a172b2594b0b4c0d9927ffd2",
+      "references": [],
+      "calls": [
+        {
+          "site": "0x140bc12b6",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bc131e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc133b",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1363",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc137d",
+          "operand": "0x1400069e0"
+        },
+        {
+          "site": "0x140bc13d6",
+          "operand": "0x1429083a0"
+        },
+        {
+          "site": "0x140bc13f8",
+          "operand": "0x140006ba0"
+        },
+        {
+          "site": "0x140bc1415",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc143a",
+          "operand": "0x142902000"
+        },
+        {
+          "site": "0x140bc149e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc14a3",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bc14be",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc14d8",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc14f2",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1515",
+          "operand": "0x142902000"
+        },
+        {
+          "site": "0x140bc1576",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1593",
+          "operand": "0x142908ee0"
+        },
+        {
+          "site": "0x140bc15bd",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc15d9",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1655",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1673",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1692",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc16a8",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bc16e4",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bc1738",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1755",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1795",
+          "operand": "0x1428fa200"
+        },
+        {
+          "site": "0x140bc17b9",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc17c7",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bc17e3",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc17fb",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc181b",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1839",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1853",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1875",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1906",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1920",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1942",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1964",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc1981",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bc19a1",
+          "operand": "0x14292b7d0"
+        }
+      ]
+    },
+    "registry_init": {
+      "entry": "0x140bb4e60",
+      "instructions": 401,
+      "unresolved_direct_edges": [],
+      "sha256": "1cbdae10dc6892d390eadfb6d7a52ed5b6ef5cb26973dae5c8a1be521b41469b",
+      "references": [
+        {
+          "site": "0x140bb4f3f",
+          "name": "Path"
+        },
+        {
+          "site": "0x140bb4f85",
+          "name": "Path"
+        },
+        {
+          "site": "0x140bb4fae",
+          "name": "Path"
+        },
+        {
+          "site": "0x140bb4fcb",
+          "name": "Path"
+        },
+        {
+          "site": "0x140bb4feb",
+          "name": "Path"
+        },
+        {
+          "site": "0x140bb502e",
+          "name": "path"
+        },
+        {
+          "site": "0x140bb50a7",
+          "name": "threading"
+        },
+        {
+          "site": "0x140bb50e8",
+          "name": "threading"
+        },
+        {
+          "site": "0x140bb5111",
+          "name": "threading"
+        },
+        {
+          "site": "0x140bb512e",
+          "name": "threading"
+        },
+        {
+          "site": "0x140bb514e",
+          "name": "threading"
+        },
+        {
+          "site": "0x140bb517d",
+          "name": "RLock"
+        },
+        {
+          "site": "0x140bb5195",
+          "name": "_lock"
+        },
+        {
+          "site": "0x140bb51d4",
+          "name": "_records"
+        },
+        {
+          "site": "0x140bb521a",
+          "name": "load_error"
+        },
+        {
+          "site": "0x140bb5240",
+          "name": "_load"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x140bb4eb9",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb4ed2",
+          "operand": "0x1428f9e60"
+        },
+        {
+          "site": "0x140bb4ef1",
+          "operand": "0x140007050"
+        },
+        {
+          "site": "0x140bb4f4a",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb4f93",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb4fb5",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb4fd9",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb4ffa",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb501d",
+          "operand": "0x142906280"
+        },
+        {
+          "site": "0x140bb503b",
+          "operand": "0x142912980"
+        },
+        {
+          "site": "0x140bb5059",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb50b2",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb50f6",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb5118",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb513c",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb515d",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb5184",
+          "operand": "0x142911880"
+        },
+        {
+          "site": "0x140bb51a2",
+          "operand": "0x142912980"
+        },
+        {
+          "site": "0x140bb51c1",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb51cf",
+          "operand": "0x1428fec80"
+        },
+        {
+          "site": "0x140bb51e4",
+          "operand": "0x142912980"
+        },
+        {
+          "site": "0x140bb5202",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb5221",
+          "operand": "0x142912980"
+        },
+        {
+          "site": "0x140bb5247",
+          "operand": "0x142911880"
+        },
+        {
+          "site": "0x140bb5272",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bb5297",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bb52eb",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb5308",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb531a",
+          "operand": "0x1428fa200"
+        },
+        {
+          "site": "0x140bb533e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb534e",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bb536a",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb5384",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb53a6",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb53bf",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb53c4",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bb53f0",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb540a",
+          "operand": "rdx"
+        }
+      ]
+    },
+    "registry_save": {
+      "entry": "0x140bb9150",
+      "instructions": 783,
+      "unresolved_direct_edges": [
+        "trap@0x140bb9cd8"
+      ],
+      "sha256": "49dad3b07248e86ae467bd8782d6be6300466c1fe42caa3981cfcbdf9aa9c691",
+      "references": [
+        {
+          "site": "0x140bb9216",
+          "name": "kind"
+        },
+        {
+          "site": "0x140bb922d",
+          "name": "REGISTRY_KIND"
+        },
+        {
+          "site": "0x140bb92a4",
+          "name": "version"
+        },
+        {
+          "site": "0x140bb92b8",
+          "name": "REGISTRY_VERSION"
+        },
+        {
+          "site": "0x140bb92e8",
+          "name": "pairs"
+        },
+        {
+          "site": "0x140bb92ef",
+          "name": "sorted"
+        },
+        {
+          "site": "0x140bb931b",
+          "name": "_records"
+        },
+        {
+          "site": "0x140bb9340",
+          "name": "values"
+        },
+        {
+          "site": "0x140bb9583",
+          "name": "asdict"
+        },
+        {
+          "site": "0x140bb95c7",
+          "name": "asdict"
+        },
+        {
+          "site": "0x140bb95f0",
+          "name": "asdict"
+        },
+        {
+          "site": "0x140bb960d",
+          "name": "asdict"
+        },
+        {
+          "site": "0x140bb971b",
+          "name": "asdict"
+        },
+        {
+          "site": "0x140bb9972",
+          "name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb99b7",
+          "name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb99e0",
+          "name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb99fe",
+          "name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb9a1e",
+          "name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb9a3f",
+          "name": "path"
+        },
+        {
+          "site": "0x140bb9a78",
+          "name": "REGISTRY_PURPOSE"
+        }
+      ],
+      "calls": [
+        {
+          "site": "0x140bb91cf",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb91e8",
+          "operand": "0x1428f9e60"
+        },
+        {
+          "site": "0x140bb9211",
+          "operand": "0x140007050"
+        },
+        {
+          "site": "0x140bb9220",
+          "operand": "0x140baa170"
+        },
+        {
+          "site": "0x140bb923b",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb9263",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bb9288",
+          "operand": "qword ptr [rip + 0x1d7486a]",
+          "import": "_PyDict_NewPresized"
+        },
+        {
+          "site": "0x140bb929e",
+          "operand": "qword ptr [rip + 0x1d7487c]",
+          "import": "PyDict_SetItem"
+        },
+        {
+          "site": "0x140bb92ae",
+          "operand": "0x140baa390"
+        },
+        {
+          "site": "0x140bb92c6",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb92e2",
+          "operand": "qword ptr [rip + 0x1d74838]",
+          "import": "PyDict_SetItem"
+        },
+        {
+          "site": "0x140bb9301",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb9326",
+          "operand": "0x1429125c0"
+        },
+        {
+          "site": "0x140bb934a",
+          "operand": "0x1429125c0"
+        },
+        {
+          "site": "0x140bb9368",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb938a",
+          "operand": "0x142905d20"
+        },
+        {
+          "site": "0x140bb93a8",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9404",
+          "operand": "0x1428ed190"
+        },
+        {
+          "site": "0x140bb9436",
+          "operand": "0x14290fcd0"
+        },
+        {
+          "site": "0x140bb9454",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb946c",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9483",
+          "operand": "0x1401168f0"
+        },
+        {
+          "site": "0x140bb94a1",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb94ba",
+          "operand": "0x142900c10"
+        },
+        {
+          "site": "0x140bb94e3",
+          "operand": "rax"
+        },
+        {
+          "site": "0x140bb9512",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb953e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb958e",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb95d5",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb95f7",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb961b",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb9646",
+          "operand": "0x142906280"
+        },
+        {
+          "site": "0x140bb9662",
+          "operand": "0x142900d60"
+        },
+        {
+          "site": "0x140bb9693",
+          "operand": "qword ptr [rip + 0x1d7442f]",
+          "import": "Py_MakePendingCalls"
+        },
+        {
+          "site": "0x140bb96b2",
+          "operand": "qword ptr [rip + 0x1d74400]",
+          "import": "PyEval_SaveThread"
+        },
+        {
+          "site": "0x140bb96bb",
+          "operand": "qword ptr [rip + 0x1d743c7]",
+          "import": "PyEval_AcquireThread"
+        },
+        {
+          "site": "0x140bb96e7",
+          "operand": "0x142902200"
+        },
+        {
+          "site": "0x140bb970a",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9729",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb9752",
+          "operand": "qword ptr [rip + 0x1d74438]",
+          "import": "PyErr_Format"
+        },
+        {
+          "site": "0x140bb97a8",
+          "operand": "0x142919e40"
+        },
+        {
+          "site": "0x140bb97d6",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb97ef",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9810",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb982e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9858",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb987d",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb98a3",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb98bc",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb98dd",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb98fb",
+          "operand": "r8"
+        },
+        {
+          "site": "0x140bb990c",
+          "operand": "qword ptr [rip + 0x1d7420e]",
+          "import": "PyDict_SetItem"
+        },
+        {
+          "site": "0x140bb9929",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb997d",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb99c5",
+          "operand": "0x1428fe580"
+        },
+        {
+          "site": "0x140bb99e7",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb9a0c",
+          "operand": "0x140006c30"
+        },
+        {
+          "site": "0x140bb9a2c",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb9a49",
+          "operand": "0x1429125c0"
+        },
+        {
+          "site": "0x140bb9a6b",
+          "operand": "0x140baa280"
+        },
+        {
+          "site": "0x140bb9a83",
+          "operand": "0x1429020b0"
+        },
+        {
+          "site": "0x140bb9a9e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9ace",
+          "operand": "0x1429083a0"
+        },
+        {
+          "site": "0x140bb9aec",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9b0f",
+          "operand": "0x14292b640"
+        },
+        {
+          "site": "0x140bb9b61",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9b7e",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9b94",
+          "operand": "0x1428fa200"
+        },
+        {
+          "site": "0x140bb9bb8",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9bc8",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bb9be8",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9c03",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9c25",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9c40",
+          "operand": "0x14292b7d0"
+        },
+        {
+          "site": "0x140bb9c6c",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9c71",
+          "operand": "0x1400070d0"
+        },
+        {
+          "site": "0x140bb9ca0",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9cbb",
+          "operand": "rdx"
+        },
+        {
+          "site": "0x140bb9cc7",
+          "operand": "qword ptr [rip + 0x1d73e8b]",
+          "import": "PyErr_PrintEx"
+        },
+        {
+          "site": "0x140bb9cd2",
+          "operand": "qword ptr [rip + 0x1d73de8]",
+          "import": "Py_Exit"
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Failure entry has no reconstructed initial register state",
+    "Callees, SEH edges and dynamic side effects are not followed",
+    "Absence of a named _records access is not proof of no rollback"
+  ]
+}

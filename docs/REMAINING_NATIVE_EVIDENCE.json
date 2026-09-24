@@ -1,0 +1,532 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "decoded_counts": {
+    "commercial_features": 642,
+    "dynamic_pairs": 323,
+    "secure_store": 245
+  },
+  "tables": {
+    "commercial_features": "0x1429db320",
+    "dynamic_pairs": "0x1429ed8b0",
+    "secure_store": "0x142a5aa10"
+  },
+  "selected_constants": {
+    "commercial_features": [
+      {
+        "index": 14,
+        "file_offset": 50788988,
+        "value": "_wallet_sweep_running"
+      },
+      {
+        "index": 16,
+        "file_offset": 50789034,
+        "value": "_pair_holdings_inflight"
+      },
+      {
+        "index": 17,
+        "file_offset": 50789059,
+        "value": "_pair_holdings_pending"
+      },
+      {
+        "index": 27,
+        "file_offset": 50789248,
+        "value": "trader"
+      },
+      {
+        "index": 29,
+        "file_offset": 50789265,
+        "value": "_wallet_registry"
+      },
+      {
+        "index": 92,
+        "file_offset": 50791240,
+        "value": "QTimer"
+      },
+      {
+        "index": 101,
+        "file_offset": 50791372,
+        "value": "_schedule_autopair"
+      },
+      {
+        "index": 106,
+        "file_offset": 50791455,
+        "value": "_request_pair_holdings_refresh"
+      },
+      {
+        "index": 132,
+        "file_offset": 50792110,
+        "value": "singleShot"
+      },
+      {
+        "index": 159,
+        "file_offset": 50792884,
+        "value": "_manual_lock"
+      },
+      {
+        "index": 179,
+        "file_offset": 50793333,
+        "value": "_set_sweep_controls_locked"
+      },
+      {
+        "index": 180,
+        "file_offset": 50793361,
+        "value": [
+          false
+        ]
+      },
+      {
+        "index": 301,
+        "file_offset": 50795863,
+        "value": "AutoPairResolver"
+      },
+      {
+        "index": 303,
+        "file_offset": 50795892,
+        "value": [
+          "multicall",
+          "v2_factory",
+          "v3_factory"
+        ]
+      },
+      {
+        "index": 304,
+        "file_offset": 50795929,
+        "value": "selection_epoch"
+      },
+      {
+        "index": 307,
+        "file_offset": 50795971,
+        "value": "error_type"
+      },
+      {
+        "index": 309,
+        "file_offset": 50795993,
+        "value": "autopair_error"
+      },
+      {
+        "index": 410,
+        "file_offset": 50798728,
+        "value": "acquire"
+      },
+      {
+        "index": 411,
+        "file_offset": 50798737,
+        "value": [
+          "blocking"
+        ]
+      },
+      {
+        "index": 412,
+        "file_offset": 50798749,
+        "value": [
+          "wallet_sweep_error",
+          "manual action lock is busy"
+        ]
+      },
+      {
+        "index": 413,
+        "file_offset": 50798799,
+        "value": "WalletSweepEngine"
+      },
+      {
+        "index": 414,
+        "file_offset": 50798818,
+        "value": "<lambda>"
+      },
+      {
+        "index": 415,
+        "file_offset": 50798828,
+        "value": "CommercialGUI._wallet_sweep_worker.<locals>.<lambda>"
+      },
+      {
+        "index": 416,
+        "file_offset": 50798882,
+        "value": [
+          "slippage_pct",
+          "progress"
+        ]
+      },
+      {
+        "index": 417,
+        "file_offset": 50798908,
+        "value": "run"
+      },
+      {
+        "index": 418,
+        "file_offset": 50798913,
+        "value": "release"
+      },
+      {
+        "index": 419,
+        "file_offset": 50798922,
+        "value": "self"
+      },
+      {
+        "index": 420,
+        "file_offset": 50798928,
+        "value": "update_balance"
+      },
+      {
+        "index": 421,
+        "file_offset": 50798944,
+        "value": "_finish_wallet_sweep_ui"
+      },
+      {
+        "index": 422,
+        "file_offset": 50798969,
+        "value": "WALLET SWEEP COMPLETE: sold/converted "
+      },
+      {
+        "index": 423,
+        "file_offset": 50799009,
+        "value": "converted_count"
+      },
+      {
+        "index": 424,
+        "file_offset": 50799026,
+        "value": "; skipped "
+      },
+      {
+        "index": 425,
+        "file_offset": 50799038,
+        "value": "skipped"
+      },
+      {
+        "index": 426,
+        "file_offset": 50799047,
+        "value": "; failed "
+      },
+      {
+        "index": 427,
+        "file_offset": 50799058,
+        "value": "failed"
+      },
+      {
+        "index": 428,
+        "file_offset": 50799066,
+        "value": "remaining"
+      },
+      {
+        "index": 429,
+        "file_offset": 50799077,
+        "value": "WALLET SWEEP REMAINING: "
+      },
+      {
+        "index": 430,
+        "file_offset": 50799103,
+        "value": [
+          "WALLET SWEEP VERIFIED: every enumerable token balance is zero; BNB retained"
+        ]
+      },
+      {
+        "index": 431,
+        "file_offset": 50799182,
+        "value": "set_position_ui"
+      },
+      {
+        "index": 432,
+        "file_offset": 50799199,
+        "value": "reconcile_external_flat"
+      },
+      {
+        "index": 433,
+        "file_offset": 50799224,
+        "value": "SWEEP SKIPPED: "
+      },
+      {
+        "index": 434,
+        "file_offset": 50799241,
+        "value": "SWEEP ERROR: "
+      }
+    ],
+    "dynamic_pairs": [
+      {
+        "index": 9,
+        "file_offset": 50962323,
+        "value": "strip"
+      },
+      {
+        "index": 21,
+        "file_offset": 50962449,
+        "value": "upper"
+      },
+      {
+        "index": 111,
+        "file_offset": 50964232,
+        "value": "_lock"
+      },
+      {
+        "index": 112,
+        "file_offset": 50964239,
+        "value": "_records"
+      },
+      {
+        "index": 142,
+        "file_offset": 50964902,
+        "value": "__enter__"
+      },
+      {
+        "index": 143,
+        "file_offset": 50964913,
+        "value": "__exit__"
+      },
+      {
+        "index": 176,
+        "file_offset": 50965385,
+        "value": "items"
+      },
+      {
+        "index": 196,
+        "file_offset": 50965697,
+        "value": "_save"
+      },
+      {
+        "index": 197,
+        "file_offset": 50965704,
+        "value": "pop"
+      },
+      {
+        "index": 200,
+        "file_offset": 50965728,
+        "value": "DynamicPairRegistry.remove.<locals>.<genexpr>"
+      }
+    ],
+    "secure_store": [
+      {
+        "index": 109,
+        "file_offset": 52124671,
+        "value": {
+          "dict": [
+            [
+              "ensure_ascii",
+              true
+            ],
+            [
+              "sort_keys",
+              true
+            ],
+            [
+              "separators",
+              [
+                ",",
+                ":"
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "index": 110,
+        "file_offset": 52124718,
+        "value": "protect_bytes"
+      },
+      {
+        "index": 111,
+        "file_offset": 52124733,
+        "value": "format"
+      },
+      {
+        "index": 112,
+        "file_offset": 52124741,
+        "value": "NRNF-DPAPI"
+      },
+      {
+        "index": 113,
+        "file_offset": 52124753,
+        "value": "version"
+      },
+      {
+        "index": 114,
+        "file_offset": 52124762,
+        "value": "VAULT_VERSION"
+      },
+      {
+        "index": 115,
+        "file_offset": 52124777,
+        "value": "payload"
+      },
+      {
+        "index": 116,
+        "file_offset": 52124786,
+        "value": "base64"
+      },
+      {
+        "index": 117,
+        "file_offset": 52124794,
+        "value": "b64encode"
+      },
+      {
+        "index": 118,
+        "file_offset": 52124805,
+        "value": "decode"
+      },
+      {
+        "index": 119,
+        "file_offset": 52124813,
+        "value": [
+          "ascii"
+        ]
+      },
+      {
+        "index": 120,
+        "file_offset": 52124822,
+        "value": {
+          "dict": [
+            [
+              "sort_keys",
+              true
+            ],
+            [
+              "separators",
+              [
+                ",",
+                ":"
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "index": 121,
+        "file_offset": 52124854,
+        "value": "_atomic_write_bytes"
+      },
+      {
+        "index": 122,
+        "file_offset": 52124875,
+        "value": "loads"
+      },
+      {
+        "index": 123,
+        "file_offset": 52124882,
+        "value": "read_text"
+      },
+      {
+        "index": 124,
+        "file_offset": 52124893,
+        "value": [
+          "encoding"
+        ]
+      },
+      {
+        "index": 125,
+        "file_offset": 52124905,
+        "value": [
+          "format"
+        ]
+      },
+      {
+        "index": 126,
+        "file_offset": 52124915,
+        "value": [
+          "version",
+          0
+        ]
+      },
+      {
+        "index": 127,
+        "file_offset": 52124928,
+        "value": "b64decode"
+      },
+      {
+        "index": 128,
+        "file_offset": 52124939,
+        "value": {
+          "dict": [
+            [
+              "validate",
+              true
+            ]
+          ]
+        }
+      },
+      {
+        "index": 129,
+        "file_offset": 52124952,
+        "value": "unprotect_bytes"
+      },
+      {
+        "index": 130,
+        "file_offset": 52124969,
+        "value": [
+          "Protected local data is damaged or unavailable"
+        ]
+      }
+    ]
+  },
+  "native_ranges": {
+    "schedule_autopair": {
+      "va_start": "0x1409093b0",
+      "va_end": "0x140909f9f",
+      "file_offset": 9471920,
+      "sha256": "6fd0b861c3e7ed89b10399aa67d5756efc15cd1164bf9be104b3d89699a3a32f"
+    },
+    "autopair_worker": {
+      "va_start": "0x14090ab20",
+      "va_end": "0x14090bbc9",
+      "file_offset": 9477920,
+      "sha256": "6ddc2f96555fbf21710bc85c69c24310e4a93d99de33adb98717a93a9ddf161d"
+    },
+    "holdings_error": {
+      "va_start": "0x1409143f0",
+      "va_end": "0x140914863",
+      "file_offset": 9517040,
+      "sha256": "e9d658a2c03988b638e755b76beec6fabd0a98cdd0dcee74fa12395efcc18900"
+    },
+    "sweep_worker": {
+      "va_start": "0x140917680",
+      "va_end": "0x1409184e5",
+      "file_offset": 9529984,
+      "sha256": "81e51caa6b3c42175413af6d963e6117c6716efc16834644d8fb88b58826127d"
+    },
+    "finish_sweep_ui": {
+      "va_start": "0x1409187e0",
+      "va_end": "0x140918d55",
+      "file_offset": 9534432,
+      "sha256": "b6823a2873036faaca05e12b99dedcdf5b4c4d9e80c443c730cc6618bce22121"
+    },
+    "sweep_complete": {
+      "va_start": "0x140918d60",
+      "va_end": "0x14091a140",
+      "file_offset": 9535840,
+      "sha256": "170810cf5d9ea4cf1ae3a295e9be42b12e384ead50eecf683effb417e1469a92"
+    },
+    "registry_remove": {
+      "va_start": "0x140bc0c60",
+      "va_end": "0x140bc19b7",
+      "file_offset": 12320864,
+      "sha256": "d7ed6f142cfe39ed913564a1f123deff7451881a28dc593e39461a8a58b607a9"
+    },
+    "read_protected_json": {
+      "va_start": "0x141dce190",
+      "va_end": "0x141dcf0c4",
+      "file_offset": 31249808,
+      "sha256": "dd7ed524fbcf073d6f182f2971a5217202680e6078aee42f8f906cca0ecce372"
+    },
+    "method_call0": {
+      "va_start": "0x142911880",
+      "va_end": "0x1429119d7",
+      "file_offset": 43060352,
+      "sha256": "08039545d150a067a042d247090f1b9a1cb681b2b56ed95bc46c42b1dee8fb94"
+    },
+    "method_call1": {
+      "va_start": "0x1429119e0",
+      "va_end": "0x142911b3c",
+      "file_offset": 43060704,
+      "sha256": "0fbd9090f8078864f501e76fa808ddf4b1515fb81db00f42fa4a19d482a0b2cd"
+    },
+    "get_attribute": {
+      "va_start": "0x1429125c0",
+      "va_end": "0x14291263a",
+      "file_offset": 43063744,
+      "sha256": "74d5bb0db0176e40132ce305951c270b229b5949f986dafdaa9120110e05267c"
+    },
+    "getattr_default_prefix_only": {
+      "va_start": "0x1428fccf0",
+      "va_end": "0x1428fcd25",
+      "file_offset": 42975472,
+      "sha256": "572357e4fcc98fca88db398612d17fd94cf1c8f6b69533584657eb3ba3f8ec20"
+    }
+  }
+}

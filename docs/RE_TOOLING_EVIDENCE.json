@@ -1,0 +1,169 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "tools": {
+    "capa": "9.4.0",
+    "floss": "3.1.1",
+    "ghidra": "12.0.3",
+    "jdk": "21.0.10",
+    "rules_commit": "2af9fbfc1c9b4634dbeb76b5d34fca9389fa7f80",
+    "signatures": {
+      "1_flare_msvc_rtf_32_64.sig": "e0042918fa80d432a1914680816996ac397afc30b05d3161192f29de63e66e79",
+      "2_flare_msvc_atlmfc_32_64.sig": "c6f6084f1553f3a4a515bcefe7a72fe2b3564c8338c01fa9add1166276bf09f1",
+      "3_flare_common_libs.sig": "6fa7dda3ffb523d2f555348db47c67b9820a40153bfacd543c9ea02a1ecd83a8"
+    }
+  },
+  "floss_static": {
+    "count": 635005,
+    "allowlisted_matches": {
+      "secure_vault.dat": [
+        "0x31b5776"
+      ],
+      "ui_state.json": [
+        "0x31b57ac"
+      ],
+      "CATALOG_TOKEN": [
+        "0x305dc61",
+        "0x305def9",
+        "0x30719b9",
+        "0x30726f6"
+      ],
+      "runtime-settings": [
+        "0x31b5f1a",
+        "0x31b5f5f"
+      ],
+      "_save_ui_state": [
+        "0x30d55c4",
+        "0x30d7077"
+      ],
+      "_autopair_timer": [
+        "0x3070350"
+      ],
+      "_close_trader": [
+        "0x31e375b",
+        "0x31e41ee"
+      ],
+      "CryptProtectData": [
+        "0x31b5875"
+      ],
+      "CryptUnprotectData": [
+        "0x31b58a0"
+      ],
+      "pending_buy": [
+        "0x3060e1c",
+        "0x306103a",
+        "0x306119b",
+        "0x30d5a11"
+      ],
+      "pending_sell": [
+        "0x3060cb0",
+        "0x3060e29",
+        "0x30611ef",
+        "0x30d5a28"
+      ]
+    }
+  },
+  "capa": {
+    "exit_code": 124
+  },
+  "capa-file": {
+    "exit_code": 1
+  },
+  "capa-file-api": {
+    "exit_code": 0,
+    "scope": "file_only",
+    "rules": {
+      "compiled with nuitka": {
+        "namespace": "compiler/nuitka",
+        "matches": []
+      },
+      "linked against libcurl": {
+        "namespace": "linking/static/libcurl",
+        "matches": []
+      },
+      "reference analysis tools strings": {
+        "namespace": "anti-analysis",
+        "matches": []
+      },
+      "reference anti-VM strings targeting VirtualBox": {
+        "namespace": "anti-analysis/anti-vm/vm-detection",
+        "matches": []
+      }
+    }
+  },
+  "floss-functions": {
+    "exit_code": 124
+  },
+  "ghidra": {
+    "initial_analysis_timeout": true,
+    "targeted_script_errors": false,
+    "exports": [
+      "gui_close 140f37a90 body=1320 (GhidraScript)  ",
+      "gui_stop 140f56f10 body=721 (GhidraScript)  ",
+      "commercial_close 140922010 body=1346 (GhidraScript)  ",
+      "autopair_error 14090fd90 body=2537 (GhidraScript)  ",
+      "sweep_error 14091a140 body=1037 (GhidraScript)  ",
+      "optional_trader_close 142093c20 body=884 (GhidraScript)  ",
+      "converter_slippage 141e76010 body=1616 (GhidraScript)  "
+    ],
+    "failures": [],
+    "decompiled_sha256": {
+      "autopair_error.c": "4ee0ae253aba131175ad8c95e7ac76f423dadf257aef6bf1e15f200a93e698bc",
+      "commercial_close.c": "170dc1c0c5422a8b28fbed32e02f24be2a713537a0621c75a7c87fdc03fe649a",
+      "converter_slippage.c": "91792e68f3c600256a0788df26b51b5eb8680acd29a033dc0537b0f40c072126",
+      "gui_close.c": "f65e264dbcc2537291009369fba5dbc59e23b8de26e3dfef37bdbe77acac4517",
+      "gui_stop.c": "e74ab90163b3a36e40f07d8a6c337d6454524249ecf9451a94c544bee070173a",
+      "optional_trader_close.c": "56b52974919b99857e255027a9ee000afb83bbab5f9cd5f88b339cfca2e30180",
+      "sweep_error.c": "405a90962959abe7807563bd0800d4e14e56975b66cb81ca33f265e82e58ad0f"
+    }
+  },
+  "instruction_comparison": {
+    "gui_close": {
+      "capstone_instructions": 370,
+      "ghidra_instructions": 370,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "gui_stop": {
+      "capstone_instructions": 199,
+      "ghidra_instructions": 199,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "commercial_close": {
+      "capstone_instructions": 372,
+      "ghidra_instructions": 372,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "autopair_error": {
+      "capstone_instructions": 690,
+      "ghidra_instructions": 690,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "sweep_error": {
+      "capstone_instructions": 313,
+      "ghidra_instructions": 313,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "optional_trader_close": {
+      "capstone_instructions": 257,
+      "ghidra_instructions": 257,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {}
+    },
+    "converter_slippage": {
+      "capstone_instructions": 447,
+      "ghidra_instructions": 443,
+      "ghidra_starts_not_in_capstone": [],
+      "capstone_only_mnemonics": {
+        "0x141e7665c": "int3",
+        "0x141e7665d": "int3",
+        "0x141e7665e": "int3",
+        "0x141e7665f": "int3"
+      }
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "shared_stream": {
+    "resource_type": 10,
+    "resource_id": 3,
+    "payload_file_offset": 50255891,
+    "count": 108,
+    "prefix_decoded_only": true,
+    "sha256": "0aa63c36f5186047978875c6825eeb82f32bc81aa8175e53e3ca5857df0dcca3"
+  },
+  "constant": {
+    "table_base": "0x1429a02a0",
+    "index": 2,
+    "slot": "0x1429a02b0",
+    "value": 0,
+    "type": "int"
+  },
+  "ranges": {
+    "shared_init": {
+      "start": "0x140001000",
+      "end": "0x140001037",
+      "sha256": "c1a760c1beebc42efeea5a5df6418c806951308efb1025648acf89145a7c08df",
+      "import_calls": [
+        {
+          "site": "0x140001014",
+          "import": "PySys_GetObject"
+        }
+      ]
+    },
+    "constants_loader": {
+      "start": "0x142925e40",
+      "end": "0x14292603d",
+      "sha256": "e0505ecc0748bdadbc34cd500411f269780de3c4e006023c7734edc7ae4a5110",
+      "import_calls": [
+        {
+          "site": "0x142925e73",
+          "import": "FindResourceA"
+        },
+        {
+          "site": "0x142925e7e",
+          "import": "LoadResource"
+        },
+        {
+          "site": "0x142925e87",
+          "import": "LockResource"
+        },
+        {
+          "site": "0x142925ebf",
+          "import": "puts"
+        },
+        {
+          "site": "0x142925ec5",
+          "import": "abort"
+        },
+        {
+          "site": "0x142925eef",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925efc",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f09",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f16",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f23",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f30",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f3d",
+          "import": "PyDict_New"
+        },
+        {
+          "site": "0x142925f4a",
+          "import": "PyDict_New"
+        }
+      ]
+    },
+    "less_equal": {
+      "start": "0x14291fc20",
+      "end": "0x14291fd80",
+      "sha256": "5aa4c844f908c42fdbae6e247a526ba8cd16e3f55cf63603ac8b30259fcc8fba",
+      "import_calls": [
+        {
+          "site": "0x14291fd74",
+          "import": "PyErr_Format"
+        }
+      ]
+    },
+    "sweep_final_guard": {
+      "start": "0x14209e494",
+      "end": "0x14209e4c5",
+      "sha256": "3c8c359e4c49e14beeec31793c7e4b5c115863bd67a06ce5f465c97793f59679",
+      "import_calls": []
+    }
+  },
+  "observations": [
+    "0x140001024 supplies shared table; R8 points to empty stream name",
+    "0x142926019 decodes one object and 0x14292601e advances destination by 8",
+    "Comparator uses Py_LE=1 and reversed Py_GE=5; verified in local CPython 3.12 headers",
+    "Known final balance <= 0 bypasses remaining; None bypasses comparison and enters remaining",
+    "Loader imports include resource access and eight PyDict_New calls; this is not initialized emulator state"
+  ],
+  "limitations": [
+    "Only final-balance classification threshold, not all Sweep sell/dust thresholds",
+    "No runtime objects, imports or dictionaries initialized by this tool"
+  ]
+}

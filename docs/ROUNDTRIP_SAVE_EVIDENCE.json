@@ -1,0 +1,200 @@
+{
+  "exe_sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "ranges": {
+    "loss": {
+      "start": "0x141e75b60",
+      "end": "0x141e76003",
+      "sha256": "e8dad9462251180f53e4712ed84f2b2d33cac851786a9fe0f62f64d62985455d",
+      "calls": [
+        {
+          "site": "0x141e75c4c",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:max",
+          "lookup_name": "max"
+        },
+        {
+          "site": "0x141e75cb1",
+          "helper": "call_vector2",
+          "receiver": "lookup:max",
+          "callable": "lookup:max",
+          "arguments": [
+            "literal:0",
+            null
+          ]
+        }
+      ]
+    },
+    "subtract": {
+      "start": "0x1429195a0",
+      "end": "0x142919697",
+      "sha256": "997587fe3f97e06836976e72e449aefc555a95a899875543245260c68973b035",
+      "calls": []
+    },
+    "multiply": {
+      "start": "0x1429178d0",
+      "end": "0x14291799b",
+      "sha256": "96d1ecd3f1447412cb46be8792c5e15fbdfca1d63fcd55bc95453326c36506b4",
+      "calls": []
+    },
+    "floor_divide": {
+      "start": "0x142916a40",
+      "end": "0x142916b3d",
+      "sha256": "befb7b900b2604a234a8baef00bfb4318c07ce86812cceada855f9c8245983d5",
+      "calls": []
+    },
+    "call_vector2": {
+      "start": "0x142907260",
+      "end": "0x142907d1a",
+      "sha256": "073c6cd605a272dfce0070652afbe536f49b6a3ae61ecbb6d98a1a3b8a4823cf",
+      "calls": [
+        {
+          "site": "0x1429079d1",
+          "helper": "call_vector2",
+          "arguments": null
+        },
+        {
+          "site": "0x142907a24",
+          "helper": "call_vector2",
+          "arguments": null
+        }
+      ]
+    },
+    "purpose_lookup": {
+      "start": "0x140baa280",
+      "end": "0x140baa390",
+      "sha256": "cdcd1bf858e2be0f479cf86aa29614dd3f24eb530d0e46c9dd0b5a0a2d9f3348",
+      "calls": [
+        {
+          "site": "0x140baa34b",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:REGISTRY_PURPOSE",
+          "lookup_name": "REGISTRY_PURPOSE"
+        },
+        {
+          "site": "0x140baa370",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:REGISTRY_PURPOSE",
+          "lookup_name": "REGISTRY_PURPOSE"
+        }
+      ]
+    },
+    "registry_save": {
+      "start": "0x140bb9150",
+      "end": "0x140bb9cd9",
+      "sha256": "49dad3b07248e86ae467bd8782d6be6300466c1fe42caa3981cfcbdf9aa9c691",
+      "calls": [
+        {
+          "site": "0x140bb9301",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:sorted",
+          "lookup_name": "sorted"
+        },
+        {
+          "site": "0x140bb9326",
+          "helper": "get_attribute",
+          "receiver": "arg[0]",
+          "attribute": "_records",
+          "expression": "arg[0]._records"
+        },
+        {
+          "site": "0x140bb934a",
+          "helper": "get_attribute",
+          "receiver": "arg[0]._records",
+          "attribute": "values",
+          "expression": "arg[0]._records.values"
+        },
+        {
+          "site": "0x140bb938a",
+          "helper": "call0",
+          "receiver": "arg[0]._records.values",
+          "callable": "arg[0]._records.values"
+        },
+        {
+          "site": "0x140bb9436",
+          "helper": "call_pos_keyword_vectors",
+          "receiver": "lookup:sorted",
+          "callable": "lookup:sorted",
+          "keyword_names": null,
+          "positional_values": [
+            "arg[0]._records.values()"
+          ]
+        },
+        {
+          "site": "0x140bb95f7",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:asdict",
+          "lookup_name": "asdict"
+        },
+        {
+          "site": "0x140bb961b",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:asdict",
+          "lookup_name": "asdict"
+        },
+        {
+          "site": "0x140bb9646",
+          "helper": "call1"
+        },
+        {
+          "site": "0x140bb99e7",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:write_protected_json",
+          "lookup_name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb9a0c",
+          "helper": "dict_slot_lookup",
+          "receiver": "name:write_protected_json",
+          "lookup_name": "write_protected_json"
+        },
+        {
+          "site": "0x140bb9a49",
+          "helper": "get_attribute",
+          "attribute": "path"
+        },
+        {
+          "site": "0x140bb9a6b",
+          "helper": "global_lookup:REGISTRY_PURPOSE",
+          "lookup": "lookup:REGISTRY_PURPOSE"
+        },
+        {
+          "site": "0x140bb9ace",
+          "helper": "call_vector3",
+          "arguments": [
+            null,
+            null,
+            "lookup:REGISTRY_PURPOSE"
+          ]
+        }
+      ]
+    }
+  },
+  "arithmetic": {
+    "subtract_slot": "0x08",
+    "multiply_slot": "0x10",
+    "floor_divide_slot": "0xe8",
+    "number_methods_offset": "0x60",
+    "loss_factor": 10000,
+    "domain": "integer raw amounts; nb_floor_divide, final PyNumber_Long"
+  },
+  "gui_failure": {
+    "entry": "0x1409079d3",
+    "instructions": 202,
+    "unresolved": [],
+    "sha256": "69935008b218c3da17485823f92053a41f4938aa436ba8634f9950f80c23f96b",
+    "reaches_catalog_refresh": false,
+    "reaches_autopair_reschedule": false
+  },
+  "manual_save_vector": {
+    "call": "0x140bb9ace",
+    "argument_0": "self.path",
+    "argument_1": "constructed document; contents not fully resolved",
+    "argument_2": "global REGISTRY_PURPOSE"
+  },
+  "limitations": [
+    "Normal CPython integer semantics; globals may be rebound",
+    "GUI direct edges only; callees and SEH not traversed",
+    "Save argument provenance does not prove full rollback or absence thereof"
+  ]
+}
