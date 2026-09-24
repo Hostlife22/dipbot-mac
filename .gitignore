@@ -1,10 +1,45 @@
+# Environments and generated files
 .venv/
+venv/
 __pycache__/
 .pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+test-results*.xml
 build/
 dist/
+*.egg-info/
 *.spec
+
+# Local secrets and wallet state
 *.nrnflic
 .env*
+secrets/
+credentials/
+state.json
+state.json.*
+wallet*.json
+dynamic_pairs.dat
+private_key*
+*.key
+*.pem
+*.keychain*
 *.log
+
+# Original Windows distribution and local application bundles
+CUSTOMER_RELEASE*/
+*.exe
+*.dll
+*.pyd
+*.app/
+*.dmg
+*.zip
+
+# Editor / OS files
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
 

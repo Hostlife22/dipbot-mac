@@ -2,8 +2,14 @@
 name = "dipbot-mac"
 version = "0.1.0"
 description = "Independent macOS BSC dip trading workbench"
+readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = ["PySide6>=6.8,<7", "web3>=7.6,<8", "keyring>=25,<26"]
+
+[project.urls]
+Repository = "https://github.com/Hostlife22/dipbot-mac"
+Documentation = "https://github.com/Hostlife22/dipbot-mac/blob/master/README_RU.md"
+Issues = "https://github.com/Hostlife22/dipbot-mac/issues"
 
 [project.scripts]
 dipbot = "dipbot.app:main"

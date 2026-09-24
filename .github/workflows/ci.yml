@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests · ${{ matrix.arch }} · Python ${{ matrix.python }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: x86_64
+            python: '3.12'
+          - runner: macos-15
+            arch: arm64
+            python: '3.13'
+    env:
+      QT_QPA_PLATFORM: offscreen
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.11.9'
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --frozen --group dev
+      - name: Check lockfile and whitespace
+        run: |
+          uv lock --check --offline
+          git diff --check
+      - name: Run offline tests
+        run: uv run --frozen pytest -q --junitxml=test-results.xml
+      - name: Smoke-test GUI and local signing
+        run: uv run --frozen python launcher.py --smoke-test
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results-${{ matrix.arch }}-py${{ matrix.python }}
+          path: test-results.xml
+          if-no-files-found: ignore
+          retention-days: 14
+

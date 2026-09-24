@@ -1,17 +1,20 @@
 # DipBot Mac 0.1
 
+[Главная](README.md) · [Архитектура](docs/ARCHITECTURE_RU.md) · [Разработка](CONTRIBUTING.md)
+
 Независимый аналог NRNF DipBot для macOS с исходным кодом. Создан по документации и статическому разбору Windows-сборки v1.4.14. Это экспериментальная реализация, а не восстановленный исходный проект автора. Совпадение торговых сигналов с оригиналом не установлено.
 
 ## Запуск
 
-Откройте `dist/DipBot Mac.app` или дважды нажмите `START_MAC.command`.
-Готовая `.app` в этой папке собрана для **Intel x86_64** на macOS 26.6.2. Apple Silicon нативно требует отдельной сборки в arm64-окружении. Приложение подписано ad-hoc, без Developer ID и нотарификации Apple.
+Если приложение уже собрано, откройте `dist/DipBot Mac.app` или дважды нажмите `START_MAC.command`. После клонирования сначала установите зависимости командами ниже; готовые бинарники в Git не хранятся.
+Первоначальная локальная `.app` проверена на **Intel x86_64**, macOS 26.6.2. Apple Silicon нативно требует отдельной сборки в arm64-окружении. Приложение подписывается ad-hoc, без Developer ID и нотарификации Apple.
 
 Из терминала:
 
 ```bash
-cd /Users/admin/Projects/MyProjects/solana/dipbot-mac
-uv sync --frozen
+git clone https://github.com/Hostlife22/dipbot-mac.git
+cd dipbot-mac
+uv sync --frozen --python 3.12
 uv run --frozen python launcher.py
 ```
 
@@ -99,4 +102,3 @@ QT_QPA_PLATFORM=offscreen uv run --frozen python launcher.py --smoke-test
 | `dipbot/strategy.py` | Реконструированная стратегия и точная арифметика сумм |
 | `dipbot/storage.py` | Keychain и атомарное публичное состояние |
 | `tools/inspect_release.py` | Воспроизводимый статический анализ EXE без запуска |
-

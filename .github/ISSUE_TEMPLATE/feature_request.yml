@@ -1,0 +1,19 @@
+name: Предложение
+description: Предложить изменение поведения или новую функцию
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Задача пользователя
+      description: Что вы пытаетесь сделать и чего сейчас не хватает?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Ожидаемое поведение
+      description: Пример работы функции и условия, по которым можно проверить результат.
+    validations:
+      required: true
+

@@ -1,0 +1,63 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build · ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: x86_64
+          - runner: macos-15
+            arch: arm64
+    env:
+      QT_QPA_PLATFORM: offscreen
+      UV_PYTHON: '3.12'
+      BUILD_ARCH: ${{ matrix.arch }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.11.9'
+          enable-cache: true
+      - name: Install and test
+        run: |
+          uv sync --frozen --group dev
+          uv run --frozen pytest -q
+          uv run --frozen python launcher.py --smoke-test
+      - name: Build application
+        run: ./BUILD_MAC.command
+      - name: Verify packaged application
+        run: |
+          codesign --verify --deep --strict "dist/DipBot Mac.app"
+          lipo -verify_arch "$BUILD_ARCH" "dist/DipBot Mac.app/Contents/MacOS/DipBot Mac"
+          "dist/DipBot Mac.app/Contents/MacOS/DipBot Mac" --smoke-test
+      - name: Package application and checksum
+        run: |
+          archive="DipBot-Mac-${BUILD_ARCH}-${GITHUB_SHA:0:7}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "dist/DipBot Mac.app" "dist/$archive"
+          cd dist
+          shasum -a 256 "$archive" > SHA256SUMS.txt
+      - name: Upload build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: DipBot-Mac-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+

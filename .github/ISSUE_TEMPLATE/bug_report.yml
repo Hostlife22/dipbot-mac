@@ -1,0 +1,41 @@
+name: Ошибка
+description: Сообщить о воспроизводимой проблеме приложения
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Не прикладывайте private key, seed, RPC с ключом доступа или state.json.
+        Для уязвимостей используйте инструкции SECURITY.md.
+  - type: input
+    id: environment
+    attributes:
+      label: Окружение
+      description: Версия приложения / commit, macOS, Intel или Apple Silicon; Python при запуске из исходников.
+      placeholder: "0.1.0, macOS 26, Intel, Python 3.12"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Режим
+      options:
+        - DEMO
+        - PAPER
+        - LIVE
+        - Запуск / сборка приложения
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Как воспроизвести
+      description: Шаги, ожидаемый результат и фактическое поведение.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Обезличенный лог или скриншот
+      description: Удалите секреты, адреса личных кошельков и историю операций. По возможности воспроизведите в DEMO.
+
