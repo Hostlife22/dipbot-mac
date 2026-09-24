@@ -73,7 +73,7 @@ class LiveTrader:
             remote_hash = Web3.to_hex(w3.eth.send_raw_transaction(signed.raw_transaction))
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
-            receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=1)
+            receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
         except Exception:
             raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
@@ -106,18 +106,23 @@ class LiveTrader:
             raise ValueError("WBNB router не совпадает")
         return address(router), abi
 
-    def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D):
+    def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D, *, signal_minimum=None):
+        if signal_minimum is not None and (not buy or not isinstance(signal_minimum, int)
+                                          or not 0 < signal_minimum < 2**256):
+            raise ValueError("Некорректный BUY minOut снимка")
         pool = self.chain.verify_pool(pool.address, pool.token)
         router, abi = self.verify_router(pool)
         src, dest = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
         if self.chain.balance(src, self.owner) < amount:
             raise ValueError("Недостаточно базового актива / токенов; используйте Converter")
         initial_min = minimum_out(self.chain.quote(pool, amount, buy), tolerance)
+        if signal_minimum is not None:
+            initial_min = max(initial_min, signal_minimum)
         self.approve(src, router, amount)
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
         before = self.chain.balance(dest, self.owner)
-        deadline = int(time.time()) + 90
+        deadline = int(time.time()) + 30
         contract = self.chain.contract(router, abi)
         if pool.router == "V2":
             function = contract.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -162,9 +167,19 @@ class LiveTrader:
                 output, pool = max(choices, key=lambda x: x[0])
                 path.append(pool)
             else:
+                # Recheck the actual amount on the same pools in reverse before
+                # ranking. Original CONVERTER_MAX_ROUNDTRIP_LOSS_BPS is 1500.
+                returned = output
+                try:
+                    for pool in reversed(path):
+                        returned = self.chain.quote(pool, returned, False)
+                except ContractLogicError:
+                    continue
+                if returned * 10000 < amount * 8500:
+                    continue
                 routes.append((output, path))
         if not routes:
-            raise ValueError("Нет ликвидного маршрута Converter через WBNB / USDT / ETH")
+            raise ValueError("Нет маршрута Converter с round-trip loss ≤ 15% для этой суммы")
         return max(routes, key=lambda item: item[0])[1]
 
     def convert(self, quote, amount, buy, slippage):
@@ -221,4 +236,3 @@ class PaperTrader:
         self.realized += pnl
         self.position = self.cost = D(0)
         return pnl
-

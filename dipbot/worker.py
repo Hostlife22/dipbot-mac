@@ -1,5 +1,4 @@
 from dataclasses import asdict
-import math
 import queue
 import re
 import threading
@@ -10,7 +9,7 @@ from eth_account import Account
 
 from .chain import Chain, Pool, WBNB, address, profiles
 from .storage import Store, Vault
-from .strategy import D, Settings, Strategy, raw_amount
+from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum
 from .trader import LiveTrader, PaperTrader, UncertainTransaction
 
 
@@ -45,7 +44,7 @@ class Worker(QThread):
         self.tick = 0
         self.current_price = None
         self.price_time = 0.0
-        self.interval = 1.0
+        self.interval = 0.1
 
     def submit(self, name, **data):
         self.commands.put((name, data))
@@ -54,7 +53,8 @@ class Worker(QThread):
         next_tick = time.monotonic()
         while not self.quit_event.is_set():
             try:
-                name, data = self.commands.get(timeout=0.05)
+                timeout = min(0.05, max(0, next_tick - time.monotonic())) if self.running else 0.05
+                name, data = self.commands.get(timeout=timeout)
             except queue.Empty:
                 name = None
             if name:
@@ -126,8 +126,8 @@ class Worker(QThread):
         mode = data["mode"]
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
         interval = float(data["interval"])
-        if not 0.1 <= interval <= 60:
-            raise ValueError("Интервал от 0.1 до 60 секунд")
+        if not 0.1 <= interval <= 0.5:
+            raise ValueError("Интервал от 0.1 до 0.5 секунд (защита разрыва: 0.55 с)")
         if mode != "DEMO":
             self.require_chain()
             if not self.pool:
@@ -145,6 +145,8 @@ class Worker(QThread):
             live = LiveTrader(self.chain, key, self.store, D(data["gas"]), self.log.emit)
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")
+        if self.pool and self.pool.router == "V3":
+            interval = max(interval, 0.103)
         self.mode, self.interval, self.live = mode, interval, live
         old_entry = self.strategy.entry
         self.strategy = Strategy(settings)
@@ -314,7 +316,9 @@ class Worker(QThread):
         if self.mode == "DEMO" and not force_chain:
             # Deterministic local market; no network, funds or signing.
             self.tick += 1
-            price = D(str(round(1 + 0.055 * math.sin(self.tick / 5), 8)))
+            # Include a sudden dip: smooth declines reanchor every two moves.
+            cycle = ("1", "1.01", "1.02", "0.97", "0.98", "1.00", "1.01", "1")
+            price = D(cycle[(self.tick - 1) % len(cycle)])
         else:
             self.require_chain()
             if not self.pool:
@@ -327,7 +331,11 @@ class Worker(QThread):
 
     def observe(self):
         price = self.read_price()
-        action = self.strategy.observe(price, time.monotonic())
+        now = time.monotonic()
+        if (self.strategy.entry is None and self.strategy.last_time is not None
+                and now - self.strategy.last_time > self.strategy.settings.max_gap):
+            self.log.emit("Разрыв котировок > 0.55 с: база DIP сброшена")
+        action = self.strategy.observe(price, now)
         if self.stop_event.is_set():
             return
         if action == "BUY":
@@ -344,15 +352,22 @@ class Worker(QThread):
         if self.mode == "LIVE":
             self.require_live()
             amount = raw_amount(settings.amount, self.pool.quote_decimals)
+            bound = snapshot_minimum(amount, self.current_price, self.pool.quote_decimals,
+                                     self.pool.token_decimals, settings.buy_tolerance)
             self.live.begin("BUY " + self.pool.token)
-            received = self.live.swap(self.pool, amount, True, settings.buy_tolerance)
-            entry = (D(amount) / D(10)**self.pool.quote_decimals) / (D(received) / D(10)**self.pool.token_decimals)
+            received = self.live.swap(self.pool, amount, True, settings.buy_tolerance,
+                                      signal_minimum=bound)
+            execution = (D(amount) / D(10)**self.pool.quote_decimals) / (D(received) / D(10)**self.pool.token_decimals)
+            # Persist actual holdings even if the post-receipt price read fails.
+            self.set_position(received, execution)
+            entry = self.read_price()
             self.set_position(received, entry)
             self.live.finish()
         else:
-            entry = self.paper.buy(settings.amount, self.current_price)
+            execution = self.paper.buy(settings.amount, self.current_price)
+            entry = self.current_price
         self.strategy.bought(entry)
-        self.log.emit(f"{self.mode} BUY: цена исполнения {entry:.10g}")
+        self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
     def close_position(self, reason):
         if self.mode == "LIVE":
@@ -375,6 +390,11 @@ class Worker(QThread):
             pnl = self.paper.sell(price)
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
         self.strategy.sold(price, reason)
+        if self.mode == "LIVE":
+            # SELL is already accounted for if this independent read fails.
+            self.strategy.base = self.read_price()
+            self.strategy.last_price = self.strategy.base
+            self.strategy.last_time = self.price_time
         self.log.emit(f"{self.mode} SELL: {reason}")
 
     def sweep(self):

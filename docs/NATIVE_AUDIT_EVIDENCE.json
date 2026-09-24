@@ -1,0 +1,292 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "image_base": "0x140000000",
+  "decoded_counts": {
+    "bot": 245,
+    "trader": 536,
+    "pair_profiles": 170
+  },
+  "selected_constants": {
+    "bot": [
+      {
+        "index": 25,
+        "file_offset": 50726391,
+        "value": "entry_price"
+      },
+      {
+        "index": 28,
+        "file_offset": 50726444,
+        "value": "down_streak"
+      },
+      {
+        "index": 30,
+        "file_offset": 50726478,
+        "value": 0.55
+      },
+      {
+        "index": 31,
+        "file_offset": 50726487,
+        "value": "max_observation_gap_sec"
+      },
+      {
+        "index": 35,
+        "file_offset": 50726534,
+        "value": 0.103
+      },
+      {
+        "index": 36,
+        "file_offset": 50726543,
+        "value": 0.1
+      },
+      {
+        "index": 37,
+        "file_offset": 50726552,
+        "value": "price_poll_interval_sec"
+      },
+      {
+        "index": 56,
+        "file_offset": 50726805,
+        "value": 99.0
+      },
+      {
+        "index": 57,
+        "file_offset": 50726814,
+        "value": 100.0
+      },
+      {
+        "index": 112,
+        "file_offset": 50728012,
+        "value": 30
+      },
+      {
+        "index": 134,
+        "file_offset": 50728503,
+        "value": [
+          0.02
+        ]
+      },
+      {
+        "index": 140,
+        "file_offset": 50728561,
+        "value": [
+          0.05
+        ]
+      },
+      {
+        "index": 147,
+        "file_offset": 50728610,
+        "value": "buy_min_out_from_snapshot"
+      },
+      {
+        "index": 165,
+        "file_offset": 50729051,
+        "value": "growth"
+      },
+      {
+        "index": 166,
+        "file_offset": 50729059,
+        "value": 2
+      },
+      {
+        "index": 167,
+        "file_offset": 50729061,
+        "value": "2 down moves"
+      },
+      {
+        "index": 169,
+        "file_offset": 50729084,
+        "value": [
+          "TP"
+        ]
+      },
+      {
+        "index": 171,
+        "file_offset": 50729117,
+        "value": [
+          "SL"
+        ]
+      }
+    ],
+    "trader": [
+      {
+        "index": 128,
+        "file_offset": 52151968,
+        "value": 99.0
+      },
+      {
+        "index": 130,
+        "file_offset": 52151984,
+        "value": 100.0
+      },
+      {
+        "index": 139,
+        "file_offset": 52152131,
+        "value": [
+          100
+        ]
+      },
+      {
+        "index": 140,
+        "file_offset": 52152135,
+        "value": [
+          0
+        ]
+      },
+      {
+        "index": 141,
+        "file_offset": 52152139,
+        "value": [
+          99
+        ]
+      },
+      {
+        "index": 142,
+        "file_offset": 52152143,
+        "value": [
+          1
+        ]
+      },
+      {
+        "index": 165,
+        "file_offset": 52152415,
+        "value": 0.2
+      },
+      {
+        "index": 237,
+        "file_offset": 52153405,
+        "value": "CONVERTER_MAX_SLIPPAGE_BPS"
+      },
+      {
+        "index": 259,
+        "file_offset": 52153765,
+        "value": "CONVERTER_MAX_ROUNDTRIP_LOSS_BPS"
+      },
+      {
+        "index": 262,
+        "file_offset": 52153820,
+        "value": "CONVERTER_V2_TAX_BUFFER_BPS"
+      },
+      {
+        "index": 354,
+        "file_offset": 52155802,
+        "value": 500
+      },
+      {
+        "index": 355,
+        "file_offset": 52155805,
+        "value": 2000
+      },
+      {
+        "index": 356,
+        "file_offset": 52155808,
+        "value": 1500
+      },
+      {
+        "index": 358,
+        "file_offset": 52155824,
+        "value": 9975
+      },
+      {
+        "index": 414,
+        "file_offset": 52161910,
+        "value": "buy_min_out_from_snapshot"
+      }
+    ],
+    "pair_profiles": [
+      {
+        "index": 129,
+        "file_offset": 51332029,
+        "value": [
+          "U",
+          "0xcE24439F2D9C6a2289F741120FE202248B666666",
+          "direct_v3",
+          500
+        ]
+      },
+      {
+        "index": 131,
+        "file_offset": 51332097,
+        "value": [
+          "USDT",
+          "0x55d398326f99059fF775485246999027B3197955",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 135,
+        "file_offset": 51332237,
+        "value": [
+          "WBNB",
+          "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+          "native_wrap"
+        ]
+      },
+      {
+        "index": 137,
+        "file_offset": 51332308,
+        "value": [
+          "XAUt",
+          "0x21cAef8A43163Eea865baeE23b9C2E327696A3bf",
+          "via_usdt_v3",
+          500
+        ]
+      }
+    ]
+  },
+  "native_ranges": {
+    "converter_limits": {
+      "va_start": "0x141e840f5",
+      "va_end": "0x141e8413e",
+      "file_offset": 31995125,
+      "sha256": "664ca23e433f4945ed3741237ec6cf9eaa7ad4be5a52f604366f714ddfe01cf6"
+    },
+    "bot_init_gap_and_poll": {
+      "va_start": "0x14088ca6d",
+      "va_end": "0x14088cb14",
+      "file_offset": 8961645,
+      "sha256": "055df04ff56032f49297d012b461cc8eba4029ff29ff085a9f132dfa328447d9"
+    },
+    "buy_guard": {
+      "va_start": "0x14088eec0",
+      "va_end": "0x14088f2d6",
+      "file_offset": 8970944,
+      "sha256": "7907a6d87ecb4db1e3d15d59859c234565706994d6f3276c7ff4839839f6b49e"
+    },
+    "monitoring_gap_and_dip": {
+      "va_start": "0x14089817b",
+      "va_end": "0x140898f80",
+      "file_offset": 9008507,
+      "sha256": "5de2a437b1775a4003c45b74b3f581e5459c03280f701133e2c81fcd4076f37f"
+    },
+    "growth_and_two_down_moves": {
+      "va_start": "0x14089af00",
+      "va_end": "0x14089b509",
+      "file_offset": 9020160,
+      "sha256": "21c1f835405aac60a28b9904e65b3fd3fb893126a041fb9061f1582375b9cabd"
+    },
+    "tp_sl": {
+      "va_start": "0x14089b689",
+      "va_end": "0x14089be5e",
+      "file_offset": 9022089,
+      "sha256": "2ad66382624d8e78b42ec284c23d9b8ea2bef097ec12da13b6c2ab8aa7a3fe2e"
+    },
+    "buy_receipt_reference": {
+      "va_start": "0x14088fec0",
+      "va_end": "0x140892d00",
+      "file_offset": 8975040,
+      "sha256": "a738d1137800c4353d34cddf1fb8d0ef3760d3a2110856140ce879982025b3bd"
+    },
+    "sell_submission": {
+      "va_start": "0x1408965a1",
+      "va_end": "0x1408965e0",
+      "file_offset": 9001377,
+      "sha256": "4654d9298b9d511f027cae36ce968c613baa80702b749672c12e355315dde269"
+    },
+    "buy_snapshot_formula": {
+      "va_start": "0x141e63dc0",
+      "va_end": "0x141e65576",
+      "file_offset": 31863232,
+      "sha256": "d86eac83ef54560cca8b73771d06c5e7d5bbf83c92e46f9ae215406f756e1bfa"
+    }
+  }
+}

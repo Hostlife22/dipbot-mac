@@ -59,16 +59,71 @@ def test_live_sell_uses_only_tracked_amount(tmp_path):
     sold = []
     worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
         finish=lambda: None, swap=lambda pool, amount, buy, tolerance: sold.append(amount))
-    worker.chain = SimpleNamespace(balance=lambda *args: 1000)
+    worker.chain = SimpleNamespace(balance=lambda *args: 1000, price=lambda _: D("1.2"))
     worker.set_position(200, D(1))
     worker.strategy.bought(D(1))
     worker.close_position("STOP")
     assert sold == [200]
     assert not worker.position()
     assert worker.strategy.stopped
+    assert worker.strategy.base == D("1.2")
 
 
 def test_error_redaction():
     assert "https" not in safe_error(ValueError("https://node/private-api-key"))
     assert "11"*32 not in safe_error(ValueError("bad key " + "11"*32))
 
+
+
+def test_live_buy_uses_signal_guard_and_post_receipt_reference(tmp_path):
+    worker = Worker(Store(tmp_path / "state.json"))
+    worker.mode = "LIVE"
+    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.current_price = D(2)
+    worker.chain = SimpleNamespace(price=lambda _: D("2.1"))
+    guards = []
+    def swap(pool, amount, buy, tolerance, *, signal_minimum):
+        guards.append(signal_minimum)
+        return 10**16
+    worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
+        finish=lambda: None, swap=swap)
+    worker.open_position()
+    assert guards == [9_950_000_000_000_000]
+    assert worker.strategy.entry == D("2.1")
+    assert worker.position()["entry"] == "2.1"
+    assert worker.position()["amount"] == 10**16
+
+
+def test_slow_poll_setting_rejected(tmp_path):
+    worker = Worker(Store(tmp_path / "state.json"))
+    with pytest.raises(ValueError, match="0.55"):
+        worker.configure(config() | {"interval": 1})
+
+
+def test_confirmed_buy_price_read_failure_keeps_holdings_and_latch(tmp_path):
+    worker = Worker(Store(tmp_path / "state.json"))
+    worker.mode = "LIVE"
+    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.current_price = D(2)
+    def failed_price(_):
+        raise TimeoutError()
+    worker.chain = SimpleNamespace(price=failed_price)
+    def begin(_):
+        worker.store.data["operation"] = {"description": "BUY"}
+    def finish():
+        pytest.fail("Failed post-receipt read must not clear operation")
+    worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=begin,
+        finish=finish, swap=lambda *args, **kwargs: 10**16)
+    with pytest.raises(TimeoutError):
+        worker.open_position()
+    reloaded = Store(worker.store.path)
+    assert reloaded.data["positions"][worker.position_key()]["amount"] == 10**16
+    assert reloaded.data["operation"]
+
+
+def test_paper_tp_reference_is_spot_not_slippage_execution(tmp_path):
+    worker = Worker(Store(tmp_path / "state.json"))
+    worker.current_price = D(100)
+    worker.open_position()
+    assert worker.strategy.entry == 100
+    assert worker.paper.cost / worker.paper.position > worker.strategy.entry
