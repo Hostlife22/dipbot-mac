@@ -8,7 +8,7 @@ from PySide6.QtCore import QThread, Signal
 from eth_account import Account
 
 from .chain import Chain, Pool, WBNB, address, profiles
-from .storage import Store, Vault
+from .storage import Store, Vault, SaveAfterReplaceError
 from . import dynamic, wallet_registry
 from .routes import seed_preference
 from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minimum_out
@@ -16,6 +16,8 @@ from .trader import LiveTrader, PaperTrader, UncertainTransaction
 
 
 def safe_error(exc):
+    if type(exc) is SaveAfterReplaceError:
+        return "Файл заменён, но надёжность сохранения не подтверждена; проверьте сохранённое состояние"
     # Provider exceptions can contain RPC credentials. Do not log arbitrary text.
     if type(exc) in (ValueError, RuntimeError, UncertainTransaction):
         message = str(exc)
@@ -76,11 +78,17 @@ class Worker(QThread):
                 try:
                     self.command(name, data)
                 except Exception as exc:
-                    if name == "discover" and not self.discovery_current(data.get("generation")):
+                    if name in ("discover", "verify", "select") and not self.discovery_current(data.get("generation")):
                         continue
                     self.running = False
                     self.log.emit("ОШИБКА: " + safe_error(exc))
-                    self.event.emit("error", safe_error(exc))
+                    if name in ("discover", "verify", "select"):
+                        self.pool = None
+                        self.pool_generation = None
+                        self.discovery_emit(data.get("generation"), "pools", [])
+                        self.discovery_emit(data.get("generation"), "error", safe_error(exc))
+                    else:
+                        self.event.emit("error", safe_error(exc))
                 finally:
                     self.event.emit("busy", False)
                     self.status()
@@ -216,6 +224,7 @@ class Worker(QThread):
             if not self.discovery_current(generation):
                 return
             self.pool = None
+            self.pool_generation = None
             self.discovery_emit(generation, "pools", [])
             catalogs = {}
             routers = ("V2", "V3") if data["router"] == "AUTO" else (data["router"],)
@@ -234,13 +243,17 @@ class Worker(QThread):
         elif name == "verify":
             self.require_chain()
             pool = self.chain.verify_pool(data["pool"], data["token"])
-            # Discovery alone is not proof of converter availability.
-            self.event.emit("pools", [pool])
-            self.select_pool(pool)
+            generation = data.get("generation")
+            if not self.discovery_current(generation):
+                return
+            self.discovery_emit(generation, "pools", [pool])
+            self.select_pool(pool, generation=generation)
         elif name == "select":
-            self.select_pool(data["pool"])
+            self.select_pool(data["pool"], generation=data.get("generation"))
         elif name == "add_profile":
             self.require_chain()
+            if data.get("generation") is not None and data["generation"] != self.pool_generation:
+                raise ValueError("Ввод изменился: повторите AutoPair или CHECK POOL")
             if not self.pool:
                 raise ValueError("Сначала CHECK + ADD или AutoPair")
             # Recheck target pool too: selection may predate a liquidity change.
@@ -268,8 +281,10 @@ class Worker(QThread):
                     raise ValueError("Round-trip loss превышает 15%")
                 if self.pool.quote not in profiles().values():
                     symbol = self.chain.symbol(self.pool.quote) if hasattr(self.chain, "symbol") else None
-                    dynamic.upsert(self.store, self.pool, buy_route, max(0, (sample-returned)*10000//sample), symbol=symbol)
-                    self.event.emit("profiles", self.store.data["dynamic_profiles"])
+                    try:
+                        dynamic.upsert(self.store, self.pool, buy_route, max(0, (sample-returned)*10000//sample), symbol=symbol)
+                    finally:
+                        self.event.emit("profiles", self.store.data.get("dynamic_profiles", {}))
                     self.event.emit("selected", self.pool)
             self.log.emit("ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist")
         elif name == "remove_profile":
@@ -290,11 +305,15 @@ class Worker(QThread):
             for key, position in self.store.data.get("positions", {}).items():
                 if key.startswith(owner.lower() + ":") and position["pool"]["quote"].lower() == token.lower():
                     raise ValueError("Сначала закройте сохранённую позицию этой базы")
-            dynamic.remove(self.store, symbol)
-            self.pool = None
-            self.event.emit("pools", [])
-            self.event.emit("profiles", self.store.data.get("dynamic_profiles", {}))
-            self.event.emit("profile_removed", symbol)
+            try:
+                dynamic.remove(self.store, symbol)
+            finally:
+                if symbol not in self.store.data.get("dynamic_profiles", {}):
+                    self.pool = None
+                    self.pool_generation = None
+                    self.event.emit("pools", [])
+                    self.event.emit("profiles", self.store.data.get("dynamic_profiles", {}))
+                    self.event.emit("profile_removed", symbol)
         elif name in ("start", "buy"):
             self.configure(data)
             if self.mode == "LIVE":
@@ -472,6 +491,48 @@ class Worker(QThread):
         self.log.emit(f"{self.mode} SELL: {reason}")
 
     def sweep(self):
+        report = {"sold": [], "failed": [], "skipped": [], "remaining": {},
+                  "unknown": [], "status": "interrupted"}
+        tokens, checked = set(), set()
+        try:
+            completed = self._sweep(report, tokens, checked)
+            report["status"] = "completed" if completed else "stopped"
+            # STOP can arrive after a confirmed sale. Keep TP/SL consistent with
+            # the accounted position, but never reconcile a pending operation here.
+            if not self.store.data.get("operation"):
+                position = self.position()
+                self.strategy.entry = D(position["entry"]) if position else None
+        except Exception as exc:
+            report["status"] = "interrupted"
+            report["error"] = safe_error(exc)
+            raise
+        finally:
+            report["unknown"] = sorted(set(report["unknown"]) | (tokens - checked))
+            report["needs_reconciliation"] = bool(self.store.data.get("operation"))
+            self.event.emit("sweep_report", report)
+            status = {"completed": "завершён", "stopped": "остановлен",
+                      "interrupted": "прерван из-за ошибки"}[report["status"]]
+            self.log.emit(f"SWEEP {status}: продано {len(report['sold'])}, ошибок {len(report['failed'])}, "
+                          f"пропущено {len(report['skipped'])}, остатков {len(report['remaining'])}, "
+                          f"не проверено {len(report['unknown'])}")
+
+    def _account_sweep_token(self, token, residual):
+        """Update this wallet's tracked positions after a verified balance read."""
+        changed = False
+        positions = self.store.data.get("positions", {})
+        for key in list(positions):
+            if (key.startswith(self.live.owner.lower() + ":")
+                    and positions[key]["pool"]["token"].lower() == token.lower()):
+                if residual:
+                    amount = min(positions[key]["amount"], residual)
+                    changed |= amount != positions[key]["amount"]
+                    positions[key]["amount"] = amount
+                else:
+                    del positions[key]
+                    changed = True
+        return changed
+
+    def _sweep(self, report, tokens, checked):
         self.log.emit("SWEEP: зарегистрированные target, затем базовые активы → BNB")
         # Saved positions remain recoverable even if another selection replaced
         # the known-pool entry for the same target before a restart.
@@ -487,7 +548,14 @@ class Worker(QThread):
                       if registered and p["token"].lower() not in registered
                       and not any(s["token"].lower() == p["token"].lower() for s in saved)]
         pools = list({p["address"].lower(): p for p in candidates}.values())
-        failures, skipped, sold, seen_targets = [], list(dict.fromkeys(unassigned)), [], set()
+        failures, skipped, sold = report["failed"], report["skipped"], report["sold"]
+        skipped.extend(dict.fromkeys(unassigned))
+        seen_targets = set()
+        all_quotes = profiles() | self.store.data.get("dynamic_profiles", {})
+        all_quotes.update({"POOL-"+p["quote"]: p["quote"] for p in pools})
+        tokens.update(address(p["token"]) for p in pools)
+        tokens.update(address(t) for t in all_quotes.values())
+        tokens.update(address(t) for t in unassigned)
         catalogs = {router: dynamic.catalog(self.store,router) for router in ("V2","V3")}
         for raw in pools:
             if self.stop_event.is_set():
@@ -520,14 +588,21 @@ class Worker(QThread):
             self.live.begin("SWEEP TARGET " + pool.token)
             self.live.swap(pool,amount,False,self.strategy.settings.slippage,
                            simulate=True, deadline_seconds=60)
+            try:
+                residual = self.chain.balance(pool.token, self.live.owner)
+            except Exception:
+                # A receipt confirms execution, not that the token balance is zero.
+                # Keep the operation and position for reconciliation after restart.
+                raise UncertainTransaction("SWEEP подтверждён, но остаток TARGET не прочитан; нужна сверка") from None
             positions = self.store.data.get("positions", {})
             for key in list(positions):
                 if key.startswith(self.live.owner.lower()+":") and positions[key]["pool"]["token"].lower() == pool.token.lower():
-                    del positions[key]
+                    if residual:
+                        positions[key]["amount"] = min(positions[key]["amount"], residual)
+                    else:
+                        del positions[key]
             self.live.finish()
             sold.append(pool.token)
-        all_quotes = profiles() | self.store.data.get("dynamic_profiles", {})
-        all_quotes.update({"POOL-"+p["quote"]: p["quote"] for p in pools})
         seen = set()
         for symbol, token in wallet_registry.ordered_bases(all_quotes):
             token = address(token)
@@ -544,6 +619,10 @@ class Worker(QThread):
                 self.log.emit("SWEEP BASE: " + safe_error(exc))
                 continue
             if not amount:
+                if self._account_sweep_token(token, 0):
+                    self.store.save()
+                if token in skipped:
+                    skipped.remove(token)
                 continue
             original_router = getattr(self.live, "trade_router", None)
             try:
@@ -566,18 +645,19 @@ class Worker(QThread):
                     return
                 self.live.begin("SWEEP BASE " + symbol)
                 self.live.convert(token, amount, False, self.strategy.settings.slippage)
+                # A target can also be a catalog base (e.g. USDT). Its sale via
+                # Converter must account for positions just like a target swap.
+                residual = self.chain.balance(token, self.live.owner)
+                self._account_sweep_token(token, residual)
                 self.live.finish()
                 sold.append(token)
+                if not residual and token in skipped:
+                    skipped.remove(token)
             finally:
                 self.live.trade_router = original_router
-        # A skipped target still has an open position and must retain TP/SL.
-        position = self.position()
-        self.strategy.entry = D(position["entry"]) if position else None
-        remaining, unknown = {}, []
+        remaining, unknown = report["remaining"], report["unknown"]
         # Enumerated target balances are part of verification, not only the UI's
         # current TARGET. Failed reads must never be reported as zero.
-        tokens = {address(p["token"]) for p in pools} | {address(t) for t in all_quotes.values()} | set(unassigned)
-        checked = set()
         for token in sorted(tokens):
             if self.stop_event.is_set():
                 unknown.extend(sorted(tokens - checked))
@@ -589,6 +669,4 @@ class Worker(QThread):
                     remaining[token] = value
             except Exception:
                 unknown.append(token)
-        report = {"sold":sold,"failed":failures,"skipped":skipped,"remaining":remaining,"unknown":unknown}
-        self.event.emit("sweep_report",report)
-        self.log.emit(f"SWEEP завершён: продано {len(sold)}, ошибок {len(failures)}, пропущено {len(skipped)}, остатков {len(remaining)}, не проверено {len(unknown)}")
+        return not self.stop_event.is_set()

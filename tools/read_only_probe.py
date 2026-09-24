@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
-from dipbot.chain import Chain, WBNB, USDT, address
-from dipbot.discovery import discover, resolve, MULTICALL
+from dipbot.chain import Chain, WBNB, USDT, address, POOL_ABI
+from dipbot.discovery import discover, resolve, MULTICALL, batch, request
 
 ALLOWED = {'eth_chainId','eth_getBlockByNumber','eth_getCode','eth_call'}
 
@@ -30,6 +30,12 @@ def probe(endpoint):
     assert chain.w3.eth.get_code(address(MULTICALL))
     catalogs = {'V2':{'WBNB':WBNB},'V3':{'WBNB':WBNB}}
     candidates = discover(chain,address(USDT),catalogs,block)
+    # Compare batch and individual reads at the SAME block for every candidate.
+    requests = [request(c.pool.address,POOL_ABI,name) for c in candidates
+                for name in ('factory','token0','token1')]
+    batched = batch(chain,requests,block)
+    direct = [chain.call(addr,abi,name,*args,block=block) for addr,abi,name,args in requests]
+    assert [address(v) for v in batched] == [address(v) for v in direct]
     checked = []
     for router in ('V2','V3'):
         candidate = next(c for c in candidates if c.ready and c.pool.router == router)
@@ -44,6 +50,7 @@ def probe(endpoint):
     assert resolve(chain,WBNB,catalogs).state == 'CATALOG_TOKEN'
     return {'utc':datetime.now(timezone.utc).isoformat(),'discovery_block':block,
             'endpoint_host':urlsplit(endpoint).hostname,'candidates':len(candidates),'checked':checked,
+            'multicall_metadata_reads':len(requests),'multicall_matches_direct':True,
             'rpc_methods':dict(calls),'transactions_sent':0}
 
 

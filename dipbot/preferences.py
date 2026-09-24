@@ -1,5 +1,6 @@
 """Versioned Mac UI preferences. No credentials or automatic LIVE resume."""
 from .strategy import D, Settings
+from .storage import SaveAfterReplaceError
 
 FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic')
 
@@ -40,6 +41,10 @@ def save(store, value):
     store.data['ui_preferences'] = normalized
     try:
         store.save()
+    except SaveAfterReplaceError:
+        # Replacement already happened. Keep the visible new state, report the
+        # durability error, and do not pretend the on-disk change was rolled back.
+        raise
     except Exception:
         store.data = previous
         raise

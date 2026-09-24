@@ -1,0 +1,24 @@
+{
+  "utc": "2026-09-24T16:32:38.379341+00:00",
+  "platform": "cocoa",
+  "scenarios": [
+    "live_token_search_select_quote",
+    "live_pool_address_search",
+    "edit_during_worker_rpc_discards_late_result",
+    "synthetic_pending_retry_available",
+    "real_connection_failure_then_live_retry",
+    "settings_loaded_in_fresh_process",
+    "synthetic_add_and_restart_settings",
+    "synthetic_remove_and_second_restart"
+  ],
+  "transactions_sent": 0,
+  "rpc_methods": {
+    "eth_chainId": 78,
+    "eth_getBlockByNumber": 14,
+    "eth_getCode": 9,
+    "eth_call": 32
+  },
+  "dialogs": [
+    "ConnectionError: операция прервана. Проверьте RPC, баланс и доступность пула"
+  ]
+}

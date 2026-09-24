@@ -2,6 +2,7 @@
 from copy import deepcopy
 import time
 import re
+from .storage import SaveAfterReplaceError
 from .chain import address, profiles, WBNB, USDT, ETH, FEES, route_path
 
 MODES = {'direct_v2', 'direct_v3', 'via_usdt_v3', 'via_eth_v3', 'native_wrap'}
@@ -73,6 +74,10 @@ def persist(store, updated):
     store.data = updated
     try:
         store.save()
+    except SaveAfterReplaceError:
+        # Replacement already happened. Keep the visible new state, report the
+        # durability error, and do not pretend the on-disk change was rolled back.
+        raise
     except Exception:
         store.data = previous
         raise

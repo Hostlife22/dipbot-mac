@@ -82,6 +82,7 @@ class Window(QMainWindow):
         self.worker.log.connect(self.log)
         self.worker.event.connect(self.on_event)
         self.busy = False
+        self.searching = False
         self.running = False
         self.active_mode = "DEMO"
         self.locked = bool(self.store.data.get("operation"))
@@ -152,16 +153,18 @@ class Window(QMainWindow):
         if self.amount_key in self.pair_amounts:
             self.params["amount"].setText(self.pair_amounts[self.amount_key])
         self.auto_generation = 0
+        self.selection_ready = False
         self.autopair_timer = QTimer(self)
         self.autopair_timer.setSingleShot(True)
         self.autopair_timer.setInterval(220)
         self.autopair_timer.timeout.connect(self.auto_discover)
         self.token.textEdited.connect(self.schedule_autopair)
-        self.pool_input.textEdited.connect(self.invalidate_discovery)
+        self.pool_input.textEdited.connect(lambda: self.invalidate_discovery(clear_pool=False))
         self.router.currentTextChanged.connect(self.market_changed)
         self.quote.currentTextChanged.connect(self.market_changed)
         if self.locked:
             self.log("В журнале есть незавершённая LIVE-операция. Проведите сверку в настройках")
+        self.update_controls()
         self.worker.start()
 
     def button(self, text, callback, kind=None):
@@ -353,7 +356,7 @@ class Window(QMainWindow):
             "<p>STOP во время отправки ждёт receipt, затем закрывает позицию. При неизвестном статусе "
             "автоматическое закрытие невозможно; приложение сохраняет hash для сверки.</p>"
             "<p>Частота чтений зависит от RPC; эквивалентность оригиналу и задержка 100 мс не подтверждены. "
-            "Реальные сделки разработчиком не выполнялись. Перед использованием средств нужна проверка "
+            "Выполнены ограниченные LIVE-тесты V2/V3. Перед использованием средств нужна проверка "
             "на выделенном тестовом кошельке.</p>")
         text.setWordWrap(True)
         text.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -377,10 +380,16 @@ class Window(QMainWindow):
         self.params["amount"].setText(self.pair_amounts.get(self.amount_key, "0.02"))
         self.invalidate_discovery()
 
-    def invalidate_discovery(self, *_):
+    def invalidate_discovery(self, *_, clear_pool=True):
         self.auto_generation += 1
         self.worker.discovery_generation = self.auto_generation
         self.autopair_timer.stop()
+        self.selection_ready = False
+        self.candidates.clear()
+        if clear_pool:
+            self.pool_input.clear()
+        self.pool_label.setText("Пул не проверен · выполните AutoPair или CHECK POOL")
+        self.update_controls()
 
     def schedule_autopair(self, *_):
         self.invalidate_discovery()
@@ -401,8 +410,11 @@ class Window(QMainWindow):
             return
         if name in ("discover", "select", "verify", "connect"):
             self.invalidate_discovery()
-        if name == "discover":
+        if name in ("discover", "verify", "select", "add_profile"):
             data["generation"] = self.auto_generation
+        if name in ("discover", "verify", "select"):
+            self.pool_label.setText("Поиск и проверка маршрута…")
+        self.searching = name in ("discover", "verify", "select")
         self.busy = True
         self.update_controls()
         self.worker.submit(name, **data)
@@ -432,7 +444,10 @@ class Window(QMainWindow):
         self.send("sell")
 
     def stop_bot(self):
-        self.invalidate_discovery()
+        if self.searching or not self.selection_ready:
+            self.invalidate_discovery()
+        else:
+            self.autopair_timer.stop()
         self.worker.stop_event.set()
         self.log("STOP запрошен. Если сделка отправлена — ожидается receipt; затем закрытие позиции")
 
@@ -478,9 +493,9 @@ class Window(QMainWindow):
         blocked = self.quote.blockSignals(True)
         self.quote.clear()
         self.quote.addItems(["ALL"] + sorted(pairs, key=str.casefold))
-        self.quote.setCurrentText(selected if selected in pairs else "WBNB")
+        self.quote.setCurrentText(selected if selected == "ALL" or selected in pairs else "WBNB")
         self.quote.blockSignals(blocked)
-        if hasattr(self, "amount_key"):
+        if hasattr(self, "amount_key") and selected != self.quote.currentText():
             self.market_changed()
         self.table.setRowCount(len(pairs))
         for row, (symbol, token) in enumerate(sorted(pairs.items(), key=lambda x: x[0].casefold())):
@@ -493,10 +508,17 @@ class Window(QMainWindow):
                         "PAPER": "PAPER · Реальная цена BSC, виртуальные сделки. Выберите пул и нажмите START.",
                         "LIVE": "LIVE · Реальные средства. Укажите RPC, сохраните кошелёк и проверьте выбранный пул."}
         self.banner.setText(descriptions[mode])
+        if hasattr(self, "selection_ready"):
+            self.update_controls()
 
     def update_controls(self):
         for widget in self.editable + self.actions:
             widget.setEnabled(not self.busy and not self.running)
+        ready = self.mode.currentText() == "DEMO" or self.selection_ready
+        self.start.setEnabled(not self.busy and not self.running and ready)
+        self.buy.setEnabled(not self.busy and not self.running and ready)
+        if self.searching and not self.running:
+            self.token.setEnabled(True)
         self.sell.setEnabled(not self.busy)
         self.stop.setEnabled(True)
 
@@ -504,10 +526,14 @@ class Window(QMainWindow):
         if name == "discovery_event":
             generation, event_name, value = payload
             if generation == self.auto_generation:
+                if event_name == "error":
+                    self.pool_label.setText("Ошибка RPC/проверки · повторите AutoPair или CHECK POOL")
                 self.on_event(event_name, value)
             return
         if name == "busy":
             self.busy = payload
+            if not payload:
+                self.searching = False
         elif name == "error":
             self.footer.setText("ОШИБКА: " + payload)
             QMessageBox.warning(self, "Операция прервана", payload)
@@ -522,11 +548,14 @@ class Window(QMainWindow):
                                      "UNSUPPORTED_POOL": "Неподдерживаемый пул или базовая пара",
                                      "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
         elif name == "pools":
+            self.selection_ready = False
+            self.pool_input.clear()
             self.candidates.clear()
             self.pool_label.setText("Выберите проверенный маршрут" if payload else "Пул не выбран")
             for pool in payload:
                 self.candidates.addItem(pool.label, pool)
         elif name == "selected":
+            self.selection_ready = True
             self.remember_amount()
             self.router.blockSignals(True)
             self.quote.blockSignals(True)
@@ -542,6 +571,17 @@ class Window(QMainWindow):
             self.token.setText(payload.token)
             self.pool_label.setText(payload.label + "\nAMOUNT в активе " + payload.quote)
         elif name == "sweep_report":
+            status = {"completed": "завершён", "stopped": "остановлен — частичный результат",
+                      "interrupted": "прерван — частичный результат"}.get(payload.get("status"), "результат")
+            self.log("SWEEP: " + status)
+            if payload["sold"]:
+                self.log("SWEEP: обработаны активы: " + ", ".join(payload["sold"]))
+            if payload["failed"]:
+                self.log("SWEEP: ошибки по активам: " + ", ".join(payload["failed"]))
+            if payload.get("error"):
+                self.log("SWEEP: " + payload["error"])
+            if payload.get("needs_reconciliation"):
+                self.log("SWEEP: есть незавершённая операция; перед продолжением нужна сверка транзакций и балансов")
             for token, amount in payload["remaining"].items():
                 self.log(f"SWEEP остаток {token}: {amount} raw")
             if payload["unknown"]:
@@ -602,10 +642,16 @@ class Window(QMainWindow):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true", help="Offline GUI startup test, temporary state")
+    parser.add_argument("--paper-acceptance", help="Isolated read-only PAPER check directory")
+    parser.add_argument("--acceptance-seconds", type=int, default=600)
+    parser.add_argument("--acceptance-resume", action="store_true")
     args = parser.parse_args()
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
+    if args.paper_acceptance:
+        from .acceptance import run
+        return run(app, args.paper_acceptance, args.acceptance_seconds, args.acceptance_resume)
     if args.smoke_test:
         import tempfile
         from pathlib import Path

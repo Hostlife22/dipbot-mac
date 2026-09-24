@@ -1,0 +1,31 @@
+{
+  "utc": "2026-09-24T16:31:06.340354+00:00",
+  "discovery_block": 123789290,
+  "endpoint_host": "bsc-rpc.publicnode.com",
+  "candidates": 5,
+  "checked": [
+    {
+      "router": "V2",
+      "pool": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+      "fee": 0,
+      "buy_0_001_wbnb_raw": 782253100672686560,
+      "sell_1_usdt_raw": 1271974767447245
+    },
+    {
+      "router": "V3",
+      "pool": "0x172fcD41E0913e95784454622d1c3724f546f849",
+      "fee": 100,
+      "buy_0_001_wbnb_raw": 783926134937329493,
+      "sell_1_usdt_raw": 1275375243427420
+    }
+  ],
+  "multicall_metadata_reads": 15,
+  "multicall_matches_direct": true,
+  "rpc_methods": {
+    "eth_chainId": 110,
+    "eth_getBlockByNumber": 10,
+    "eth_getCode": 10,
+    "eth_call": 50
+  },
+  "transactions_sent": 0
+}
