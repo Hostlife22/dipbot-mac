@@ -70,6 +70,13 @@ class Worker(QThread):
                     self.status()
             if self.stop_event.is_set():
                 self.stop_event.clear()
+                # Discard commands queued before STOP was processed. In
+                # particular, a queued BUY must not restart trading afterwards.
+                while True:
+                    try:
+                        self.commands.get_nowait()
+                    except queue.Empty:
+                        break
                 try:
                     if self.running or self.paper.position or self.position():
                         self.close_position("STOP")
@@ -157,6 +164,8 @@ class Worker(QThread):
         self.paper.slippage = settings.slippage
 
     def command(self, name, data):
+        if self.stop_event.is_set() and name in ("start", "buy", "convert", "sweep"):
+            raise ValueError("STOP запрошен: новая торговая операция отменена")
         if self.running and name not in ("sell",):
             raise ValueError("Сначала остановите BOT")
         if name in ("connect", "discover", "verify", "select", "wallet", "remove_profile") and (self.paper.position or self.position()):
@@ -242,12 +251,15 @@ class Worker(QThread):
             self.event.emit("profiles", dynamic)
         elif name in ("start", "buy"):
             self.configure(data)
-            self.stop_event.clear()
+            if self.stop_event.is_set():
+                raise ValueError("STOP запрошен во время подготовки")
             if name == "start":
                 self.running = True
                 self.log.emit(f"START {self.mode}: DIP {self.strategy.settings.dip}% / TP {self.strategy.settings.take_profit}% / SL {self.strategy.settings.stop_loss}%")
             else:
                 self.read_price()
+                if self.stop_event.is_set():
+                    raise ValueError("STOP запрошен во время чтения цены")
                 self.open_position()
         elif name == "sell":
             self.close_position("MANUAL")

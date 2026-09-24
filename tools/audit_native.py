@@ -112,7 +112,7 @@ def constants(data, module):
     return result
 
 
-def inspect(exe, disassembly=None):
+def inspect(exe, disassembly=None, *, ranges=None):
     data = exe.read_bytes()
     if hashlib.sha256(data).hexdigest() != SHA256:
         raise ValueError("Different release: native addresses must be established again")
@@ -128,7 +128,7 @@ def inspect(exe, disassembly=None):
         engine.detail = True
         slots = {TABLES[name] + row["index"] * 8: f'{name}[{row["index"]}]={row["value"]!r}'
                  for name, rows in modules.items() for row in rows}
-    for name, (start, end) in RANGES.items():
+    for name, (start, end) in (RANGES if ranges is None else ranges).items():
         offset = start - 0x140001000 + 0x400  # .text of this hash-locked release
         code = data[offset:offset + end - start]
         report["native_ranges"][name] = {"va_start": hex(start), "va_end": hex(end),

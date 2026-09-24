@@ -55,21 +55,6 @@ def test_token_balance_change_below_minimum_latches_error():
         trader.swap(pool, 20, True, D(2))
 
 
-def test_sequential_converter_passes_actual_output_and_divides_tolerance():
-    trader = object.__new__(LiveTrader)
-    hops = [SimpleNamespace(name="first"), SimpleNamespace(name="second")]
-    trader.conversion_route = lambda *args: hops
-    calls = []
-    trader.wrap = lambda n: calls.append(("wrap", n))
-    def swap(pool, amount, buy, tolerance):
-        calls.append((pool.name, amount, buy, tolerance))
-        return amount * 2
-    trader.swap = swap
-    assert trader.convert(USDT, 10, True, D(2)) == 40
-    assert calls == [("wrap", 10), ("first", 10, True, D(1)), ("second", 20, True, D(1))]
-
-
-
 @pytest.mark.parametrize('returned,accepted', [(85, True), (84, False)])
 def test_converter_rejects_actual_amount_roundtrip_loss(returned, accepted):
     trader = object.__new__(LiveTrader)
@@ -77,10 +62,10 @@ def test_converter_rejects_actual_amount_roundtrip_loss(returned, accepted):
     calls = []
     def find(target, quote):
         return [pool] if (target, quote) == (address(USDT), address(WBNB)) else []
-    def quote(p, amount, buy):
-        calls.append((amount, buy))
-        return 200 if buy else returned
-    trader.chain = SimpleNamespace(find_pools=find, quote=quote)
+    def quote(p, amount, reverse=False):
+        calls.append((amount, not reverse))
+        return returned if reverse else 200
+    trader.chain = SimpleNamespace(find_pools=find, quote_route=quote)
     if accepted:
         assert trader.conversion_route(WBNB, USDT, 100) == [pool]
     else:

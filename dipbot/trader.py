@@ -7,7 +7,8 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError, TransactionNotFound
 
 from .chain import (Chain, Pool, TOKEN_ABI, V2_ABI, V3_ABI, V2_ROUTER, V3_ROUTER,
-                    V2_FACTORY, V3_FACTORY, WBNB, USDT, ETH, address)
+                    V2_FACTORY, V3_FACTORY, WBNB, USDT, ETH, address, route_path)
+from .routes import conversion_specs
 from .storage import Store
 from .strategy import D, minimum_out
 
@@ -39,11 +40,15 @@ class LiveTrader:
     def finish(self):
         if self.operation is None:
             raise RuntimeError("Нет активной операции")
-        history = self.store.data.setdefault("history", [])
-        history.append(self.operation)
-        self.store.data["history"] = history[-100:]
+        previous = self.store.data.copy()
+        self.store.data["history"] = (self.store.data.get("history", []) + [self.operation])[-100:]
         self.store.data.pop("operation", None)
-        self.store.save()
+        try:
+            self.store.save()
+        except Exception:
+            # Remain locked in this process even if fsync/replace outcome is unknown.
+            self.store.data = previous
+            raise
         self.operation = None
 
     def send(self, function, label, value=0):
@@ -145,59 +150,87 @@ class LiveTrader:
         self.send(self.chain.contract(WBNB, TOKEN_ABI).functions.withdraw(amount), "WBNB → BNB")
 
     def conversion_route(self, src, dest, amount):
-        """Compare direct and two-hop routes; public canonical factories only."""
+        """Quote original candidate order; retain safe alternatives per tier."""
         src, dest = address(src), address(dest)
+        if src == dest or not 0 < amount < 2**256:
+            raise ValueError("Некорректный маршрут / сумма Converter")
         routes = []
-        for bridge in (None, address(USDT), address(ETH)):
-            if bridge in (src, dest):
-                continue
-            nodes = [src, dest] if bridge is None else [src, bridge, dest]
-            path, output = [], amount
-            for left, right in zip(nodes, nodes[1:]):
-                choices = []
-                for pool in self.chain.find_pools(right, left):
-                    try:
-                        quoted = self.chain.quote(pool, output, True)
-                        if quoted > 0:
-                            choices.append((quoted, pool))
-                    except ContractLogicError:
-                        continue
-                if not choices:
+        cache = {}
+        for kind, nodes, fees in conversion_specs(src, dest):
+            path = []
+            for index, (left, right) in enumerate(zip(nodes, nodes[1:])):
+                pair = (left, right)
+                if pair not in cache:
+                    cache[pair] = self.chain.find_pools(right, left)
+                match = next((p for p in cache[pair] if p.router == kind
+                              and (kind == "V2" or p.fee == fees[index])), None)
+                if match is None:
                     break
-                output, pool = max(choices, key=lambda x: x[0])
-                path.append(pool)
+                path.append(match)
             else:
-                # Recheck the actual amount on the same pools in reverse before
-                # ranking. Original CONVERTER_MAX_ROUNDTRIP_LOSS_BPS is 1500.
-                returned = output
                 try:
-                    for pool in reversed(path):
-                        returned = self.chain.quote(pool, returned, False)
+                    output = self.chain.quote_route(path, amount)
+                    if output <= 0:
+                        continue
+                    returned = self.chain.quote_route(path, output, reverse=True)
                 except ContractLogicError:
                     continue
-                if returned * 10000 < amount * 8500:
-                    continue
-                routes.append((output, path))
+                # Keep the exact 15% bound; the original floors loss to integer bps.
+                if returned * 10000 >= amount * 8500:
+                    routes.append((output, path))
         if not routes:
             raise ValueError("Нет маршрута Converter с round-trip loss ≤ 15% для этой суммы")
         return max(routes, key=lambda item: item[0])[1]
 
     def convert(self, quote, amount, buy, slippage):
+        if not 0 < amount < 2**256 or not slippage.is_finite() or not 0 <= slippage <= 20:
+            raise ValueError("Некорректная сумма / Slippage Converter")
         quote = address(quote)
         if quote == address(WBNB):
             self.wrap(amount) if buy else self.unwrap(amount)
             return amount
-        src, dest = (WBNB, quote) if buy else (quote, WBNB)
+        src, dest = (address(WBNB), quote) if buy else (quote, address(WBNB))
         route = self.conversion_route(src, dest, amount)
-        if buy:
-            self.wrap(amount)
-        # The total tolerance is divided across sequential legs.
-        tolerance = slippage / len(route)
-        for pool in route:
-            amount = self.swap(pool, amount, True, tolerance)
+        route = [self.chain.verify_pool(p.address, p.token) for p in route]
+        tokens, packed = route_path(route)
+        if (tokens[0], tokens[-1]) != (src, dest):
+            raise ValueError("Маршрут не соответствует направлению Converter")
+        router, abi = self.verify_router(route[0])
+        minimum = minimum_out(self.chain.quote_route(route, amount), slippage)
         if not buy:
-            self.unwrap(amount)
-        return amount
+            if self.chain.balance(src, self.owner) < amount:
+                raise ValueError("Недостаточно базового актива")
+            self.approve(src, router, amount)
+        # Fresh preflight preserves the earlier minimum and round-trip constraint.
+        fresh = self.chain.quote_route(route, amount)
+        if self.chain.quote_route(route, fresh, reverse=True) * 10000 < amount * 8500:
+            raise ValueError("Round-trip loss изменился: Converter остановлен")
+        minimum = max(minimum, minimum_out(fresh, slippage))
+        native_sell = not buy and route[0].router == "V2"
+        before = (self.chain.w3.eth.get_balance(self.owner) if native_sell
+                  else self.chain.balance(dest, self.owner))
+        deadline = int(time.time()) + 60
+        functions = self.chain.contract(router, abi).functions
+        if route[0].router == "V2":
+            function = (functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                minimum, tokens, self.owner, deadline) if buy else
+                functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                    amount, minimum, tokens, self.owner, deadline))
+        else:
+            function = functions.exactInput((packed, self.owner, deadline, amount, minimum))
+        receipt = self.send(function, "CONVERTER BUY" if buy else "CONVERTER SELL",
+                            value=amount if buy else 0)
+        if native_sell:
+            received = self.chain.w3.eth.get_balance(self.owner) - before
+            received += receipt["gasUsed"] * receipt["effectiveGasPrice"]
+        else:
+            received = self.chain.balance(dest, self.owner) - before
+        if received < minimum:
+            raise UncertainTransaction("Converter подтверждён, но выход ниже minOut; нужна сверка")
+        if not buy and not native_sell:
+            # Like the original V3 SELL, unwrap only the newly received WBNB.
+            self.unwrap(received)
+        return received
 
     def reconcile(self):
         operation = self.store.data.get("operation")

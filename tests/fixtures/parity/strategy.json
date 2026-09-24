@@ -1,0 +1,18 @@
+{
+  "provenance": {"type": "STATIC_CONTROL_FLOW", "runtime_original": false, "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72", "va": ["0x14089af3a", "0x14089b135", "0x14089b3a9", "0x140898371", "0x14089ba36", "0x14089bc23"]},
+  "scenarios": [
+    {"id":"two_down", "ticks":[[0,"100",null,"100"],[0.1,"99",null,"100"],[0.2,"98",null,"98"]]},
+    {"id":"flat_keeps_streak", "ticks":[[0,"100",null,"100"],[0.1,"99",null,"100"],[0.2,"99",null,"100"],[0.3,"98",null,"98"]]},
+    {"id":"growth_below_old_high", "ticks":[[0,"100",null,"100"],[0.1,"99",null,"100"],[0.2,"99.5",null,"99.5"]]},
+    {"id":"buy_before_reanchor", "ticks":[[0,"100",null,"100"],[0.1,"98.5",null,"100"],[0.2,"97","BUY","100"]]},
+    {"id":"dip_below", "ticks":[[0,"100",null,"100"],[0.1,"97.0001",null,"100"]]},
+    {"id":"dip_above", "ticks":[[0,"100",null,"100"],[0.1,"96.9999","BUY","100"]]},
+    {"id":"gap_equal", "ticks":[[0,"100",null,"100"],[0.55,"90","BUY","100"]]},
+    {"id":"gap_above", "ticks":[[0,"100",null,"100"],[0.551,"90",null,"90"]]},
+    {"id":"tp_equal", "entry":"100", "ticks":[[1,"102","TAKE_PROFIT",null]]},
+    {"id":"tp_below", "entry":"100", "ticks":[[1,"101.9999",null,null]]},
+    {"id":"sl_equal", "entry":"100", "ticks":[[1,"95","STOP_LOSS",null]]},
+    {"id":"sl_above", "entry":"100", "ticks":[[1,"95.0001",null,null]]},
+    {"id":"gap_open_still_exits", "entry":"100", "ticks":[[0,"100",null,null],[4,"90","STOP_LOSS",null]]}
+  ]
+}

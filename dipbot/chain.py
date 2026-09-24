@@ -43,23 +43,32 @@ FACTORY_ABI = [fn("getPair", ("address", "address"), ("address",)),
                fn("getPool", ("address", "address", "uint24"), ("address",))]
 V2_ABI = [fn("factory", outputs=("address",)), fn("WETH", outputs=("address",)),
           fn("getAmountsOut", ("uint256", "address[]"), ("uint256[]",)),
+          fn("swapExactETHForTokensSupportingFeeOnTransferTokens",
+             ("uint256", "address[]", "address", "uint256"), mutability="payable"),
+          fn("swapExactTokensForETHSupportingFeeOnTransferTokens",
+             ("uint256", "uint256", "address[]", "address", "uint256"), mutability="nonpayable"),
           fn("swapExactTokensForTokensSupportingFeeOnTransferTokens",
              ("uint256", "uint256", "address[]", "address", "uint256"), mutability="nonpayable")]
 
 
 def tuple_fn(name, components, outputs):
-    result = fn(name, outputs=outputs, mutability="payable" if name == "exactInputSingle" else "nonpayable")
+    result = fn(name, outputs=outputs, mutability="payable" if name in ("exactInputSingle", "exactInput") else "nonpayable")
     result["inputs"] = [{"name": "params", "type": "tuple",
                          "components": [{"name": n, "type": t} for n, t in components]}]
     return result
 
 
 V3_ABI = [fn("factory", outputs=("address",)), fn("WETH9", outputs=("address",)),
+          tuple_fn("exactInput", [("path", "bytes"), ("recipient", "address"),
+                   ("deadline", "uint256"), ("amountIn", "uint256"),
+                   ("amountOutMinimum", "uint256")], ("uint256",)),
           tuple_fn("exactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
                    ("fee", "uint24"), ("recipient", "address"), ("deadline", "uint256"),
                    ("amountIn", "uint256"), ("amountOutMinimum", "uint256"),
                    ("sqrtPriceLimitX96", "uint160")], ("uint256",))]
-QUOTER_ABI = [tuple_fn("quoteExactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
+QUOTER_ABI = [fn("quoteExactInput", ("bytes", "uint256"),
+                ("uint256", "uint160[]", "uint32[]", "uint256"), "nonpayable"),
+             tuple_fn("quoteExactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
                 ("amountIn", "uint256"), ("fee", "uint24"), ("sqrtPriceLimitX96", "uint160")],
                 ("uint256", "uint160", "uint32", "uint256"))]
 
@@ -89,6 +98,32 @@ class Pool:
     def label(self):
         names = {v.lower(): k for k, v in profiles().items()}
         return f"{self.router} / {names.get(self.quote.lower(), self.quote[:10])} / {self.fee or 2500} · {self.address}"
+
+
+def route_path(route, reverse=False):
+    if not route or len(route) > 2:
+        raise ValueError("Converter требует один или два пула")
+    kind = route[0].router
+    if kind not in ("V2", "V3") or any(p.router != kind for p in route):
+        raise ValueError("Смешанный маршрут не может быть исполнен атомарно")
+    tokens = [address(route[0].quote)]
+    fees = []
+    for pool in route:
+        if address(pool.quote) != tokens[-1]:
+            raise ValueError("Разрыв маршрута Converter")
+        tokens.append(address(pool.token))
+        if kind == "V3" and pool.fee not in FEES:
+            raise ValueError("Неподдерживаемый fee tier")
+        fees.append(pool.fee)
+    if len(set(tokens)) != len(tokens):
+        raise ValueError("Циклический маршрут Converter")
+    if reverse:
+        tokens.reverse()
+        fees.reverse()
+    packed = bytes.fromhex(tokens[0][2:])
+    for fee, token in zip(fees, tokens[1:]):
+        packed += fee.to_bytes(3, "big") + bytes.fromhex(token[2:])
+    return tokens, packed
 
 
 class Chain:
@@ -211,3 +246,10 @@ class Chain:
         return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInputSingle",
                          (token_in, token_out, amount, pool.fee, 0))[0]
 
+    def quote_route(self, route, amount, reverse=False):
+        if not 0 < amount < 2**256:
+            raise ValueError("Сумма Converter вне диапазона")
+        tokens, packed = route_path(route, reverse)
+        if route[0].router == "V2":
+            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, tokens)[-1]
+        return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInput", packed, amount)[0]

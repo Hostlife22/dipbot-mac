@@ -1,0 +1,1170 @@
+{
+  "baseline_commit": "4f3e9860018f28f728c008cc0dd2d60af914777c",
+  "environment": {
+    "os": "macOS 26.6.2 (25G83)",
+    "architecture": "x86_64",
+    "python": "3.12.3",
+    "radare2": "6.1.0",
+    "r2ghidra": "6.1.0",
+    "capstone": "5.0.7"
+  },
+  "baseline": {
+    "tests_passed": 70,
+    "gui_smoke": "exit 0",
+    "working_tree": "clean"
+  },
+  "original_runtime": {
+    "executed": false,
+    "reason": "No isolated Windows VM or runtime configured; wine/qemu/prlctl not found in PATH. Activation excluded."
+  },
+  "native": {
+    "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+    "image_base": "0x140000000",
+    "decoded_counts": {
+      "bot": 245,
+      "trader": 536,
+      "pair_profiles": 170
+    },
+    "selected_constants": {
+      "bot": [
+        {
+          "index": 25,
+          "file_offset": 50726391,
+          "value": "entry_price"
+        },
+        {
+          "index": 28,
+          "file_offset": 50726444,
+          "value": "down_streak"
+        },
+        {
+          "index": 30,
+          "file_offset": 50726478,
+          "value": 0.55
+        },
+        {
+          "index": 31,
+          "file_offset": 50726487,
+          "value": "max_observation_gap_sec"
+        },
+        {
+          "index": 35,
+          "file_offset": 50726534,
+          "value": 0.103
+        },
+        {
+          "index": 36,
+          "file_offset": 50726543,
+          "value": 0.1
+        },
+        {
+          "index": 37,
+          "file_offset": 50726552,
+          "value": "price_poll_interval_sec"
+        },
+        {
+          "index": 56,
+          "file_offset": 50726805,
+          "value": 99.0
+        },
+        {
+          "index": 57,
+          "file_offset": 50726814,
+          "value": 100.0
+        },
+        {
+          "index": 112,
+          "file_offset": 50728012,
+          "value": 30
+        },
+        {
+          "index": 134,
+          "file_offset": 50728503,
+          "value": [
+            0.02
+          ]
+        },
+        {
+          "index": 140,
+          "file_offset": 50728561,
+          "value": [
+            0.05
+          ]
+        },
+        {
+          "index": 147,
+          "file_offset": 50728610,
+          "value": "buy_min_out_from_snapshot"
+        },
+        {
+          "index": 165,
+          "file_offset": 50729051,
+          "value": "growth"
+        },
+        {
+          "index": 166,
+          "file_offset": 50729059,
+          "value": 2
+        },
+        {
+          "index": 167,
+          "file_offset": 50729061,
+          "value": "2 down moves"
+        },
+        {
+          "index": 169,
+          "file_offset": 50729084,
+          "value": [
+            "TP"
+          ]
+        },
+        {
+          "index": 171,
+          "file_offset": 50729117,
+          "value": [
+            "SL"
+          ]
+        }
+      ],
+      "trader": [
+        {
+          "index": 128,
+          "file_offset": 52151968,
+          "value": 99.0
+        },
+        {
+          "index": 130,
+          "file_offset": 52151984,
+          "value": 100.0
+        },
+        {
+          "index": 139,
+          "file_offset": 52152131,
+          "value": [
+            100
+          ]
+        },
+        {
+          "index": 140,
+          "file_offset": 52152135,
+          "value": [
+            0
+          ]
+        },
+        {
+          "index": 141,
+          "file_offset": 52152139,
+          "value": [
+            99
+          ]
+        },
+        {
+          "index": 142,
+          "file_offset": 52152143,
+          "value": [
+            1
+          ]
+        },
+        {
+          "index": 165,
+          "file_offset": 52152415,
+          "value": 0.2
+        },
+        {
+          "index": 237,
+          "file_offset": 52153405,
+          "value": "CONVERTER_MAX_SLIPPAGE_BPS"
+        },
+        {
+          "index": 259,
+          "file_offset": 52153765,
+          "value": "CONVERTER_MAX_ROUNDTRIP_LOSS_BPS"
+        },
+        {
+          "index": 262,
+          "file_offset": 52153820,
+          "value": "CONVERTER_V2_TAX_BUFFER_BPS"
+        },
+        {
+          "index": 354,
+          "file_offset": 52155802,
+          "value": 500
+        },
+        {
+          "index": 355,
+          "file_offset": 52155805,
+          "value": 2000
+        },
+        {
+          "index": 356,
+          "file_offset": 52155808,
+          "value": 1500
+        },
+        {
+          "index": 358,
+          "file_offset": 52155824,
+          "value": 9975
+        },
+        {
+          "index": 414,
+          "file_offset": 52161910,
+          "value": "buy_min_out_from_snapshot"
+        }
+      ],
+      "pair_profiles": [
+        {
+          "index": 129,
+          "file_offset": 51332029,
+          "value": [
+            "U",
+            "0xcE24439F2D9C6a2289F741120FE202248B666666",
+            "direct_v3",
+            500
+          ]
+        },
+        {
+          "index": 131,
+          "file_offset": 51332097,
+          "value": [
+            "USDT",
+            "0x55d398326f99059fF775485246999027B3197955",
+            "direct_v2"
+          ]
+        },
+        {
+          "index": 135,
+          "file_offset": 51332237,
+          "value": [
+            "WBNB",
+            "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "native_wrap"
+          ]
+        },
+        {
+          "index": 137,
+          "file_offset": 51332308,
+          "value": [
+            "XAUt",
+            "0x21cAef8A43163Eea865baeE23b9C2E327696A3bf",
+            "via_usdt_v3",
+            500
+          ]
+        }
+      ]
+    },
+    "native_ranges": {
+      "converter_limits": {
+        "va_start": "0x141e840f5",
+        "va_end": "0x141e8413e",
+        "file_offset": 31995125,
+        "sha256": "664ca23e433f4945ed3741237ec6cf9eaa7ad4be5a52f604366f714ddfe01cf6"
+      },
+      "bot_init_gap_and_poll": {
+        "va_start": "0x14088ca6d",
+        "va_end": "0x14088cb14",
+        "file_offset": 8961645,
+        "sha256": "055df04ff56032f49297d012b461cc8eba4029ff29ff085a9f132dfa328447d9"
+      },
+      "buy_guard": {
+        "va_start": "0x14088eec0",
+        "va_end": "0x14088f2d6",
+        "file_offset": 8970944,
+        "sha256": "7907a6d87ecb4db1e3d15d59859c234565706994d6f3276c7ff4839839f6b49e"
+      },
+      "monitoring_gap_and_dip": {
+        "va_start": "0x14089817b",
+        "va_end": "0x140898f80",
+        "file_offset": 9008507,
+        "sha256": "5de2a437b1775a4003c45b74b3f581e5459c03280f701133e2c81fcd4076f37f"
+      },
+      "growth_and_two_down_moves": {
+        "va_start": "0x14089af00",
+        "va_end": "0x14089b509",
+        "file_offset": 9020160,
+        "sha256": "21c1f835405aac60a28b9904e65b3fd3fb893126a041fb9061f1582375b9cabd"
+      },
+      "tp_sl": {
+        "va_start": "0x14089b689",
+        "va_end": "0x14089be5e",
+        "file_offset": 9022089,
+        "sha256": "2ad66382624d8e78b42ec284c23d9b8ea2bef097ec12da13b6c2ab8aa7a3fe2e"
+      },
+      "buy_receipt_reference": {
+        "va_start": "0x14088fec0",
+        "va_end": "0x140892d00",
+        "file_offset": 8975040,
+        "sha256": "a738d1137800c4353d34cddf1fb8d0ef3760d3a2110856140ce879982025b3bd"
+      },
+      "sell_submission": {
+        "va_start": "0x1408965a1",
+        "va_end": "0x1408965e0",
+        "file_offset": 9001377,
+        "sha256": "4654d9298b9d511f027cae36ce968c613baa80702b749672c12e355315dde269"
+      },
+      "buy_snapshot_formula": {
+        "va_start": "0x141e63dc0",
+        "va_end": "0x141e65576",
+        "file_offset": 31863232,
+        "sha256": "d86eac83ef54560cca8b73771d06c5e7d5bbf83c92e46f9ae215406f756e1bfa"
+      },
+      "converter_bridge_fees": {
+        "va_start": "0x141e840c1",
+        "va_end": "0x141e840f5",
+        "file_offset": 31995073,
+        "sha256": "0da2b52a977c9353f780a9f7d7b91f71d192ad8fe5cdf5b4b5a9b748716cf47b"
+      },
+      "read_snapshot": {
+        "va_start": "0x14088e2e0",
+        "va_end": "0x14088e6cc",
+        "file_offset": 8967904,
+        "sha256": "435343cea1579868d93f9ecd8fa8e026ef78a14e9c51c9e32fb6345657e54ade"
+      },
+      "stop_request": {
+        "va_start": "0x1408a07c0",
+        "va_end": "0x1408a0c79",
+        "file_offset": 9042880,
+        "sha256": "32aecd4764d69338bf2e42b2f498c3f366b8b275629c3c5ae85c25e93da9dad4"
+      },
+      "read_price_wrapper": {
+        "va_start": "0x14088e6d0",
+        "va_end": "0x14088eebc",
+        "file_offset": 8968912,
+        "sha256": "191a92a718815aea80dc6f6e0577df284bd21d00d08c1dd74078e03582904037"
+      },
+      "preferred_buy_route": {
+        "va_start": "0x141e71fb0",
+        "va_end": "0x141e72aab",
+        "file_offset": 31921072,
+        "sha256": "c33160e97a1bbae7d460bc7222476d23df803118df65eb8f2789a3798f9553b8"
+      },
+      "buy_route_candidates": {
+        "va_start": "0x141e72ab0",
+        "va_end": "0x141e7427e",
+        "file_offset": 31923888,
+        "sha256": "58d8e92cd493f9c63d2014907bbf1c09aa8e7958a1f645820770fc3804512900"
+      },
+      "quote_route": {
+        "va_start": "0x141e74280",
+        "va_end": "0x141e75b60",
+        "file_offset": 31929984,
+        "sha256": "6f61df44fc61dd7bd014bd285396555fdb3340a791a42361a3f6d49ead3c5005"
+      },
+      "roundtrip_loss_bps": {
+        "va_start": "0x141e75b60",
+        "va_end": "0x141e76003",
+        "file_offset": 31936352,
+        "sha256": "e8dad9462251180f53e4712ed84f2b2d33cac851786a9fe0f62f64d62985455d"
+      },
+      "select_safe_route": {
+        "va_start": "0x141e76660",
+        "va_end": "0x141e795b2",
+        "file_offset": 31939168,
+        "sha256": "f30fb74c94e4296e136793007313e11a6698c0c3c7bf297caae10ad4fd7dbc39"
+      },
+      "execute_bnb_to_quote": {
+        "va_start": "0x141e7c400",
+        "va_end": "0x141e7e6be",
+        "file_offset": 31963136,
+        "sha256": "98c5b4a7fae1937f2bcdc9f5dc0caf99e6077a34d81b80279531e87f885bf421"
+      },
+      "execute_quote_to_bnb": {
+        "va_start": "0x141e7e6c0",
+        "va_end": "0x141e8126f",
+        "file_offset": 31972032,
+        "sha256": "12dcba07f84c0960b04d7254693742e739909934f7d76d9cc6d6568c55a8f99d"
+      }
+    },
+    "profile_metadata": [
+      {
+        "index": 55,
+        "file_offset": 51329266,
+        "value": [
+          "AAPLB",
+          "0x431a3bee82e2ca41e49895cbece5bb0f76a89b7a",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 57,
+        "file_offset": 51329342,
+        "value": [
+          "AMZNB",
+          "0x1a4b499833a79a09ad7cf1d42d7dacf71e92eb00",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 59,
+        "file_offset": 51329418,
+        "value": [
+          "ASTER",
+          "0x000Ae314E2A2172a039B26378814C252734f556A",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 61,
+        "file_offset": 51329489,
+        "value": [
+          "BABAB",
+          "0x4ef9d3062c7f6eba4aae4990c5036598c6eff4ec",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 63,
+        "file_offset": 51329565,
+        "value": [
+          "BMNRB",
+          "0x3548Da95a9eFFE481e8604664d75e95821e557F5",
+          "via_eth_v3",
+          10000
+        ]
+      },
+      {
+        "index": 65,
+        "file_offset": 51329639,
+        "value": [
+          "BNC4",
+          "0x7c8d5502b544dDAf8852Fc46D1174E34876D545C",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 67,
+        "file_offset": 51329713,
+        "value": [
+          "BTCB",
+          "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 69,
+        "file_offset": 51329783,
+        "value": [
+          "CRCLB",
+          "0x80f3d493ebce97e343c53d29a137942416b4ffc0",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 71,
+        "file_offset": 51329858,
+        "value": [
+          "DJTB",
+          "0xF2ec508422174Ee564de98187db9359D318AFB6b",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 73,
+        "file_offset": 51329933,
+        "value": [
+          "DRAMB",
+          "0x93862d63fd9fd488b1328e9b47717d75e994a84b",
+          "via_usdt_v3",
+          10000
+        ]
+      },
+      {
+        "index": 75,
+        "file_offset": 51330009,
+        "value": [
+          "FLNCB",
+          "0x4af1D41cd9dD950dcA43984b43aaA2A8702714Ac",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 77,
+        "file_offset": 51330084,
+        "value": [
+          "FORM",
+          "0x5b73A93b4E5e4f1FD27D8b3F8C97D69908b5E284",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 79,
+        "file_offset": 51330158,
+        "value": [
+          "GMEB",
+          "0x46ceefda28dd7207059ed19b0acdc026955bb15c",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 81,
+        "file_offset": 51330234,
+        "value": [
+          "GOOGLB",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 83,
+        "file_offset": 51330311,
+        "value": [
+          "HOODB",
+          "0xA394dCEa3fd3847fD793afBFd163E2e3858B7c65",
+          "direct_v3",
+          2500
+        ]
+      },
+      {
+        "index": 85,
+        "file_offset": 51330385,
+        "value": [
+          "INTCB",
+          "0xe614e2fc6c787035ff51f452e8e826bfd32d5283",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 87,
+        "file_offset": 51330461,
+        "value": [
+          "METAB",
+          "0x7425889fe94f9d693e8daefe88bcced6acfef4c0",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 89,
+        "file_offset": 51330537,
+        "value": [
+          "MRNAB",
+          "0x5fd86da9B05abE396fe9d02a4A213A7c00556503",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 91,
+        "file_offset": 51330613,
+        "value": [
+          "MSFTB",
+          "0x80106cb3EAD06659A5ad19DF39D9b4733863B9b0",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 93,
+        "file_offset": 51330689,
+        "value": [
+          "MSTRB",
+          "0xe87afb3076aeb0f9b14e368de8145ae6a2826a14",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 95,
+        "file_offset": 51330763,
+        "value": [
+          "MUB",
+          "0xcdf2f3e0fa43c47a6662a91c9e4a7c5f69762699",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 97,
+        "file_offset": 51330837,
+        "value": [
+          "NFLXB",
+          "0xd6829ea836b6fa224d099d40e54b31262f874631",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 99,
+        "file_offset": 51330912,
+        "value": [
+          "NOKB",
+          "0x7c4d7a180d737dd5a70d8065a90e6746a69c37ea",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 101,
+        "file_offset": 51330987,
+        "value": [
+          "NVDAB",
+          "0x02Fca66C1D1aFB4E2A7884261eB00F63598a7436",
+          "via_usdt_v3",
+          500
+        ]
+      },
+      {
+        "index": 103,
+        "file_offset": 51331062,
+        "value": [
+          "QQQB",
+          "0x205812CdBed920aFf76C6580abD681a46D11efc7",
+          "via_usdt_v3",
+          500
+        ]
+      },
+      {
+        "index": 105,
+        "file_offset": 51331137,
+        "value": [
+          "SKHYB",
+          "0xca750eF65f295BBECd685Abf54e82CAf297BDB61",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 107,
+        "file_offset": 51331213,
+        "value": [
+          "SNDKB",
+          "0x3ee4df61bd4f867e349beae8bfe07bc31b4850fb",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 109,
+        "file_offset": 51331289,
+        "value": [
+          "SNXXB",
+          "0x9e82e3da8f1115B73d24bB24113ab836FfDAb6b6",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 111,
+        "file_offset": 51331365,
+        "value": [
+          "SOXLB",
+          "0xd97d097a89113fa59b76c572e5b2eb647e8eefaf",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 113,
+        "file_offset": 51331441,
+        "value": [
+          "SOXSB",
+          "0xe28cd11c99af2df76bb8ada4cd0ef3904378280f",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 115,
+        "file_offset": 51331517,
+        "value": [
+          "SPCXB",
+          "0xbe9D156892E55e7154BcD3cB0FEA677F9D3103E1",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 117,
+        "file_offset": 51331592,
+        "value": [
+          "SPYB",
+          "0x7138b48df7D98D7e3cc221BfE7192D0a178182D8",
+          "via_usdt_v3",
+          500
+        ]
+      },
+      {
+        "index": 119,
+        "file_offset": 51331667,
+        "value": [
+          "SQQQB",
+          "0x25e572B466D152604D9E6C3e53B432B978825342",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 121,
+        "file_offset": 51331741,
+        "value": [
+          "SOL",
+          "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+          "direct_v3",
+          500
+        ]
+      },
+      {
+        "index": 123,
+        "file_offset": 51331813,
+        "value": [
+          "TQQQB",
+          "0x462B5F13B7C7748279358962925c5De83BB9E598",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 125,
+        "file_offset": 51331889,
+        "value": [
+          "TSLAB",
+          "0x5b1910eAaD6450E50f816082Aa078C41F10C292f",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 127,
+        "file_offset": 51331959,
+        "value": [
+          "TSMB",
+          "0xab78b89b5bb00236be0b4b20704cbfa04efc711c",
+          "via_usdt_v3",
+          2500
+        ]
+      },
+      {
+        "index": 129,
+        "file_offset": 51332029,
+        "value": [
+          "U",
+          "0xcE24439F2D9C6a2289F741120FE202248B666666",
+          "direct_v3",
+          500
+        ]
+      },
+      {
+        "index": 131,
+        "file_offset": 51332097,
+        "value": [
+          "USDT",
+          "0x55d398326f99059fF775485246999027B3197955",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 133,
+        "file_offset": 51332167,
+        "value": [
+          "USDT1",
+          "0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d",
+          "direct_v2"
+        ]
+      },
+      {
+        "index": 135,
+        "file_offset": 51332237,
+        "value": [
+          "WBNB",
+          "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+          "native_wrap"
+        ]
+      },
+      {
+        "index": 137,
+        "file_offset": 51332308,
+        "value": [
+          "XAUt",
+          "0x21cAef8A43163Eea865baeE23b9C2E327696A3bf",
+          "via_usdt_v3",
+          500
+        ]
+      }
+    ]
+  },
+  "commands": {
+    "native": "python -m tools.parity_native /path/to/DipBot.exe --output /tmp/native.json --disassembly /tmp/disassembly",
+    "quote_probe": "uv run --frozen python -m tools.measure_feed --count 5 --output /tmp/feed.json",
+    "regression": "uv run --frozen pytest -q"
+  },
+  "feed_probe": {
+    "kind": "READ_ONLY_RPC_MAC",
+    "runtime_original": false,
+    "rpc": "https://bsc-dataseed.binance.org",
+    "router": "V2",
+    "pool": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+    "time_utc": "2026-09-24T09:53:03Z",
+    "pause_seconds": 0.1,
+    "samples": [
+      {
+        "read_seconds": 0.39930555499995535,
+        "observation_gap_seconds": null,
+        "price": "0.00130554535361988405805283942021635764434887847507021183112513981861092137994076"
+      },
+      {
+        "read_seconds": 0.4067694320001465,
+        "observation_gap_seconds": 0.5075922160003756,
+        "price": "0.00130554535361988405805283942021635764434887847507021183112513981861092137994076"
+      },
+      {
+        "read_seconds": 0.4009030369998072,
+        "observation_gap_seconds": 0.504429835999872,
+        "price": "0.00130554535361988405805283942021635764434887847507021183112513981861092137994076"
+      },
+      {
+        "read_seconds": 0.40346912999939377,
+        "observation_gap_seconds": 0.5054223529996307,
+        "price": "0.00130554535361988405805283942021635764434887847507021183112513981861092137994076"
+      },
+      {
+        "read_seconds": 0.3975897600003009,
+        "observation_gap_seconds": 0.5017219560004378,
+        "price": "0.00130554535361988405805283942021635764434887847507021183112513981861092137994076"
+      }
+    ],
+    "median_read_seconds": 0.4009030369998072,
+    "max_read_seconds": 0.4067694320001465
+  },
+  "fixtures": [
+    {
+      "path": "tests/fixtures/parity/strategy.json",
+      "type": "STATIC_CONTROL_FLOW",
+      "runtime_original": false
+    }
+  ],
+  "findings": [
+    {
+      "id": "P01",
+      "parity": "STRATEGY_DEVIATION",
+      "severity": "HIGH",
+      "behavior_before": "Windows V2 native swap; V3 полный `exactInput`. Mac wrap + отдельные swaps: промежуточные активы, лишний газ и риск незавершённой цепочки",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED: BUY напрямую BNB; homogeneous V2/V3 path исполняется одной swap; V3 SELL затем отдельно unwrap только дельты",
+      "evidence": "S: `0x141e7ca84`, `0x141e7dc88`, `0x141e7ff8c`, `0x141e80938`; HIGH",
+      "files": [
+        "dipbot/chain.py",
+        "dipbot/trader.py"
+      ],
+      "test": "tests/test_parity_audit.py::test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped",
+      "expected_provenance": "STATIC_CONTROL_FLOW_AND_CONTRACT_ABI",
+      "root_cause": "Sequential per-leg swap workflow instead of original native full-path call.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x141e7ca84`, `0x141e7dc88`, `0x141e7ff8c`, `0x141e80938`; HIGH",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped -q"
+    },
+    {
+      "id": "P02",
+      "parity": "BUG",
+      "severity": "HIGH",
+      "behavior_before": "Windows сортирует котируемые маршруты и проверяет их обратные котировки. Mac выбирал один лучший pool каждого шага до проверки: отклонение лидера скрывало безопасный fee tier",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED: все кандидаты восстановленного списка котируются/проверяются; выбирается лучший безопасный",
+      "evidence": "S: `0x141e7718b`, `0x141e774d4`, `0x141e775d0`, `0x141e78d1c`; HIGH для отбора, каталог кандидатов отдельно P12",
+      "files": [
+        "dipbot/trader.py"
+      ],
+      "test": "tests/test_parity_audit.py::test_converter_tries_safe_alternative_after_best_quote_fails_roundtrip",
+      "expected_provenance": "STATIC_CONTROL_FLOW_AND_CONTRACT_ABI",
+      "root_cause": "Greedy pruning before reverse safety rejected viable alternative fee tiers.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x141e7718b`, `0x141e774d4`, `0x141e775d0`, `0x141e78d1c`; HIGH для отбора, каталог кандидатов отдельно P12",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_converter_tries_safe_alternative_after_best_quote_fails_roundtrip -q"
+    },
+    {
+      "id": "P03",
+      "parity": "BUG",
+      "severity": "MEDIUM",
+      "behavior_before": "Оригинальный converter использует 60 с; общий Mac swap использовал 30 с. Возможны лишние expiry/revert",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED: converter 60 с, торговый swap 30 с",
+      "evidence": "S: `0x141e7cddd`, `0x141e7dde6`, `0x141e800ca`; HIGH",
+      "files": [
+        "dipbot/trader.py"
+      ],
+      "test": "tests/test_parity_audit.py::test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped",
+      "expected_provenance": "STATIC_CONTROL_FLOW_AND_CONTRACT_ABI",
+      "root_cause": "Trading-swap deadline reused for converter.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x141e7cddd`, `0x141e7dde6`, `0x141e800ca`; HIGH",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped -q"
+    },
+    {
+      "id": "P04",
+      "parity": "BUG",
+      "severity": "CRITICAL",
+      "behavior_before": "Оригинальный STOP сохраняет force-stop при pending. Mac `command(buy/start)` очищал stop_event: запрос STOP до/во время подготовки мог пропасть",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED: отмена ещё не начатых операций, проверки после подготовки/чтения; при обработке STOP удаляются оставшиеся команды очереди; подтверждённый BUY затем закрывается",
+      "evidence": "S: `0x1408a07c0–0x1408a0c79`; очередь — I, не предполагаем одинаковый UI Windows; HIGH",
+      "files": [
+        "dipbot/worker.py"
+      ],
+      "test": "tests/test_parity_audit.py::test_worker_waits_for_buy_then_stop_closes_once_and_discards_queued_buy",
+      "expected_provenance": "MAC_SAFETY_INVARIANT",
+      "root_cause": "Pending STOP flag cleared by a queued BUY/start command.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x1408a07c0–0x1408a0c79`; очередь — I, не предполагаем одинаковый UI Windows; HIGH",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_worker_waits_for_buy_then_stop_closes_once_and_discards_queued_buy -q"
+    },
+    {
+      "id": "P05",
+      "parity": "BUG",
+      "severity": "CRITICAL",
+      "behavior_before": "Windows persistence UNKNOWN. Mac `finish()` удалял operation до сохранения: OSError оставлял диск заблокированным, а память — разблокированной",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED: при исключении save восстанавливаются operation/history в памяти; повторный finish не дублирует историю",
+      "evidence": "I; `trader.py:LiveTrader.finish`, fault injection. HIGH для Mac-багa, не parity-утверждение",
+      "files": [
+        "dipbot/trader.py"
+      ],
+      "test": "tests/test_parity_audit.py::test_finish_save_failure_keeps_latch_and_retry_does_not_duplicate_history",
+      "expected_provenance": "MAC_SAFETY_INVARIANT",
+      "root_cause": "In-memory operation removed before durable save, without rollback on exception.",
+      "confidence": "HIGH",
+      "confidence_reason": "I; `trader.py:LiveTrader.finish`, fault injection. HIGH для Mac-багa, не parity-утверждение",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_finish_save_failure_keeps_latch_and_retry_does_not_duplicate_history -q"
+    },
+    {
+      "id": "P06",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "HIGH",
+      "behavior_before": "Windows bot SELL передаёт minOut=1. Mac сохраняет slippage minimum; выход может отклониться при сильном падении",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: защиту не ослабляли",
+      "evidence": "S: `0x1408965a1–0x1408965db`; HIGH",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x1408965a1–0x1408965db`; HIGH"
+    },
+    {
+      "id": "P07",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "MEDIUM",
+      "behavior_before": "Windows converter V2 добавляет tax buffer 500 bps к slippage, ограничивает общую сумму 9500 bps. Mac не расширяет разрешённое проскальзывание на 5%",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: tax-токены могут давать revert при более строгом minOut; изменение требует отдельного решения",
+      "evidence": "S: `0x141e77cca–0x141e77efb`; HIGH",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x141e77cca–0x141e77efb`; HIGH"
+    },
+    {
+      "id": "P08",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "LOW",
+      "behavior_before": "Windows floor round-trip loss до целых bps; Mac проверяет точное ≤15%. Windows minOut снизу 1, Mac отклоняет округление до 0",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: граничные 15.00…%/dust отклоняются строже",
+      "evidence": "S: `0x141e75d75–0x141e75dfe`, snapshot formula; HIGH",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: `0x141e75d75–0x141e75dfe`, snapshot formula; HIGH"
+    },
+    {
+      "id": "P09",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "HIGH",
+      "behavior_before": "Windows wrapper вызывает `get_price_from_reserves`, Mac дополнительно проверяет chainId/блок; номинальная пауза не равна периоду наблюдений",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: проверки сохранены. Измерено 0.50–0.51 с между V2-наблюдениями, близко к gap 0.55 с",
+      "evidence": "S wrapper `0x14088e397`; READ_ONLY_RPC_MAC; HIGH для Mac, полное число внутренних запросов Windows не доказано",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S wrapper `0x14088e397`; READ_ONLY_RPC_MAC; HIGH для Mac, полное число внутренних запросов Windows не доказано"
+    },
+    {
+      "id": "P10",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "HIGH",
+      "behavior_before": "Windows цикл повторяет чтение после ошибки с паузой 0.05; Mac приостанавливает автоматический цикл",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: автоматический retry сделки/неоднозначного broadcast не добавлялся",
+      "evidence": "S: bot.start, прежние evidence/error branch; HIGH для общего отличия; все типы исключений Windows не разобраны",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S: bot.start, прежние evidence/error branch; HIGH для общего отличия; все типы исключений Windows не разобраны"
+    },
+    {
+      "id": "P11",
+      "parity": "INTENTIONAL_DIFFERENCE",
+      "severity": "MEDIUM",
+      "behavior_before": "Windows использует ensure_approve_max; Mac точечный approve, дополнительные preflight, snapshot/router bound и блокировка unknown transaction",
+      "resolution": "RETAINED_INTENTIONALLY",
+      "behavior_after_or_blocker": "RETAINED_INTENTIONALLY: больше RPC/задержка, но инварианты ТЗ сохраняются",
+      "evidence": "S SELL converter `0x141e7f60a`; Mac source/tests; HIGH",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S SELL converter `0x141e7f60a`; Mac source/tests; HIGH"
+    },
+    {
+      "id": "P12",
+      "parity": "UNKNOWN",
+      "severity": "HIGH",
+      "behavior_before": "Точный router-specific каталог AutoPair, приоритеты/равные котировки, cache invalidation, fee-pref и ADD/REMOVE оригинала восстановлены частично. Mac ищет прямые/двухшаговые V2/V3 через USDT/ETH; ADD BASE проверяет 0.01 WBNB и 10%",
+      "resolution": "BLOCKED",
+      "behavior_after_or_blocker": "BLOCKED: не хватает доказанной полной схемы построения/обновления динамических и router-specific профилей и AutoPair; нужны связанные GUI/AutoPair функции и трассы. Известная широта Mac-кандидатов не названа MATCH",
+      "evidence": "C/S `_preferred_buy_route`, `_buy_route_candidates`, pair_profiles; MEDIUM",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "MEDIUM",
+      "confidence_reason": "C/S `_preferred_buy_route`, `_buy_route_candidates`, pair_profiles; MEDIUM"
+    },
+    {
+      "id": "P13",
+      "parity": "UNKNOWN",
+      "severity": "HIGH",
+      "behavior_before": "Windows restart, восстановление старых остатков и полный Sweep не доказаны эквивалентными. Mac сохраняет позиции/операции, Sweep target→bases, останавливается на неоднозначной отправке",
+      "resolution": "BLOCKED",
+      "behavior_after_or_blocker": "BLOCKED: нужны ветви восстановления/сериализации и контролируемый crash/restart оригинала. Mock подтверждает Mac-инварианты, не Windows",
+      "evidence": "Частичные receipt callbacks + Mac source; LOW для оригинального restart",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "LOW",
+      "confidence_reason": "Частичные receipt callbacks + Mac source; LOW для оригинального restart"
+    },
+    {
+      "id": "P14",
+      "parity": "UNKNOWN",
+      "severity": "HIGH",
+      "behavior_before": "Исполнение оригинала на тех же RPC-ответах, reorg, разные типы токенов, длительная работа и точное float-поведение не проверены",
+      "resolution": "BLOCKED",
+      "behavior_after_or_blocker": "BLOCKED: нет настроенной изолированной Windows VM/runtime и replay harness оригинала. В PATH нет wine/qemu/prlctl; запуск EXE на основной системе не выполнялся",
+      "evidence": "Ограничение среды; уверенность в эквивалентности LOW",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "LOW",
+      "confidence_reason": "Ограничение среды; уверенность в эквивалентности LOW"
+    },
+    {
+      "id": "P15",
+      "parity": "MATCH",
+      "severity": "N/A",
+      "behavior_before": "DIP до переноса базы; growth относительно предыдущей цены, два снижения, flat сохраняет streak, gap строго >0.55, TP перед SL",
+      "resolution": "N/A",
+      "behavior_after_or_blocker": "Ограниченный MATCH: статические условия + 13 синтетических vectors, без реального Windows replay",
+      "evidence": "S и fixtures; HIGH для порядка, не для всех float-границ",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "HIGH",
+      "confidence_reason": "S и fixtures; HIGH для порядка, не для всех float-границ"
+    },
+    {
+      "id": "P16",
+      "parity": "MATCH",
+      "severity": "N/A",
+      "behavior_before": "Цена quote/token и единицы quote/token raw, V2/V3 ориентация, параметры BUY guard",
+      "resolution": "N/A",
+      "behavior_after_or_blocker": "Ограниченный MATCH: обычные входы; точная арифметика Mac и дополнительные bounds могут отличаться на границах",
+      "evidence": "S предыдущего аудита + `test_chain`, `test_strategy`; MEDIUM",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "MEDIUM",
+      "confidence_reason": "S предыдущего аудита + `test_chain`, `test_strategy`; MEDIUM"
+    },
+    {
+      "id": "P17",
+      "parity": "MATCH",
+      "severity": "N/A",
+      "behavior_before": "Нормальный STOP при pending BUY ждёт receipt и закрывает позицию; pending SELL завершается перед остановкой",
+      "resolution": "N/A",
+      "behavior_after_or_blocker": "Ограниченный MATCH: успешный сценарий и отсутствие дубликата в последовательном Worker. Ошибки receipt/reorg не покрыты этим MATCH",
+      "evidence": "S request_stop и контролируемая очередь; MEDIUM",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "MEDIUM",
+      "confidence_reason": "S request_stop и контролируемая очередь; MEDIUM"
+    },
+    {
+      "id": "P19",
+      "parity": "STRATEGY_DEVIATION",
+      "severity": "HIGH",
+      "behavior_before": "Mac потерял mode/fee 42 профилей, перебирал любые bridge/fee. Оригинал имеет preferred-first, bridge fee=100, ETH fallback только при via_eth_v3",
+      "resolution": "FIXED",
+      "behavior_after_or_blocker": "FIXED для статических профилей: routes.py, metadata и dedup сохраняют восстановленный порядок; dynamic/AutoPair остаются P12",
+      "evidence": "S: `0x141e72ab0`, `0x141e733e4`, `0x141e73b27`, `0x141e840c1`; C: 42 tuples; MEDIUM/HIGH по области",
+      "files": [
+        "dipbot/routes.py",
+        "dipbot/profiles.json"
+      ],
+      "test": "tests/test_parity_audit.py::test_original_converter_candidates_preference_bridge_fee_and_sell_reversal",
+      "expected_provenance": "STATIC_CONTROL_FLOW_AND_CONTRACT_ABI",
+      "root_cause": "Static converter mode/fee metadata lost when public profile catalog was flattened.",
+      "confidence": "MEDIUM",
+      "confidence_reason": "S: `0x141e72ab0`, `0x141e733e4`, `0x141e73b27`, `0x141e840c1`; C: 42 tuples; MEDIUM/HIGH по области",
+      "reproduce": "uv run --frozen pytest tests/test_parity_audit.py::test_original_converter_candidates_preference_bridge_fee_and_sell_reversal -q"
+    },
+    {
+      "id": "P18",
+      "parity": "UNKNOWN",
+      "severity": "LOW",
+      "behavior_before": "Mac настройки формируются UI, восстановление старой позиции использует сохранённый entry; полная Windows-политика defaults/persistence/migration не установлена",
+      "resolution": "BLOCKED",
+      "behavior_after_or_blocker": "BLOCKED: нужны GUI/config методы и изолированные конфиги Windows. Реальные пользовательские данные не исследовались",
+      "evidence": "Mac source, C; LOW",
+      "files": [],
+      "root_cause": "See behavior/evidence; unrecovered details remain UNKNOWN.",
+      "confidence": "LOW",
+      "confidence_reason": "Mac source, C; LOW"
+    }
+  ],
+  "read_only_path_quote": {
+    "type": "READ_ONLY_RPC_MAC",
+    "broadcast": false,
+    "original_runtime": false,
+    "pools": [
+      "0x172fcD41E0913e95784454622d1c3724f546f849",
+      "0xBe141893E4c6AD9272e8C04BAB7E6a10604501a5"
+    ],
+    "fees": [
+      100,
+      500
+    ],
+    "amount_in_raw": 1000000000000000,
+    "amount_out_raw": 289921091876462,
+    "reverse_out_raw": 998786887420339
+  },
+  "summary": {
+    "FIXED": 6,
+    "RETAINED_INTENTIONALLY": 6,
+    "BLOCKED": 4,
+    "MATCH": 3
+  },
+  "source_hashes": {
+    "dipbot/chain.py": "a9788213b3474f5b7994b6e7c6e67d92d4326c0152ab568df9a38cdf2af730a5",
+    "dipbot/trader.py": "18811b37e2935205ec6daf92f82ba33d8c0bf2d6de696b0558e070d951cfbb58",
+    "dipbot/worker.py": "61fb9255e0ae7b86b763acdd2c3db1a2810368b629623e7ea41a6ec18974cd3e",
+    "dipbot/routes.py": "eb179755bd7eb8dee5a6f7eca7bd3ef4e37f495a0686fdb2a82f5ed2877b9be9",
+    "dipbot/profiles.json": "db54008bcb837eb07bc01cf6b00e7bbd6dd5bb030ae8318d443a35985b7994c7",
+    "tests/test_parity_audit.py": "ac82ec703210817b1c45c725851646d0fd6ca88402162e7775d7fa169956123f",
+    "tests/fixtures/parity/strategy.json": "3a33c2fef11f2eebfcecb1573b49fc1c1eb3e83c9ff516b9870ae390aae7f68d"
+  },
+  "validation": {
+    "tests_passed": 101,
+    "tests_failed": 0,
+    "warning": "websockets.legacy DeprecationWarning",
+    "source_gui_smoke_exit": 0,
+    "build_exit": 0,
+    "bundle_cocoa_smoke_exit": 0,
+    "codesign_verify_exit": 0,
+    "git_diff_check_exit": 0,
+    "live_transactions": 0,
+    "original_runtime_executions": 0,
+    "architecture": "x86_64",
+    "artifact": "dist/DipBot Mac.app"
+  }
+}
