@@ -1,0 +1,40 @@
+{
+  "utc": "2026-09-24T13:49:22.707849+00:00",
+  "discovery_block": 123767739,
+  "candidates": 5,
+  "checked": [
+    {
+      "router": "V2",
+      "pool": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+      "fee": 0,
+      "buy_0_001_wbnb_raw": 774071431918779964,
+      "sell_1_usdt_raw": 1285419103155737
+    },
+    {
+      "router": "V3",
+      "pool": "0x172fcD41E0913e95784454622d1c3724f546f849",
+      "fee": 100,
+      "buy_0_001_wbnb_raw": 775083431041245522,
+      "sell_1_usdt_raw": 1290065733895734
+    }
+  ],
+  "rpc_methods": {
+    "eth_chainId": 78,
+    "eth_getBlockByNumber": 10,
+    "eth_getCode": 10,
+    "eth_call": 34
+  },
+  "transactions_sent": 0,
+  "endpoint_host": "bsc.nodereal.io",
+  "earlier_attempts": [
+    {
+      "endpoint_host": "bsc-dataseed-public.bnbchain.org",
+      "outcome": "connection refused before chainId"
+    },
+    {
+      "endpoint_host": "bsc-dataseed.bnbchain.org",
+      "outcome": "connection refused before chainId"
+    }
+  ],
+  "regression_fixed": "WBNB successful empty return for missing pool selectors"
+}

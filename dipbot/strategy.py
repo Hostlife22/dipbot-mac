@@ -11,8 +11,8 @@ class Settings:
     amount: D = D("0.02")
     dip: D = D("3")
     take_profit: D = D("2")
-    stop_loss: D = D("5")
-    slippage: D = D("2")
+    stop_loss: D = D("2")
+    slippage: D = D("3")
     dynamic: D = D("150")
     max_gap: float = 0.55
 

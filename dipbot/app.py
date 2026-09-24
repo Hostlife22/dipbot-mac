@@ -239,7 +239,7 @@ class Window(QMainWindow):
         self.params = {}
         for key, title, value in [("amount", "AMOUNT (базовый актив)", "0.02"),
                  ("dip", "DIP %", "3"), ("take_profit", "TP %", "2"),
-                 ("stop_loss", "STOP LOSS %", "5"), ("slippage", "SLIPPAGE %", "2"),
+                 ("stop_loss", "STOP LOSS %", "2"), ("slippage", "SLIPPAGE %", "3"),
                  ("dynamic", "DYNAMIC", "150")]:
             self.params[key] = self.field(value)
             grid.addRow(title, self.params[key])
@@ -518,7 +518,7 @@ class Window(QMainWindow):
             self.pool_label.setText({"PENDING": "PENDING · ожидается ликвидность; повторите AutoPair",
                                      "NOT_FOUND": "Пулы не найдены",
                                      "INVALID_CONTRACT": "По адресу нет контракта BSC",
-                                     "CATALOG_TOKEN": "Введена база профиля; нужен целевой токен",
+                                     "CATALOG_TOKEN": "Введён адрес базового профиля; выберите PAIR вручную",
                                      "UNSUPPORTED_POOL": "Неподдерживаемый пул или базовая пара",
                                      "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
         elif name == "pools":

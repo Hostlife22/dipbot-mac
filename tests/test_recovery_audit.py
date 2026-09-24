@@ -107,3 +107,28 @@ def test_add_profile_uses_whole_path_quotes(tmp_path, monkeypatch):
     worker.command('add_profile', {})
     assert calls == [10**15, 99*10**13]
     assert worker.pool.quote in Store(worker.store.path).data['dynamic_profiles'].values()
+
+
+def test_sweep_dust_is_attempted_once_and_leftover_reported(tmp_path):
+    worker,sent=sweep_worker(tmp_path)
+    worker.chain.balance=lambda token,owner:1 if token==POOL.token else 0
+    attempts=[];reports=[]
+    worker.live.swap=lambda *args,**kwargs:attempts.append(args[1])
+    worker.event.connect(lambda name,data:reports.append(data) if name=='sweep_report' else None)
+    worker.sweep()
+    assert attempts==[1] and len(sent)==1
+    assert reports[0]['remaining'][POOL.token]==1
+
+
+def test_sweep_preflight_failure_is_not_retried(tmp_path):
+    worker,sent=sweep_worker(tmp_path)
+    reads=[];reports=[]
+    def quote(*args):
+        reads.append(args)
+        raise TimeoutError('synthetic timeout')
+    worker.chain.quote=quote
+    worker.event.connect(lambda name,data:reports.append(data) if name=='sweep_report' else None)
+    worker.sweep()
+    assert len(reads)==1 and not sent
+    assert POOL.token in reports[0]['failed'] and reports[0]['remaining'][POOL.token]==200
+    assert worker.position()['amount']==200

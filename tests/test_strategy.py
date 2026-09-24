@@ -56,7 +56,7 @@ def test_amounts_round_down_and_never_zero():
     assert minimum_out(12345, D("0.5")) == 12283
     with pytest.raises(ValueError):
         minimum_out(1, D("20"))
-    assert Settings().buy_tolerance == D("0.5")
+    assert Settings().buy_tolerance == D("1.5")
     huge = 10**70 + 123456789
     assert minimum_out(huge, D("0.5")) == huge * 995 // 1000
     assert raw_amount(D("1.123456789012345678901234567890123456"), 36) == 1123456789012345678901234567890123456
@@ -101,7 +101,7 @@ def test_gap_boundary(gap, action):
 
 
 def test_dynamic_above_slippage_clamps_to_zero():
-    assert Settings(dynamic=D(201)).buy_tolerance == 0
+    assert Settings(dynamic=D(301)).buy_tolerance == 0
     assert Settings(slippage=D(0), dynamic=D(150)).buy_tolerance == 0
 
 

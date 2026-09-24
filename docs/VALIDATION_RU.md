@@ -1,5 +1,19 @@
 # Проверка DipBot Mac 0.1
 
+## Полный статический проход, 2026-09-24
+
+- `uv run --frozen pytest -q`: **245 passed**, 7.84 с; прежнее предупреждение websockets.legacy.
+- Source offscreen smoke, `./BUILD_MAC.command`, Cocoa smoke собранного Intel x86_64 приложения: exit 0.
+- `codesign --verify --deep --strict`: exit 0.
+- Реальный read-only BSC probe: пять кандидатов, V2/V3 canonical pools, Multicall, BUY/SELL quotes, CATALOG_TOKEN WBNB. Отправлено **0 транзакций**.
+- Первые два dataseed endpoint отказали в соединении; успешен bsc.nodereal.io. Discovery block 123767739; дальнейшие quotes не закреплены за этим блоком.
+- `tools.full_static_audit.report`: JSON повторно воспроизведён из EXE (с нормализацией tuple/list при JSON-сериализации).
+- `git diff HEAD --check`: без ошибок. Commit/push в этом проходе не выполнялись.
+- Windows EXE не запускался; реальные пользовательские настройки, лицензия и Keychain не использовались.
+
+[Изменения, свидетельства и ограничения](FULL_STATIC_AUDIT_RU.md), [RPC-результат](READ_ONLY_RPC_EVIDENCE.json). Ниже сохранены исторические результаты; их ограничения по RPC относятся к соответствующим проходам.
+
+
 ## Nonce/receipt, 2026-09-24
 
 - `uv run --frozen pytest -q`: **226 passed**, 7.04 с; одно прежнее предупреждение websockets.legacy.

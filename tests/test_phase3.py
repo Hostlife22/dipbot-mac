@@ -58,7 +58,7 @@ def test_resolver_address_kinds(monkeypatch,kind):
         answers=[[None]*3,[POOL.address],[V2_FACTORY,TOKEN,address(WBNB),(10,20,0)]];raw=TOKEN
     else:
         answers=[[None]*3];raw=WBNB if kind=='catalog' else TOKEN
-    monkeypatch.setattr(discovery,'batch',lambda *args: answers.pop(0))
+    monkeypatch.setattr(discovery,'batch',lambda *args, **kwargs: answers.pop(0))
     result=discovery.resolve(chain,raw,catalog)
     expected={'token':'RESOLVED','pool':'RESOLVED','empty_pool':'PENDING','catalog':'CATALOG_TOKEN',
               'no_code':'INVALID_CONTRACT','unsupported':'UNSUPPORTED_POOL'}[kind]
@@ -70,7 +70,7 @@ def test_bad_canonical_pool_cannot_resolve(monkeypatch):
     chain=SimpleNamespace(check=lambda:1,w3=SimpleNamespace(eth=SimpleNamespace(get_code=lambda *a,**k:b'x')))
     def reject(*a,**k): raise ValueError('forged')
     chain.verify_pool=reject
-    monkeypatch.setattr(discovery,'batch',lambda *a:[V2_FACTORY,TOKEN,WBNB])
+    monkeypatch.setattr(discovery,'batch',lambda *a, **kwargs:[V2_FACTORY,TOKEN,WBNB])
     assert discovery.resolve(chain,POOL.address,{'V2':{'WBNB':WBNB}}).state=='UNSUPPORTED_POOL'
 
 

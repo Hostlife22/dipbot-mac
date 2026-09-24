@@ -1,0 +1,1475 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "decoded_counts": {
+    "commercial_bootstrap": 207,
+    "bot": 245,
+    "trader": 536,
+    "gui": 1040,
+    "autopair": 223,
+    "dynamic_pairs": 323,
+    "runtime_config": 56,
+    "secure_store": 245,
+    "wallet_sweep": 343,
+    "commercial_features": 642
+  },
+  "tables": {
+    "commercial_bootstrap": "0x1429da7b0",
+    "bot": "0x1429d77d0",
+    "trader": "0x142a5f6d0",
+    "gui": "0x142a0cf60",
+    "autopair": "0x1429d6180",
+    "dynamic_pairs": "0x1429ed8b0",
+    "runtime_config": "0x142a5a5c0",
+    "secure_store": "0x142a5aa10",
+    "wallet_sweep": "0x142a6fd50",
+    "commercial_features": "0x1429db320"
+  },
+  "selected_constants": {
+    "commercial_bootstrap": [
+      {
+        "index": 88,
+        "file_offset": 50785233,
+        "value": [
+          "1.0"
+        ]
+      }
+    ],
+    "bot": [],
+    "trader": [
+      {
+        "index": 237,
+        "file_offset": 52153405,
+        "value": "CONVERTER_MAX_SLIPPAGE_BPS"
+      },
+      {
+        "index": 259,
+        "file_offset": 52153765,
+        "value": "CONVERTER_MAX_ROUNDTRIP_LOSS_BPS"
+      },
+      {
+        "index": 262,
+        "file_offset": 52153820,
+        "value": "CONVERTER_V2_TAX_BUFFER_BPS"
+      },
+      {
+        "index": 263,
+        "file_offset": 52153849,
+        "value": 9500
+      },
+      {
+        "index": 354,
+        "file_offset": 52155802,
+        "value": 500
+      },
+      {
+        "index": 355,
+        "file_offset": 52155805,
+        "value": 2000
+      },
+      {
+        "index": 356,
+        "file_offset": 52155808,
+        "value": 1500
+      }
+    ],
+    "gui": [
+      {
+        "index": 300,
+        "file_offset": 51192284,
+        "value": [
+          "0.02"
+        ]
+      },
+      {
+        "index": 304,
+        "file_offset": 51192328,
+        "value": [
+          "3"
+        ]
+      },
+      {
+        "index": 308,
+        "file_offset": 51192363,
+        "value": [
+          "2"
+        ]
+      },
+      {
+        "index": 315,
+        "file_offset": 51192459,
+        "value": [
+          "150"
+        ]
+      },
+      {
+        "index": 320,
+        "file_offset": 51192593,
+        "value": "sl"
+      },
+      {
+        "index": 609,
+        "file_offset": 51205641,
+        "value": "pair_amounts"
+      },
+      {
+        "index": 613,
+        "file_offset": 51205675,
+        "value": "trade_router"
+      },
+      {
+        "index": 614,
+        "file_offset": 51205689,
+        "value": "pair"
+      },
+      {
+        "index": 615,
+        "file_offset": 51205695,
+        "value": "trade"
+      },
+      {
+        "index": 616,
+        "file_offset": 51205702,
+        "value": "amount_wbnb"
+      },
+      {
+        "index": 618,
+        "file_offset": 51205745,
+        "value": "slippage_pct"
+      },
+      {
+        "index": 619,
+        "file_offset": 51205759,
+        "value": "dip_pct"
+      },
+      {
+        "index": 620,
+        "file_offset": 51205768,
+        "value": "dynamic_dip_x100"
+      },
+      {
+        "index": 621,
+        "file_offset": 51205786,
+        "value": "tp_pct"
+      },
+      {
+        "index": 622,
+        "file_offset": 51205794,
+        "value": "sl_pct"
+      },
+      {
+        "index": 623,
+        "file_offset": 51205802,
+        "value": "window"
+      }
+    ],
+    "autopair": [
+      {
+        "index": 114,
+        "file_offset": 50715730,
+        "value": "PROFILE_TOKEN"
+      },
+      {
+        "index": 115,
+        "file_offset": 50715745,
+        "value": "STATUS_CATALOG_TOKEN"
+      },
+      {
+        "index": 116,
+        "file_offset": 50715767,
+        "value": "Address is already a configured quote profile: "
+      }
+    ],
+    "dynamic_pairs": [
+      {
+        "index": 146,
+        "file_offset": 50964952,
+        "value": "REGISTRY_PURPOSE"
+      },
+      {
+        "index": 148,
+        "file_offset": 50964978,
+        "value": "REGISTRY_KIND"
+      },
+      {
+        "index": 149,
+        "file_offset": 50964993,
+        "value": [
+          "version",
+          0
+        ]
+      },
+      {
+        "index": 150,
+        "file_offset": 50965006,
+        "value": "REGISTRY_VERSION"
+      },
+      {
+        "index": 152,
+        "file_offset": 50965061,
+        "value": "pairs"
+      }
+    ],
+    "runtime_config": [],
+    "secure_store": [
+      {
+        "index": 24,
+        "file_offset": 52123510,
+        "value": "secure_vault.dat"
+      },
+      {
+        "index": 27,
+        "file_offset": 52123564,
+        "value": "ui_state.json"
+      },
+      {
+        "index": 50,
+        "file_offset": 52123846,
+        "value": "_entropy_for_purpose"
+      },
+      {
+        "index": 80,
+        "file_offset": 52124423,
+        "value": "_windows_dpapi"
+      },
+      {
+        "index": 151,
+        "file_offset": 52125431,
+        "value": "validate_runtime_settings"
+      },
+      {
+        "index": 152,
+        "file_offset": 52125458,
+        "value": {
+          "dict": [
+            [
+              "kind",
+              "runtime-settings"
+            ]
+          ]
+        }
+      },
+      {
+        "index": 153,
+        "file_offset": 52125484,
+        "value": {
+          "dict": [
+            [
+              "version",
+              1
+            ]
+          ]
+        }
+      },
+      {
+        "index": 156,
+        "file_offset": 52125535,
+        "value": "runtime-settings"
+      }
+    ],
+    "wallet_sweep": [],
+    "commercial_features": [
+      {
+        "index": 347,
+        "file_offset": 50796985,
+        "value": "STATUS_CATALOG_TOKEN"
+      },
+      {
+        "index": 348,
+        "file_offset": 50797007,
+        "value": [
+          "AUTOPAIR • введён адрес базового профиля, а не целевого токена; выберите PAIR вручную",
+          "manual"
+        ]
+      },
+      {
+        "index": 374,
+        "file_offset": 50798081,
+        "value": [
+          "position",
+          "refresh_balance",
+          "balance_snapshot"
+        ]
+      },
+      {
+        "index": 507,
+        "file_offset": 50800953,
+        "value": 220
+      }
+    ]
+  },
+  "native_ranges": {
+    "trader_init": {
+      "va_start": "0x141e55f60",
+      "va_end": "0x141e58081",
+      "file_offset": 31806304,
+      "sha256": "a5b2724a29d7fd93fcc3421ba28cfcc7a62bdc629b2f2a167498502b3a5a4ca2"
+    },
+    "converter_slippage": {
+      "va_start": "0x141e76010",
+      "va_end": "0x141e76660",
+      "file_offset": 31937552,
+      "sha256": "53a3d33ef813c0504c05fe39f81bf1ee5b6f558bf3c090184fab48d6de370566"
+    },
+    "select_safe_route": {
+      "va_start": "0x141e76660",
+      "va_end": "0x141e795b2",
+      "file_offset": 31939168,
+      "sha256": "f30fb74c94e4296e136793007313e11a6698c0c3c7bf297caae10ad4fd7dbc39"
+    },
+    "execute_quote_to_bnb": {
+      "va_start": "0x141e7e6c0",
+      "va_end": "0x141e8126f",
+      "file_offset": 31972032,
+      "sha256": "12dcba07f84c0960b04d7254693742e739909934f7d76d9cc6d6568c55a8f99d"
+    },
+    "decode": {
+      "va_start": "0x14085b8c0",
+      "va_end": "0x14085bcc4",
+      "file_offset": 8760512,
+      "sha256": "283623d5c64928f32f5a413a97e3329dc2e2accfb9cfbe96f34ad6704908d0d1"
+    },
+    "catalog_matches": {
+      "va_start": "0x140862160",
+      "va_end": "0x14086337b",
+      "file_offset": 8787296,
+      "sha256": "07eed57e7ff264e9f7235eeaa00521d2af9bdc34918d7e8fb6f315847093ac92"
+    },
+    "resolve": {
+      "va_start": "0x140868f00",
+      "va_end": "0x14086a3f6",
+      "file_offset": 8815360,
+      "sha256": "e639bb51148dd733582e644dae9db022879b70cf54e35d63a57a47fbd8d37bcc"
+    },
+    "autopair_start": {
+      "va_start": "0x140909fa0",
+      "va_end": "0x14090ab1a",
+      "file_offset": 9474976,
+      "sha256": "dc79435faa7f36fdc1fb510292b8160307fc04f5ea4ac4050112af868a8b5463"
+    },
+    "handle_event": {
+      "va_start": "0x140910780",
+      "va_end": "0x140911149",
+      "file_offset": 9501568,
+      "sha256": "0d1bab86503060e0828a713a896b4b024be60d4e80189854bd18b849d5f2834f"
+    },
+    "handle_autopair_result": {
+      "va_start": "0x14090cac0",
+      "va_end": "0x14090fd85",
+      "file_offset": 9486016,
+      "sha256": "25c909df466a6be958495294787115f30ec24512e87b53deef24f25b32c67a62"
+    },
+    "recreate_trader": {
+      "va_start": "0x140921950",
+      "va_end": "0x140922001",
+      "file_offset": 9571664,
+      "sha256": "cae1be4865a8f5d10bb52a7da1080c5ad6579bf435f59e605cc0da7e571119bc"
+    },
+    "change_router": {
+      "va_start": "0x14091aa70",
+      "va_end": "0x14091b042",
+      "file_offset": 9543280,
+      "sha256": "9de102decfa6d6692f098bdf1740100cdc1dd7ee7f412bd739f08262fd590afc"
+    },
+    "change_pair": {
+      "va_start": "0x14091b050",
+      "va_end": "0x14091b622",
+      "file_offset": 9544784,
+      "sha256": "879446d1541dd16eb3bafbc6d385c1db106be5b1227973bed749e385438799d5"
+    },
+    "registry_key": {
+      "va_start": "0x140bb5430",
+      "va_end": "0x140bb58d5",
+      "file_offset": 12273712,
+      "sha256": "370b3deb40461b1ed026afd1182706db4e607e035eca3b922fbc2493c82ab1de"
+    },
+    "registry_record": {
+      "va_start": "0x140bb58e0",
+      "va_end": "0x140bb7420",
+      "file_offset": 12274912,
+      "sha256": "1b473f10282333824aafd68791a9fd6d0a33d150d53e07078357fdb4374fec03"
+    },
+    "registry_load": {
+      "va_start": "0x140bb7420",
+      "va_end": "0x140bb914c",
+      "file_offset": 12281888,
+      "sha256": "d1820a78022f9578a4b9616c6b8e68929661c936a55b29085da4df443641c0ee"
+    },
+    "registry_unique_name": {
+      "va_start": "0x140bbbcd0",
+      "va_end": "0x140bbe272",
+      "file_offset": 12300496,
+      "sha256": "35c219aff2edbd7be50f7cd947415e6fc24e5b10fe8c181dfdd7b6d24814971d"
+    },
+    "ui_load": {
+      "va_start": "0x140f32a00",
+      "va_end": "0x140f35da2",
+      "file_offset": 15932928,
+      "sha256": "13870513cee3d45cf0b1bb49b256725ecf1f454e9f4a3435f21e076f186ad909"
+    },
+    "ui_save": {
+      "va_start": "0x140f35db0",
+      "va_end": "0x140f374a0",
+      "file_offset": 15946160,
+      "sha256": "b8c5908efe0024934becb18ad86b93c193f007d8799cac6a5c3fdb9cc2bd8b33"
+    },
+    "ui_trade_defaults": {
+      "va_start": "0x140f144a0",
+      "va_end": "0x140f14b90",
+      "file_offset": 15808672,
+      "sha256": "42fbe169a8f4066a73b8d4dfea75295540465df3744e381e67f46cc196f75019"
+    },
+    "entropy": {
+      "va_start": "0x141dc4550",
+      "va_end": "0x141dc4c66",
+      "file_offset": 31209808,
+      "sha256": "e7dccba6ee6ecf047ee30aafab6cc4cfdcc9d26953455cac804b36340c77f98c"
+    },
+    "protect": {
+      "va_start": "0x141dcaf40",
+      "va_end": "0x141dcb517",
+      "file_offset": 31236928,
+      "sha256": "9107a26cb9d7c00cd0c78ccb065aa6a6fb384e876b78f65d47d064b13d22e67e"
+    },
+    "unprotect": {
+      "va_start": "0x141dcb520",
+      "va_end": "0x141dcbaf7",
+      "file_offset": 31238432,
+      "sha256": "a94442022ff9f18ff6fcb4940d2d370d05210b5d6cdb81bb211d55394dd2b94b"
+    },
+    "runtime_save": {
+      "va_start": "0x141dc0d20",
+      "va_end": "0x141dc1257",
+      "file_offset": 31195424,
+      "sha256": "735c7f17e49d7f65938e7389bd67d7b7a904d292f7cbf8a433760e3e54469feb"
+    },
+    "runtime_reset": {
+      "va_start": "0x141dc1260",
+      "va_end": "0x141dc147d",
+      "file_offset": 31196768,
+      "sha256": "7e61492e67f4bdf76d410d30911321fbac58a7a7c99c153113209b7f5284a422"
+    },
+    "sweep_run": {
+      "va_start": "0x142099f30",
+      "va_end": "0x1420a00d6",
+      "file_offset": 34181936,
+      "sha256": "ed1cf1a25d5dcbcb944419f5ea235a64d57c9d805821dcdaf465b3a144c6bb22"
+    }
+  },
+  "direct_references": {
+    "autopair": {
+      "trade_ready": [
+        "0x14085813d",
+        "0x14086d047",
+        "0x14086d0be"
+      ],
+      "ready": [
+        "0x140858705",
+        "0x140858dda",
+        "0x140859348",
+        "0x140859f7b",
+        "0x14086c52b"
+      ],
+      "_encode_transaction_data": [
+        "0x14085d7d5",
+        "0x14085eb27",
+        "0x140863b66",
+        "0x1408646a8",
+        "0x14086633f"
+      ]
+    },
+    "bot": {
+      "_read_price": [
+        "0x14088beab",
+        "0x140890ff6",
+        "0x14089428a",
+        "0x1408a1b57",
+        "0x1408a1b8d"
+      ],
+      "_read_snapshot": [
+        "0x14088befd",
+        "0x14088e77c",
+        "0x14089de4e",
+        "0x14089f62e",
+        "0x1408a1ad8",
+        "0x1408a1b07"
+      ],
+      "_wait_receipt_async": [
+        "0x14088c045",
+        "0x14088f358",
+        "0x140890023",
+        "0x14089303e",
+        "0x1408a1c63",
+        "0x1408a1c99"
+      ],
+      "set_state": [
+        "0x14088c18d",
+        "0x14088faa0",
+        "0x1408904a1",
+        "0x140890afd",
+        "0x14089162f",
+        "0x14089258b",
+        "0x140892a8e",
+        "0x140893303",
+        "0x14089383a",
+        "0x140893942",
+        "0x14089494b",
+        "0x140894a46",
+        "0x140895ffa",
+        "0x140896abc",
+        "0x140897202",
+        "0x14089731a",
+        "0x14089a716",
+        "0x14089ace4",
+        "0x14089cda7",
+        "0x14089fa40",
+        "0x1408a0bd8",
+        "0x1408a194e",
+        "0x1408a1984"
+      ],
+      "state": [
+        "0x14088c917",
+        "0x14088d3a0",
+        "0x14088d3bd",
+        "0x14089817b",
+        "0x140898a01",
+        "0x14089b5eb",
+        "0x14089d80d",
+        "0x14089d9d9",
+        "0x1408a0481",
+        "0x1408a0843",
+        "0x1408a0962",
+        "0x1408a0a5a"
+      ],
+      "_http_reads": [
+        "0x14088cbdf",
+        "0x14088e475",
+        "0x14088e4c3",
+        "0x140899b50",
+        "0x14089d15f",
+        "0x14089e8c7",
+        "0x14089f3d0"
+      ],
+      "call_soon_threadsafe": [
+        "0x14088d7f8"
+      ],
+      "to_thread": [
+        "0x14088f520",
+        "0x140890f68",
+        "0x140891980",
+        "0x140892127",
+        "0x140894222",
+        "0x14089ddcd",
+        "0x14089f5b6"
+      ],
+      "open": [
+        "0x14089b603",
+        "0x14089d9f1",
+        "0x1408a04a3",
+        "0x1408a0864"
+      ]
+    },
+    "commercial_bootstrap": {
+      "load_secure_settings": [
+        "0x1408e5d57",
+        "0x1408e5d9b",
+        "0x1408e5dc4",
+        "0x1408e5de2",
+        "0x1408eb463",
+        "0x1408ee756",
+        "0x1408eebca",
+        "0x1408f051b",
+        "0x1408f0539",
+        "0x1408f055d"
+      ],
+      "_save": [
+        "0x1408e630f",
+        "0x1408eb2e0",
+        "0x1408f17fc",
+        "0x1408f182b"
+      ],
+      "ensure_commercial_ready": [
+        "0x1408e6361",
+        "0x1408f1dbe",
+        "0x1408f1df4"
+      ],
+      "setReadOnly": [
+        "0x1408e6bb7"
+      ],
+      "saved": [
+        "0x1408e9bfe",
+        "0x1408ed343",
+        "0x1408eeb4d",
+        "0x1408ef1df"
+      ],
+      "save_button": [
+        "0x1408eacbb",
+        "0x1408ead00",
+        "0x1408eaf9f",
+        "0x1408eb22b"
+      ],
+      "save_secure_settings": [
+        "0x1408ece7b",
+        "0x1408ecec0",
+        "0x1408ecee9",
+        "0x1408ecf07",
+        "0x1408ecf27",
+        "0x1408f0586",
+        "0x1408f05a4",
+        "0x1408f05c4"
+      ]
+    },
+    "commercial_features": {
+      "QTimer": [
+        "0x1408f3447",
+        "0x1408f348b",
+        "0x1408f34b4",
+        "0x1408f34d2",
+        "0x1408f84ed",
+        "0x1408f98f5",
+        "0x1409061fc",
+        "0x140908ed3",
+        "0x140910df7",
+        "0x140914073",
+        "0x140914546",
+        "0x1409189b0",
+        "0x140918ac9",
+        "0x140921d6f",
+        "0x140923db1",
+        "0x140923dcb",
+        "0x140923df7"
+      ],
+      "threading": [
+        "0x1408f46a7",
+        "0x1408f46eb",
+        "0x1408f4714",
+        "0x1408f4732",
+        "0x1408fe874",
+        "0x14090a615",
+        "0x140912b00",
+        "0x1409172ce",
+        "0x140923bd8",
+        "0x140923c59"
+      ],
+      "_read_common_inputs": [
+        "0x1408f5169",
+        "0x14091ca19",
+        "0x1409233ba",
+        "0x140926af6"
+      ],
+      "_refresh_live_pair_delete_state": [
+        "0x1408f521b",
+        "0x1408f98ad",
+        "0x1409029ec",
+        "0x140903c5a",
+        "0x140908930",
+        "0x140910c9a",
+        "0x140918976",
+        "0x14091ac64",
+        "0x14091b244",
+        "0x140920210",
+        "0x140923782",
+        "0x140925a88"
+      ],
+      "_rewrite_pool_to_token": [
+        "0x1408f53b5",
+        "0x14090d706",
+        "0x140922a62",
+        "0x140926177"
+      ],
+      "_schedule_autopair": [
+        "0x1408f5407",
+        "0x1408f89bb",
+        "0x140906087",
+        "0x140908d9a",
+        "0x1409228f2",
+        "0x140926039"
+      ],
+      "get_ui_state_path": [
+        "0x1408f608d"
+      ],
+      "_autopair_ui_ready": [
+        "0x1408f61fb",
+        "0x1408f8fc8",
+        "0x1409111e0",
+        "0x14091ac91",
+        "0x14091b271"
+      ],
+      "_sweep_control_states": [
+        "0x1408f6297",
+        "0x140915250",
+        "0x140915299",
+        "0x140915a8e",
+        "0x140916381"
+      ],
+      "ui_state_path": [
+        "0x1408f64b1",
+        "0x140921b46"
+      ],
+      "_autopair_timer": [
+        "0x1408f8532",
+        "0x1408f8570",
+        "0x1408f8611",
+        "0x1408f8740",
+        "0x1409095e9",
+        "0x140909c9a",
+        "0x140922213",
+        "0x140922244"
+      ],
+      "setSingleShot": [
+        "0x1408f85b8"
+      ],
+      "setInterval": [
+        "0x1408f8648"
+      ],
+      "load_error": [
+        "0x1408f9792"
+      ],
+      "singleShot": [
+        "0x1408f9916",
+        "0x14090621a",
+        "0x140908ef6",
+        "0x140910e1a",
+        "0x14091409e",
+        "0x14091456f",
+        "0x1409189d9",
+        "0x140918af2",
+        "0x140921d95"
+      ],
+      "Thread": [
+        "0x1408fe895",
+        "0x14090a638",
+        "0x140912b23",
+        "0x1409172ef"
+      ],
+      "ready": [
+        "0x14090147c",
+        "0x140904343",
+        "0x140905c42",
+        "0x14090e364"
+      ],
+      "payload": [
+        "0x1409021c2"
+      ],
+      "remaining": [
+        "0x140919262",
+        "0x14091931c"
+      ]
+    },
+    "dynamic_pairs": {
+      "_load": [
+        "0x140bab15c",
+        "0x140bb5240",
+        "0x140bc2652",
+        "0x140bc5ce6"
+      ],
+      "_save": [
+        "0x140bab22f",
+        "0x140bc033a",
+        "0x140bc125f",
+        "0x140bc26b2",
+        "0x140bc5d30"
+      ],
+      "path": [
+        "0x140bb502e",
+        "0x140bb766a",
+        "0x140bb782d",
+        "0x140bb9a3f"
+      ],
+      "threading": [
+        "0x140bb50a7",
+        "0x140bb50e8",
+        "0x140bb5111",
+        "0x140bb512e",
+        "0x140bb514e",
+        "0x140bc3006",
+        "0x140bc3088"
+      ],
+      "load_error": [
+        "0x140bb521a",
+        "0x140bb7645",
+        "0x140bb899a"
+      ],
+      "read_protected_json": [
+        "0x140bb775a",
+        "0x140bb77a2",
+        "0x140bb77cb",
+        "0x140bb77e9",
+        "0x140bb7809",
+        "0x140bc3cd5",
+        "0x140bc3cef",
+        "0x140bc3d00"
+      ],
+      "write_protected_json": [
+        "0x140bb9972",
+        "0x140bb99b7",
+        "0x140bb99e0",
+        "0x140bb99fe",
+        "0x140bb9a1e",
+        "0x140bc3d36",
+        "0x140bc3d50",
+        "0x140bc3d6c"
+      ],
+      "ready": [
+        "0x140bbef44",
+        "0x140bc4a6b"
+      ]
+    },
+    "gui": {
+      "QTimer": [
+        "0x140f018d7",
+        "0x140f0191b",
+        "0x140f01944",
+        "0x140f01962",
+        "0x140f0c53e",
+        "0x140f3d817",
+        "0x140f3fd9a",
+        "0x140f3ff2e",
+        "0x140f5994a",
+        "0x140f59964",
+        "0x140f59975"
+      ],
+      "reload_runtime_settings": [
+        "0x140f025e7",
+        "0x140f0262b",
+        "0x140f02654",
+        "0x140f02672",
+        "0x140f2bfd6",
+        "0x140f2d3cd",
+        "0x140f301e4",
+        "0x140f5a422",
+        "0x140f5a43c",
+        "0x140f5a44d"
+      ],
+      "save_user_settings": [
+        "0x140f026f7",
+        "0x140f0273b",
+        "0x140f02764",
+        "0x140f02782",
+        "0x140f2f1bf",
+        "0x140f2f37b",
+        "0x140f5a483",
+        "0x140f5a49d",
+        "0x140f5a4f3"
+      ],
+      "threading": [
+        "0x140f02807",
+        "0x140f0284b",
+        "0x140f02874",
+        "0x140f02892",
+        "0x140f0c193",
+        "0x140f38313",
+        "0x140f491fe",
+        "0x140f4c868",
+        "0x140f4efe0",
+        "0x140f51a8e",
+        "0x140f55190",
+        "0x140f596dc",
+        "0x140f59765"
+      ],
+      "_load_config_values": [
+        "0x140f0302b",
+        "0x140f2c256",
+        "0x140f57d6e",
+        "0x140f5c856"
+      ],
+      "_load_settings_from_config": [
+        "0x140f0307d",
+        "0x140f0c4c5",
+        "0x140f2d46e",
+        "0x140f2f744",
+        "0x140f3027d",
+        "0x140f57dce",
+        "0x140f5c8b6"
+      ],
+      "_load_ui_state": [
+        "0x140f030cf",
+        "0x140f0c501",
+        "0x140f582ae",
+        "0x140f5d49b"
+      ],
+      "_persist_current_pair_amount": [
+        "0x140f03269",
+        "0x140f2b139",
+        "0x140f58262",
+        "0x140f5d447"
+      ],
+      "_read_common_inputs": [
+        "0x140f0330d",
+        "0x140f48c92",
+        "0x140f545a7",
+        "0x140f5896e",
+        "0x140f5e011"
+      ],
+      "_reload_saved_settings": [
+        "0x140f034db",
+        "0x140f2b27a",
+        "0x140f57e2e",
+        "0x140f5c916"
+      ],
+      "_run_bot_thread": [
+        "0x140f03789",
+        "0x140f551dc",
+        "0x140f58e4e",
+        "0x140f5e9e4"
+      ],
+      "_save_settings_to_config": [
+        "0x140f037db",
+        "0x140f2b3bb",
+        "0x140f57f4e",
+        "0x140f5ca98"
+      ],
+      "_save_ui_state": [
+        "0x140f0382d",
+        "0x140f32837",
+        "0x140f37c9f",
+        "0x140f41939",
+        "0x140f46110",
+        "0x140f47477",
+        "0x140f5830e",
+        "0x140f5d4ef"
+      ],
+      "_set_header_connection_state": [
+        "0x140f03923",
+        "0x140f2c6b1",
+        "0x140f2c998",
+        "0x140f3c7ee",
+        "0x140f3ca9a",
+        "0x140f3f080",
+        "0x140f3f74a",
+        "0x140f579c2",
+        "0x140f5c347"
+      ],
+      "_responsive_ready": [
+        "0x140f0ba25",
+        "0x140f0c3e2",
+        "0x140f27293"
+      ],
+      "get_ui_state_path": [
+        "0x140f0baee",
+        "0x140f0bb36",
+        "0x140f0bb5f",
+        "0x140f0bb7c",
+        "0x140f0bb9c",
+        "0x140f5a2f3",
+        "0x140f5a30d",
+        "0x140f5a322"
+      ],
+      "ui_state_path": [
+        "0x140f0bbda",
+        "0x140f32b34",
+        "0x140f32c43",
+        "0x140f36a10",
+        "0x140f36b1c"
+      ],
+      "_loading_ui_state": [
+        "0x140f0bc62",
+        "0x140f32b0e",
+        "0x140f32c0f",
+        "0x140f357b4",
+        "0x140f35847",
+        "0x140f40d25",
+        "0x140f418ad",
+        "0x140f45b53",
+        "0x140f460a6"
+      ],
+      "bot_thread": [
+        "0x140f0c169",
+        "0x140f55292",
+        "0x140f552d5"
+      ],
+      "setInterval": [
+        "0x140f0c5d4"
+      ],
+      "rpc_state": [
+        "0x140f0e429",
+        "0x140f0e467",
+        "0x140f0eea7",
+        "0x140f0f20a",
+        "0x140f0f811",
+        "0x140f10137",
+        "0x140f245fa",
+        "0x140f24922",
+        "0x140f2c6d3",
+        "0x140f3f0b7",
+        "0x140f3f77c"
+      ],
+      "wss_state": [
+        "0x140f0e53d",
+        "0x140f0e57b",
+        "0x140f0e603",
+        "0x140f0e68b",
+        "0x140f0eed5",
+        "0x140f0f294",
+        "0x140f0f92c",
+        "0x140f1016b",
+        "0x140f246af",
+        "0x140f2c9ba",
+        "0x140f3c81f",
+        "0x140f3cad1",
+        "0x140f3cbdb"
+      ],
+      "system_state_caption": [
+        "0x140f11819",
+        "0x140f11e57",
+        "0x140f20cad",
+        "0x140f22580"
+      ],
+      "system_state": [
+        "0x140f118ad",
+        "0x140f118eb",
+        "0x140f11ea1",
+        "0x140f260cd",
+        "0x140f2695b",
+        "0x140f3c0cd"
+      ],
+      "setReadOnly": [
+        "0x140f18dba"
+      ],
+      "replace": [
+        "0x140f200bf",
+        "0x140f23f5c",
+        "0x140f23fb3",
+        "0x140f2632d",
+        "0x140f3d3ec"
+      ],
+      "STATE": [
+        "0x140f22609"
+      ],
+      "cfg_save_btn": [
+        "0x140f289f3",
+        "0x140f28bb1",
+        "0x140f2b329"
+      ],
+      "cfg_reload_btn": [
+        "0x140f28a96",
+        "0x140f28ce3",
+        "0x140f2b1e8"
+      ],
+      "load_runtime_settings": [
+        "0x140f2efd8",
+        "0x140f2f020",
+        "0x140f2f049",
+        "0x140f2f06b",
+        "0x140f2f08b",
+        "0x140f5a3bd",
+        "0x140f5a3d7",
+        "0x140f5a3ec"
+      ],
+      "read_text": [
+        "0x140f32c76"
+      ],
+      "loads": [
+        "0x140f32d56"
+      ],
+      "write_text": [
+        "0x140f36b49"
+      ],
+      "dumps": [
+        "0x140f36bc6"
+      ],
+      "Thread": [
+        "0x140f38336",
+        "0x140f4922e",
+        "0x140f4c888",
+        "0x140f4f003",
+        "0x140f51aae",
+        "0x140f551b2"
+      ],
+      "state": [
+        "0x140f3bda8"
+      ],
+      "singleShot": [
+        "0x140f3d832",
+        "0x140f3fdc3",
+        "0x140f3ff49"
+      ]
+    },
+    "runtime_config": {
+      "load_runtime_settings": [
+        "0x141dbeed7",
+        "0x141dbef1b",
+        "0x141dbef44",
+        "0x141dbef62",
+        "0x141dbf0e7",
+        "0x141dc02c4",
+        "0x141dc0328",
+        "0x141dc0544",
+        "0x141dc0ded",
+        "0x141dc1431",
+        "0x141dc2419",
+        "0x141dc24a8"
+      ],
+      "get_ui_state_path": [
+        "0x141dbf020",
+        "0x141dc207c",
+        "0x141dc209a",
+        "0x141dc22d0",
+        "0x141dc2306"
+      ],
+      "reload_runtime_settings": [
+        "0x141dbf179",
+        "0x141dc096c",
+        "0x141dc09b7",
+        "0x141dc09e8",
+        "0x141dc0a05",
+        "0x141dc0a25",
+        "0x141dc24df",
+        "0x141dc2515"
+      ],
+      "save_runtime_credentials": [
+        "0x141dbf1f9",
+        "0x141dc0e79",
+        "0x141dc0ed0",
+        "0x141dc0efe",
+        "0x141dc0f20",
+        "0x141dc0f45",
+        "0x141dc25a9",
+        "0x141dc25df"
+      ],
+      "save_user_settings": [
+        "0x141dbf244",
+        "0x141dc260e",
+        "0x141dc2644"
+      ],
+      "_secure_ui_state_path": [
+        "0x141dbf843",
+        "0x141dbf88b",
+        "0x141dbf8b4",
+        "0x141dbf8d1",
+        "0x141dbf8f1",
+        "0x141dc20be"
+      ],
+      "get_vault_path": [
+        "0x141dbfb33",
+        "0x141dbfb7b",
+        "0x141dbfba4",
+        "0x141dbfbc1",
+        "0x141dbfbe1",
+        "0x141dc20e7",
+        "0x141dc2105",
+        "0x141dc2129"
+      ],
+      "load_secure_settings": [
+        "0x141dbfe3f",
+        "0x141dbfe85",
+        "0x141dbfeae",
+        "0x141dbfeca",
+        "0x141dbfeea",
+        "0x141dc2152",
+        "0x141dc2170",
+        "0x141dc2190"
+      ],
+      "save_secure_settings": [
+        "0x141dc07fe",
+        "0x141dc0853",
+        "0x141dc0881",
+        "0x141dc089e",
+        "0x141dc08be",
+        "0x141dc21b9",
+        "0x141dc21d7",
+        "0x141dc2224"
+      ],
+      "delete_secure_settings": [
+        "0x141dc1323",
+        "0x141dc136b",
+        "0x141dc1394",
+        "0x141dc13b1",
+        "0x141dc13d1",
+        "0x141dc2011",
+        "0x141dc202f",
+        "0x141dc2053"
+      ]
+    },
+    "secure_store": {
+      "get_vault_path": [
+        "0x141dc3b67",
+        "0x141dc3bab",
+        "0x141dc3bd4",
+        "0x141dc3bf2",
+        "0x141dc42ab",
+        "0x141dd0287",
+        "0x141dd06d1",
+        "0x141dd14b4",
+        "0x141dd1709",
+        "0x141dd3880",
+        "0x141dd38ac"
+      ],
+      "_atomic_write_bytes": [
+        "0x141dc3ed7",
+        "0x141dcdce3",
+        "0x141dcdd29",
+        "0x141dcdd52",
+        "0x141dcdd6f",
+        "0x141dcdd8f",
+        "0x141dd3ccd",
+        "0x141dd3d03"
+      ],
+      "delete_secure_settings": [
+        "0x141dc411d",
+        "0x141dd3f90",
+        "0x141dd3fc6"
+      ],
+      "get_ui_state_path": [
+        "0x141dc426b",
+        "0x141dd39a5",
+        "0x141dd39db"
+      ],
+      "load_secure_settings": [
+        "0x141dc42eb",
+        "0x141dd3ec6",
+        "0x141dd3efc"
+      ],
+      "read_protected_json": [
+        "0x141dc4390",
+        "0x141dd0876",
+        "0x141dd08be",
+        "0x141dd08e7",
+        "0x141dd0904",
+        "0x141dd0924",
+        "0x141dd3d97",
+        "0x141dd3dcd"
+      ],
+      "save_secure_settings": [
+        "0x141dc43c8",
+        "0x141dd3e61",
+        "0x141dd3e97"
+      ],
+      "write_protected_json": [
+        "0x141dc44e9",
+        "0x141dd019b",
+        "0x141dd01e6",
+        "0x141dd0217",
+        "0x141dd0234",
+        "0x141dd0254",
+        "0x141dd3d32",
+        "0x141dd3d68"
+      ],
+      "mkstemp": [
+        "0x141dcbe55"
+      ],
+      "write": [
+        "0x141dcc545"
+      ],
+      "flush": [
+        "0x141dcc582"
+      ],
+      "fsync": [
+        "0x141dcc5b4"
+      ],
+      "replace": [
+        "0x141dccc69"
+      ],
+      "unlink": [
+        "0x141dcce63",
+        "0x141dd173b"
+      ],
+      "dumps": [
+        "0x141dcd644",
+        "0x141dcdaf7"
+      ],
+      "payload": [
+        "0x141dcd9aa",
+        "0x141dce689",
+        "0x141dceb04"
+      ],
+      "loads": [
+        "0x141dce2f3",
+        "0x141dce986"
+      ],
+      "read_text": [
+        "0x141dce31c"
+      ]
+    },
+    "trader": {
+      "threading": [
+        "0x141e54787",
+        "0x141e547cb",
+        "0x141e547f4",
+        "0x141e54812",
+        "0x141e57b33",
+        "0x141e83462",
+        "0x141e834e4"
+      ],
+      "_get_signed_raw_transaction": [
+        "0x141e54dab",
+        "0x141e674b1",
+        "0x141e674f9",
+        "0x141e67522",
+        "0x141e6753f",
+        "0x141e6755f",
+        "0x141e821fa",
+        "0x141e84199"
+      ],
+      "_next_nonce": [
+        "0x141e54e48",
+        "0x141e66d13",
+        "0x141e82152",
+        "0x141e857c1"
+      ],
+      "_read_two_balances": [
+        "0x141e54f3e",
+        "0x141e5a274",
+        "0x141e82ec2",
+        "0x141e84feb"
+      ],
+      "_sync_nonce_from_network": [
+        "0x141e5512a",
+        "0x141e6779e",
+        "0x141e67f9a",
+        "0x141e68045",
+        "0x141e821b2",
+        "0x141e8580b"
+      ],
+      "raw_transaction": [
+        "0x141e55cb6",
+        "0x141e83125"
+      ],
+      "rawTransaction": [
+        "0x141e55cef"
+      ],
+      "load_runtime_settings": [
+        "0x141e56695",
+        "0x141e566da",
+        "0x141e56703",
+        "0x141e56720",
+        "0x141e56740",
+        "0x141e83a3d",
+        "0x141e83a57",
+        "0x141e83a82"
+      ],
+      "_nonce_lock": [
+        "0x141e57b76",
+        "0x141e65ac0",
+        "0x141e66345"
+      ],
+      "get_transaction_count": [
+        "0x141e57c09",
+        "0x141e66476"
+      ],
+      "_nonce": [
+        "0x141e57ce6",
+        "0x141e65b84",
+        "0x141e65bc0",
+        "0x141e65c0e",
+        "0x141e6657f",
+        "0x141e6659f"
+      ],
+      "_encode_transaction_data": [
+        "0x141e581b8",
+        "0x141e6d696"
+      ],
+      "nonce": [
+        "0x141e66d00"
+      ],
+      "sign_transaction": [
+        "0x141e67261"
+      ],
+      "send_raw_transaction": [
+        "0x141e67434"
+      ],
+      "wait_for_transaction_receipt": [
+        "0x141e67de0"
+      ],
+      "build_transaction": [
+        "0x141e68c1d",
+        "0x141e69dda",
+        "0x141e6a55d",
+        "0x141e6b43d",
+        "0x141e6bb0a",
+        "0x141e7c734",
+        "0x141e7cee0",
+        "0x141e7df80",
+        "0x141e7e9e2",
+        "0x141e7f417",
+        "0x141e8027c",
+        "0x141e80a2b"
+      ]
+    },
+    "wallet_sweep": {
+      "_load": [
+        "0x142082d45",
+        "0x14208448c",
+        "0x1420a1152",
+        "0x1420a2ced"
+      ],
+      "_read_document": [
+        "0x142082db5",
+        "0x142086fc6",
+        "0x1420a11b2",
+        "0x1420a2d37"
+      ],
+      "_save": [
+        "0x142082e59",
+        "0x14208906d",
+        "0x1420a1212",
+        "0x1420a2d81"
+      ],
+      "replace": [
+        "0x142083a3a",
+        "0x14208837e"
+      ],
+      "path": [
+        "0x142084207",
+        "0x142084a65",
+        "0x142084b76",
+        "0x1420868bb",
+        "0x142087e27",
+        "0x142087f37",
+        "0x142087f93",
+        "0x1420883b4"
+      ],
+      "threading": [
+        "0x14208430e",
+        "0x142084353",
+        "0x14208437c",
+        "0x142084399",
+        "0x1420843b9",
+        "0x1420a175d",
+        "0x1420a17e0"
+      ],
+      "loads": [
+        "0x142084b49",
+        "0x142086892"
+      ],
+      "read_text": [
+        "0x142084bbb",
+        "0x1420868fb"
+      ],
+      "write_text": [
+        "0x142088098"
+      ],
+      "dumps": [
+        "0x142088112"
+      ],
+      "_encode_transaction_data": [
+        "0x14208d4d9"
+      ],
+      "ready": [
+        "0x142091b7a",
+        "0x142091ec1"
+      ],
+      "balance_reader": [
+        "0x142093072",
+        "0x14209a9ea",
+        "0x14209c92d",
+        "0x14209e1b2",
+        "0x1420a3e59"
+      ],
+      "zero_balance": [
+        "0x14209b1ea",
+        "0x1420a34e1",
+        "0x1420a356d"
+      ],
+      "remaining": [
+        "0x14209e776",
+        "0x14209e7cc",
+        "0x1420a3823",
+        "0x1420a38af"
+      ],
+      "_sync_nonce_from_network": [
+        "0x14209edfa"
+      ]
+    }
+  }
+}

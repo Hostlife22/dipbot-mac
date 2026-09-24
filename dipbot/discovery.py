@@ -21,7 +21,7 @@ class Resolution:
     input_kind: str = 'TOKEN'
 
 
-def batch(chain, requests, block):
+def batch(chain, requests, block, *, allow_empty=False):
     if not requests:
         return []
     calls = [(address(addr), True, chain.contract(addr, abi).get_function_by_name(name)(*args)._encode_transaction_data())
@@ -31,7 +31,7 @@ def batch(chain, requests, block):
         raise ValueError('Multicall вернул неполный снимок')
     result = []
     for (success, data), (_, abi, name, _) in zip(raw, requests):
-        if not success:
+        if not success or (allow_empty and not data):
             result.append(None)
             continue
         outputs = next(fn['outputs'] for fn in abi if fn.get('name') == name)
@@ -92,7 +92,7 @@ def resolve(chain, raw, catalogs):
     block = chain.check()
     if not chain.w3.eth.get_code(entered, block_identifier=block):
         return Resolution('INVALID_CONTRACT', target=entered)
-    factory, t0, t1 = batch(chain, [request(entered,POOL_ABI,m) for m in ('factory','token0','token1')], block)
+    factory, t0, t1 = batch(chain, [request(entered,POOL_ABI,m) for m in ('factory','token0','token1')], block, allow_empty=True)
     if factory is not None and t0 is not None and t1 is not None:
         factory = address(factory)
         router = 'V2' if factory==address(V2_FACTORY) else 'V3' if factory==address(V3_FACTORY) else None
@@ -112,7 +112,7 @@ def resolve(chain, raw, catalogs):
             candidate = Candidate(pool,names[quote],score>0,score)
             return Resolution('RESOLVED' if score>0 else 'PENDING',(candidate,),candidate,target,router+'_POOL')
     if any(entered == address(token) for catalog in catalogs.values() for token in catalog.values()):
-        return Resolution('CATALOG_TOKEN',target=entered)
+        return Resolution('CATALOG_TOKEN',target=entered,input_kind='PROFILE_TOKEN')
     candidates = discover(chain,entered,catalogs,block)
     state, selected = choose(candidates)
     return Resolution(state,tuple(candidates),selected,entered)
