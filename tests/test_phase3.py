@@ -149,7 +149,7 @@ def test_sweep_registered_route_refresh_and_target_residuals(tmp_path):
     newpool=replace(POOL,address=address('0x'+'78'*20));c=Candidate(newpool,'WBNB',True,100)
     balances={TOKEN:200};swaps=[]
     worker.live=SimpleNamespace(owner=OWNER,begin=lambda _:None,finish=worker.store.save)
-    def swap(pool,*args): swaps.append(pool);balances[TOKEN]=1
+    def swap(pool,*args,**kwargs): swaps.append(pool);balances[TOKEN]=1
     worker.live.swap=swap
     worker.chain=SimpleNamespace(balance=lambda token,owner:balances.get(token,0),
         resolve_address=lambda *args:discovery.Resolution('RESOLVED',(c,),c,TOKEN),

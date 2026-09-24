@@ -1,5 +1,41 @@
 # Проверка DipBot Mac 0.1
 
+## Nonce/receipt, 2026-09-24
+
+- `uv run --frozen pytest -q`: **226 passed**, 7.04 с; одно прежнее предупреждение websockets.legacy.
+- Source offscreen smoke: exit 0.
+- `./BUILD_MAC.command`: exit 0; Cocoa smoke собранного приложения: exit 0.
+- `codesign --verify --deep --strict`: exit 0.
+- `tools.nonce_native.report`: шесть диапазонов/выбранные константы повторно воспроизводят NONCE_EVIDENCE.json.
+- `git diff HEAD --check`: без ошибок. Commit/push не выполнялись, существующий индекс сохранён.
+
+[Выводы и ограничения](NONCE_RECOVERY_RU.md). Windows EXE не запускался; RPC, подписи и receipts в тестах — локальные синтетические сценарии. Реальные транзакции не отправлялись.
+
+
+## Sweep internals, 2026-09-24
+
+- `uv run --frozen pytest -q`: **205 passed**, 6.51 с, одно прежнее предупреждение websockets.legacy.
+- Source offscreen smoke: exit 0.
+- `./BUILD_MAC.command`: exit 0; Cocoa smoke собранного приложения: exit 0.
+- `codesign --verify --deep --strict`: exit 0.
+- `tools.sweep_native.report`: пять диапазонов/выбранные константы повторно воспроизводят SWEEP_EVIDENCE.json.
+- `git diff --check`: без ошибок. Существующее содержимое индекса сохранено; новых commit/push в этом проходе нет.
+
+[Разбор и изменения](SWEEP_INTERNALS_RU.md). Все сценарии offline, Windows EXE/реальные RPC/пользовательские данные не использовались. Симуляция SELL проверена на подставном контракте и не подтверждает LIVE parity.
+
+
+## Follow-up после 2a3bb6b, 2026-09-24
+
+- `uv run --frozen pytest -q`: **196 passed**, 6.33 с, одно прежнее предупреждение websockets.legacy.
+- Source offscreen smoke и временный GUI-сценарий REMOVE → single-shot 220 мс: exit 0, без RPC.
+- `./BUILD_MAC.command`: exit 0; Cocoa smoke собранного приложения: exit 0.
+- `codesign --verify --deep --strict`: exit 0.
+- `tools.followup_native.report` повторно воспроизводит FOLLOWUP_EVIDENCE.json.
+- `git diff --check`: без ошибок. Коммит 2a3bb6b содержит предыдущий проход; изменения этого follow-up оставлены в рабочем дереве. Push не выполнялся.
+
+[Новые выводы и остающиеся UNKNOWN](FOLLOWUP_PARITY_RU.md). Windows/DPAPI/runtime не запускались; envelope проверен только на синтетических callbacks, без доступа к пользовательским данным.
+
+
 ## Проход workflow, 2026-09-24 (база 74ca2a9)
 
 - `uv run --frozen pytest -q`: **182 passed**, 6.60 с; одно прежнее предупреждение websockets.legacy.

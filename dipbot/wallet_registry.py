@@ -45,3 +45,13 @@ def ordered_bases(catalog):
         grouped.setdefault(address(token), []).append(name)
     return [(names[0], token) for token, names in sorted(
         grouped.items(), key=lambda item: ('WBNB' in item[1], item[1][0].casefold()))]
+
+
+def base_router(pair_name, token, catalogs):
+    """Native Sweep prefers an installed V2 base profile, then V3."""
+    token = address(token)
+    for router in ('V2', 'V3'):
+        value = catalogs[router].get(pair_name)
+        if value is not None and address(value) == token:
+            return router
+    raise ValueError('Профиль базы больше не установлен')

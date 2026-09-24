@@ -38,7 +38,7 @@ def trader(tmp_path):
                 raise TimeoutError("private RPC url must not leak")
             return Web3.keccak(raw)
         def wait_for_transaction_receipt(self, tx_hash, **kwargs):
-            return {"status": self.status, "blockNumber": 123}
+            return {"status": self.status, "blockNumber": 123, "transactionHash": tx_hash}
     chain = SimpleNamespace(w3=SimpleNamespace(eth=Eth()), check=lambda: 123)
     # Ephemeral, unfunded key; never leaves local test process.
     key = Account.create().key
@@ -108,7 +108,7 @@ def test_reconcile_missing_receipt_stays_locked(trader):
 def test_reconcile_confirmed_does_not_implicitly_unlock(trader):
     trader.begin("test")
     trader.send(Function(), "test")
-    trader.chain.w3.eth.get_transaction_receipt = lambda _: {"status": 1}
+    trader.chain.w3.eth.get_transaction_receipt = lambda tx_hash: {"status": 1, "blockNumber": 123, "transactionHash": tx_hash}
     trader.reconcile()
     assert trader.store.data.get("operation")
 
@@ -158,3 +158,72 @@ def test_receipt_timeout_after_accepted_send_never_unlocks(trader):
     trader.store = Store(trader.store.path)
     assert trader.store.data['operation']['transactions'][0]['status'] == 'pending'
     with pytest.raises(UncertainTransaction): trader.begin('duplicate')
+
+
+@pytest.mark.parametrize('message', ['already known', 'KNOWN TRANSACTION'])
+@pytest.mark.parametrize('timeout', [False, True])
+def test_known_transaction_polls_local_hash_without_rebroadcast(trader, message, timeout):
+    trader.begin('known transaction')
+    sends, waits = [], []
+    def send(raw):
+        sends.append(Web3.to_hex(Web3.keccak(raw)))
+        assert Store(trader.store.path).data['operation']['transactions'][0]['hash'] == sends[0]
+        raise ValueError({'message':message})
+    def wait(tx_hash, **kwargs):
+        waits.append(tx_hash)
+        if timeout: raise TimeoutError('synthetic timeout')
+        return {'status':1,'blockNumber':123,'transactionHash':tx_hash}
+    trader.chain.w3.eth.send_raw_transaction=send
+    trader.chain.w3.eth.wait_for_transaction_receipt=wait
+    if timeout:
+        with pytest.raises(UncertainTransaction):trader.send(Function(),'test')
+    else:
+        trader.send(Function(),'test')
+    assert len(sends)==1 and waits==sends
+    assert Store(trader.store.path).data['operation']['transactions'][0]['status']==('pending' if timeout else 'confirmed')
+
+
+@pytest.mark.parametrize('change', [
+    {'transactionHash':'0x'+'ab'*32}, {'status':2}, {'status':None},
+    {'status':True}, {'blockNumber':None}, {'blockNumber':-1},
+])
+@pytest.mark.parametrize('reconcile', [False, True])
+def test_invalid_receipt_never_confirms_or_unlocks(trader,change,reconcile):
+    trader.begin('invalid receipt')
+    def receipt(tx_hash,**kwargs):
+        return {'status':1,'blockNumber':123,'transactionHash':tx_hash,**change}
+    if reconcile:
+        trader.chain.w3.eth.fail_send=True
+        with pytest.raises(UncertainTransaction):trader.send(Function(),'test')
+        trader.chain.w3.eth.get_transaction_receipt=receipt
+        action=trader.reconcile
+    else:
+        trader.chain.w3.eth.wait_for_transaction_receipt=receipt
+        action=lambda:trader.send(Function(),'test')
+    with pytest.raises(UncertainTransaction):action()
+    assert Store(trader.store.path).data['operation']['transactions'][0]['status']=='pending'
+    assert trader.operation['transactions'][0]['status']=='pending'
+
+
+def test_receipt_hexbytes_is_supported(trader):
+    from hexbytes import HexBytes
+    tx_hash='0x'+'ab'*32
+    trader.validate_receipt({'status':0,'blockNumber':123,'transactionHash':HexBytes(tx_hash)},tx_hash)
+
+
+def test_unrelated_send_error_does_not_poll_or_retry(trader):
+    trader.begin('nonce error')
+    sends=[]
+    def reject(raw):
+        sends.append(raw)
+        raise ValueError('nonce too low')
+    trader.chain.w3.eth.send_raw_transaction=reject
+    trader.chain.w3.eth.wait_for_transaction_receipt=lambda *a,**k:pytest.fail('must stay locked')
+    with pytest.raises(UncertainTransaction):trader.send(Function(),'test')
+    assert len(sends)==1
+    assert Store(trader.store.path).data['operation']['transactions'][0]['status']=='pending'
+
+
+@pytest.mark.parametrize('receipt',[{},None,{'status':1,'blockNumber':123,'transactionHash':32}])
+def test_missing_or_wrongly_typed_receipt_cannot_unlock(receipt):
+    with pytest.raises(UncertainTransaction):LiveTrader.validate_receipt(receipt,'0x'+'ab'*32)

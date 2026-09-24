@@ -1,0 +1,468 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "decoded_counts": {
+    "commercial_features": 642,
+    "secure_store": 245,
+    "wallet_sweep": 343
+  },
+  "tables": {
+    "commercial_features": "0x1429db320",
+    "secure_store": "0x142a5aa10",
+    "wallet_sweep": "0x142a6fd50"
+  },
+  "selected_constants": {
+    "commercial_features": [
+      {
+        "index": 93,
+        "file_offset": 50791248,
+        "value": "_autopair_timer"
+      },
+      {
+        "index": 101,
+        "file_offset": 50791372,
+        "value": "_schedule_autopair"
+      },
+      {
+        "index": 132,
+        "file_offset": 50792110,
+        "value": "singleShot"
+      },
+      {
+        "index": 280,
+        "file_offset": 50795138,
+        "value": [
+          "LIVE PAIR • selected profile is built-in and cannot be removed",
+          "idle"
+        ]
+      },
+      {
+        "index": 281,
+        "file_offset": 50795212,
+        "value": [
+          "LIVE PAIR ✕ wait for the current action",
+          "error"
+        ]
+      },
+      {
+        "index": 282,
+        "file_offset": 50795264,
+        "value": [
+          "LIVE PAIR ✕ stop/close the current position before removal",
+          "error"
+        ]
+      },
+      {
+        "index": 287,
+        "file_offset": 50795401,
+        "value": "?\nSell its target/base balances first. Built-in 42 profiles are untouched."
+      },
+      {
+        "index": 291,
+        "file_offset": 50795508,
+        "value": "remove"
+      },
+      {
+        "index": 295,
+        "file_offset": 50795612,
+        "value": "stop"
+      },
+      {
+        "index": 335,
+        "file_offset": 50796497,
+        "value": "STATUS_PENDING"
+      }
+    ],
+    "secure_store": [
+      {
+        "index": 109,
+        "file_offset": 52124671,
+        "value": {
+          "dict": [
+            [
+              "ensure_ascii",
+              true
+            ],
+            [
+              "sort_keys",
+              true
+            ],
+            [
+              "separators",
+              [
+                ",",
+                ":"
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "index": 111,
+        "file_offset": 52124733,
+        "value": "format"
+      },
+      {
+        "index": 112,
+        "file_offset": 52124741,
+        "value": "NRNF-DPAPI"
+      },
+      {
+        "index": 113,
+        "file_offset": 52124753,
+        "value": "version"
+      },
+      {
+        "index": 114,
+        "file_offset": 52124762,
+        "value": "VAULT_VERSION"
+      },
+      {
+        "index": 115,
+        "file_offset": 52124777,
+        "value": "payload"
+      },
+      {
+        "index": 120,
+        "file_offset": 52124822,
+        "value": {
+          "dict": [
+            [
+              "sort_keys",
+              true
+            ],
+            [
+              "separators",
+              [
+                ",",
+                ":"
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "index": 126,
+        "file_offset": 52124915,
+        "value": [
+          "version",
+          0
+        ]
+      },
+      {
+        "index": 128,
+        "file_offset": 52124939,
+        "value": {
+          "dict": [
+            [
+              "validate",
+              true
+            ]
+          ]
+        }
+      },
+      {
+        "index": 130,
+        "file_offset": 52124969,
+        "value": [
+          "Protected local data is damaged or unavailable"
+        ]
+      }
+    ],
+    "wallet_sweep": [
+      {
+        "index": 184,
+        "file_offset": 52312242,
+        "value": "report"
+      },
+      {
+        "index": 185,
+        "file_offset": 52312250,
+        "value": "failed"
+      },
+      {
+        "index": 186,
+        "file_offset": 52312258,
+        "value": ": token balance could not be verified"
+      },
+      {
+        "index": 187,
+        "file_offset": 52312297,
+        "value": "TARGET FAILED "
+      },
+      {
+        "index": 188,
+        "file_offset": 52312313,
+        "value": ": balance read failed; continuing"
+      },
+      {
+        "index": 189,
+        "file_offset": 52312348,
+        "value": "zero_balance"
+      },
+      {
+        "index": 190,
+        "file_offset": 52312362,
+        "value": "resolver"
+      },
+      {
+        "index": 191,
+        "file_offset": 52312372,
+        "value": "resolve"
+      },
+      {
+        "index": 192,
+        "file_offset": 52312381,
+        "value": "choose_registered_candidate"
+      },
+      {
+        "index": 193,
+        "file_offset": 52312410,
+        "value": "skipped"
+      },
+      {
+        "index": 194,
+        "file_offset": 52312419,
+        "value": ": no unique/live registered AutoPair route"
+      },
+      {
+        "index": 195,
+        "file_offset": 52312463,
+        "value": "SKIP "
+      },
+      {
+        "index": 196,
+        "file_offset": 52312470,
+        "value": "_sell_target"
+      },
+      {
+        "index": 197,
+        "file_offset": 52312484,
+        "value": " → "
+      },
+      {
+        "index": 198,
+        "file_offset": 52312491,
+        "value": "tx_hashes"
+      },
+      {
+        "index": 199,
+        "file_offset": 52312502,
+        "value": "TARGET SOLD "
+      },
+      {
+        "index": 200,
+        "file_offset": 52312516,
+        "value": "safe_error"
+      },
+      {
+        "index": 201,
+        "file_offset": 52312528,
+        "value": "; continuing"
+      },
+      {
+        "index": 202,
+        "file_offset": 52312542,
+        "value": "WalletSweepEngine.run.<locals>.<lambda>"
+      },
+      {
+        "index": 203,
+        "file_offset": 52312583,
+        "value": "base_balances"
+      },
+      {
+        "index": 204,
+        "file_offset": 52312598,
+        "value": ": base balance could not be verified"
+      },
+      {
+        "index": 205,
+        "file_offset": 52312636,
+        "value": "BASE FAILED "
+      },
+      {
+        "index": 206,
+        "file_offset": 52312650,
+        "value": "_convert_base"
+      },
+      {
+        "index": 207,
+        "file_offset": 52312665,
+        "value": "BASE SOLD "
+      },
+      {
+        "index": 208,
+        "file_offset": 52312677,
+        "value": " → BNB: "
+      },
+      {
+        "index": 209,
+        "file_offset": 52312689,
+        "value": "final_balances"
+      },
+      {
+        "index": 210,
+        "file_offset": 52312705,
+        "value": "remaining"
+      },
+      {
+        "index": 211,
+        "file_offset": 52312716,
+        "value": ": final balance could not be verified"
+      },
+      {
+        "index": 212,
+        "file_offset": 52312755,
+        "value": "final verification: "
+      },
+      {
+        "index": 213,
+        "file_offset": 52312777,
+        "value": "_sync_nonce_from_network"
+      },
+      {
+        "index": 214,
+        "file_offset": 52312803,
+        "value": "nonce refresh: "
+      }
+    ]
+  },
+  "native_ranges": {
+    "remove_live_pair": {
+      "va_start": "0x140907240",
+      "va_end": "0x1409093a9",
+      "file_offset": 9463360,
+      "sha256": "6334c6985e8d402e21e26dc682715ae16d2140c021dca61d538e671b2e09e454"
+    },
+    "autopair_close": {
+      "va_start": "0x140922010",
+      "va_end": "0x140922552",
+      "file_offset": 9573392,
+      "sha256": "fbac006368ef50187eb32c8e842025e3836fad72afea76b7679c3cf61eac97b3"
+    },
+    "autopair_execution_guard": {
+      "va_start": "0x14091b630",
+      "va_end": "0x14091c89d",
+      "file_offset": 9546288,
+      "sha256": "254748b6ecb8d3b52cd5cd0eeccae899c6d12418669f1d62c77ff19dc293e030"
+    },
+    "vault_version_assignment": {
+      "va_start": "0x141dd2251",
+      "va_end": "0x141dd2264",
+      "file_offset": 31266385,
+      "sha256": "8dcbb63d231fd337cf381d02be8ee7ebb64258c065b66c419d95fa65a40676c4"
+    },
+    "read_protected_json": {
+      "va_start": "0x141dce190",
+      "va_end": "0x141dcf0c4",
+      "file_offset": 31249808,
+      "sha256": "dd7ed524fbcf073d6f182f2971a5217202680e6078aee42f8f906cca0ecce372"
+    },
+    "write_protected_json": {
+      "va_start": "0x141dcd550",
+      "va_end": "0x141dce18d",
+      "file_offset": 31246672,
+      "sha256": "85b279ffe70e647cecbfe29acd715672441d0923735dfc8579a5f9821a774709"
+    },
+    "sweep_run": {
+      "va_start": "0x142099f30",
+      "va_end": "0x1420a00d6",
+      "file_offset": 34181936,
+      "sha256": "ed1cf1a25d5dcbcb944419f5ea235a64d57c9d805821dcdaf465b3a144c6bb22"
+    }
+  },
+  "direct_rip_references": [
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1408f3aa7"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1408f3aeb"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1408f3b14"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1408f3b32"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x1408f5407"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x1408f8532"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x1408f8570"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x1408f8611"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x1408f8740"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x1408f89bb"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x140906087"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x140908d9a"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x1409095e9"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x140909c9a"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x14090eb36"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x14091c09b"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x140922213"
+    },
+    {
+      "name": "_autopair_timer",
+      "ref": "0x140922244"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x1409228f2"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1409244b0"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1409244ca"
+    },
+    {
+      "name": "STATUS_PENDING",
+      "ref": "0x1409244df"
+    },
+    {
+      "name": "_schedule_autopair",
+      "ref": "0x140926039"
+    }
+  ]
+}

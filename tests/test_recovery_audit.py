@@ -45,7 +45,7 @@ def sweep_worker(tmp_path):
         verify_pool=lambda *_: POOL, quote=lambda *_: 190)
     worker.live.begin = lambda description: sent.append(description)
     worker.live.finish = lambda: worker.store.save()
-    worker.live.swap = lambda *args: balances.update({POOL.token: 0})
+    worker.live.swap = lambda *args, **kwargs: balances.update({POOL.token: 0})
     worker.command = lambda *args: None  # Final balance UI report only.
     return worker, sent
 
@@ -79,7 +79,7 @@ def test_stop_during_sweep_quote_never_begins(tmp_path):
 
 def test_ambiguous_sweep_stops_without_removing_position(tmp_path):
     worker, sent = sweep_worker(tmp_path)
-    def ambiguous(*_): raise UncertainTransaction('Unknown receipt')
+    def ambiguous(*_, **kwargs): raise UncertainTransaction('Unknown receipt')
     worker.live.swap = ambiguous
     with pytest.raises(UncertainTransaction): worker.sweep()
     assert len(sent) == 1

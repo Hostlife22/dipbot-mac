@@ -86,7 +86,10 @@ docs/               Архитектура, разбор, отчёт прове�
 - [Архитектура и поток исполнения](docs/ARCHITECTURE_RU.md)
 - [Участие в разработке](CONTRIBUTING.md)
 - [Работа с чувствительными данными](SECURITY.md)
-- [Последний разбор AutoPair, ADD, Sweep и настроек](docs/WORKFLOW_PARITY_RU.md)
+- [Разбор nonce, known-transaction и receipt](docs/NONCE_RECOVERY_RU.md)
+- [Внутренние методы Sweep и перенесённая симуляция](docs/SWEEP_INTERNALS_RU.md)
+- [Уточнение REMOVE, ошибок Sweep и защищённого формата](docs/FOLLOWUP_PARITY_RU.md)
+- [Разбор AutoPair, ADD, Sweep и настроек](docs/WORKFLOW_PARITY_RU.md)
 - [Что удалось восстановить из оригинала](docs/REVERSE_ENGINEERING_RU.md)
 - [Что проверено и что осталось непроверенным](docs/VALIDATION_RU.md)
 

@@ -27,7 +27,7 @@ class Eth:
   return Web3.keccak(raw)
  def wait_for_transaction_receipt(self,*args,**kwargs):
   if boundary=='receipt':os._exit(72)
-  return {'status':1,'blockNumber':123}
+  return {'status':1,'blockNumber':123,'transactionHash':args[0]}
 t=LiveTrader(SimpleNamespace(check=lambda:123,w3=SimpleNamespace(eth=Eth())),
              Account.create().key,store,D('0.1'),lambda _:None)
 t.begin('synthetic process crash')

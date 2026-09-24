@@ -552,6 +552,8 @@ class Window(QMainWindow):
             self.wallet.setText(payload)
         elif name == "profiles":
             self.update_profiles(payload)
+        elif name == "profile_removed":
+            self.schedule_autopair()
         elif name == "balances":
             self.log("Балансы: " + "; ".join(f"{k}={v}" for k, v in payload.items() if v not in ("0", "0.0")))
             for row in range(self.table.rowCount()):

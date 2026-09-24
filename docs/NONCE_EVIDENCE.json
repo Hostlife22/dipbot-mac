@@ -1,0 +1,171 @@
+{
+  "sha256": "0f9da36f8a9f0b9908d69e00a7c7c3501efb8d9823246078063267dababd0f72",
+  "original_executed": false,
+  "decoded_counts": {
+    "trader": 536,
+    "wallet_sweep": 343
+  },
+  "tables": {
+    "trader": "0x142a5f6d0",
+    "wallet_sweep": "0x142a6fd50"
+  },
+  "selected_constants": {
+    "trader": [
+      {
+        "index": 65,
+        "file_offset": 52151038,
+        "value": "_nonce_lock"
+      },
+      {
+        "index": 66,
+        "file_offset": 52151051,
+        "value": "get_transaction_count"
+      },
+      {
+        "index": 67,
+        "file_offset": 52151074,
+        "value": "pending"
+      },
+      {
+        "index": 68,
+        "file_offset": 52151083,
+        "value": "_nonce"
+      },
+      {
+        "index": 147,
+        "file_offset": 52152179,
+        "value": "nonce"
+      },
+      {
+        "index": 148,
+        "file_offset": 52152186,
+        "value": "_next_nonce"
+      },
+      {
+        "index": 156,
+        "file_offset": 52152245,
+        "value": "sign_transaction"
+      },
+      {
+        "index": 157,
+        "file_offset": 52152263,
+        "value": "hash"
+      },
+      {
+        "index": 158,
+        "file_offset": 52152269,
+        "value": "hex"
+      },
+      {
+        "index": 159,
+        "file_offset": 52152274,
+        "value": "send_raw_transaction"
+      },
+      {
+        "index": 160,
+        "file_offset": 52152296,
+        "value": "_get_signed_raw_transaction"
+      },
+      {
+        "index": 161,
+        "file_offset": 52152325,
+        "value": "_sync_nonce_from_network"
+      },
+      {
+        "index": 162,
+        "file_offset": 52152351,
+        "value": "already known"
+      },
+      {
+        "index": 163,
+        "file_offset": 52152366,
+        "value": "known transaction"
+      },
+      {
+        "index": 164,
+        "file_offset": 52152385,
+        "value": "wait_for_transaction_receipt"
+      },
+      {
+        "index": 165,
+        "file_offset": 52152415,
+        "value": 0.2
+      },
+      {
+        "index": 166,
+        "file_offset": 52152424,
+        "value": [
+          "timeout",
+          "poll_latency"
+        ]
+      },
+      {
+        "index": 426,
+        "file_offset": 52162183,
+        "value": [
+          120
+        ]
+      }
+    ],
+    "wallet_sweep": [
+      {
+        "index": 128,
+        "file_offset": 52311191,
+        "value": "close"
+      },
+      {
+        "index": 129,
+        "file_offset": 52311198,
+        "value": "callable"
+      },
+      {
+        "index": 166,
+        "file_offset": 52311899,
+        "value": "_close_trader"
+      },
+      {
+        "index": 213,
+        "file_offset": 52312777,
+        "value": "_sync_nonce_from_network"
+      }
+    ]
+  },
+  "native_ranges": {
+    "next_nonce": {
+      "va_start": "0x141e65a10",
+      "va_end": "0x141e6629b",
+      "file_offset": 31870480,
+      "sha256": "cfa92462999e43fe44ddc8d45f8e80583ec2cae83b8ddabf6e237510f81c61d2"
+    },
+    "sync_nonce": {
+      "va_start": "0x141e662a0",
+      "va_end": "0x141e66c05",
+      "file_offset": 31872672,
+      "sha256": "041ce5a367ecea623b4011f62fde62f5e5c9328828a663f974216df80452dfe7"
+    },
+    "tx_base": {
+      "va_start": "0x141e66c10",
+      "va_end": "0x141e670ef",
+      "file_offset": 31875088,
+      "sha256": "db839dd003c835f8ef2427fe7b187ecabe839b5d50ce622437bce093276f5348"
+    },
+    "send": {
+      "va_start": "0x141e670f0",
+      "va_end": "0x141e67cfb",
+      "file_offset": 31876336,
+      "sha256": "8a41462032cf342ef970e7246445c6cb77284960a9383fdd9f1ec3376f15351d"
+    },
+    "wait": {
+      "va_start": "0x141e67d00",
+      "va_end": "0x141e68294",
+      "file_offset": 31879424,
+      "sha256": "c31fd6461245f2bd93375c151e9a6563704cd16a4401f0ba5f4f28e774d99227"
+    },
+    "close_trader": {
+      "va_start": "0x142093c20",
+      "va_end": "0x142093f94",
+      "file_offset": 34156576,
+      "sha256": "52eefd7c49f63052d7319597070d8e463f00c8300f219d9503ccbb4865e9651b"
+    }
+  }
+}

@@ -76,12 +76,21 @@ class LiveTrader:
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
         self.log(f"{label}: {local_hash}")
         try:
-            remote_hash = Web3.to_hex(w3.eth.send_raw_transaction(signed.raw_transaction))
+            try:
+                remote_hash = Web3.to_hex(w3.eth.send_raw_transaction(signed.raw_transaction))
+            except Exception as exc:
+                message = str(exc).lower()
+                if not any(text in message for text in ("already known", "known transaction")):
+                    raise
+                # This is only a hint to query the durable local hash, never proof
+                # of confirmation and never permission to sign or broadcast again.
+                remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
             receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
         except Exception:
             raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
+        self.validate_receipt(receipt, local_hash)
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
         self.store.save()
@@ -112,7 +121,8 @@ class LiveTrader:
             raise ValueError("WBNB router не совпадает")
         return address(router), abi
 
-    def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D, *, signal_minimum=None):
+    def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D, *, signal_minimum=None,
+             simulate=False, deadline_seconds=30):
         if signal_minimum is not None and (not buy or not isinstance(signal_minimum, int)
                                           or not 0 < signal_minimum < 2**256):
             raise ValueError("Некорректный BUY minOut снимка")
@@ -128,7 +138,7 @@ class LiveTrader:
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
         before = self.chain.balance(dest, self.owner)
-        deadline = int(time.time()) + 30
+        deadline = int(time.time()) + deadline_seconds
         contract = self.chain.contract(router, abi)
         if pool.router == "V2":
             function = contract.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -136,6 +146,8 @@ class LiveTrader:
         else:
             function = contract.functions.exactInputSingle(
                 (src, dest, pool.fee, self.owner, deadline, amount, min_out, 0))
+        if simulate:
+            function.call({"from": self.owner})
         self.send(function, "BUY" if buy else "SELL")
         received = self.chain.balance(dest, self.owner) - before
         if received < min_out:
@@ -237,18 +249,37 @@ class LiveTrader:
             self.unwrap(received)
         return received
 
+    @staticmethod
+    def validate_receipt(receipt, tx_hash):
+        try:
+            expected = Web3.to_bytes(hexstr=tx_hash)
+            raw_hash = receipt["transactionHash"]
+            if not isinstance(raw_hash, (str, bytes, bytearray)):
+                raise ValueError("receipt hash type")
+            actual = Web3.to_bytes(hexstr=raw_hash) if isinstance(raw_hash, str) else bytes(raw_hash)
+            valid = (len(expected) == len(actual) == 32 and actual == expected
+                     and type(receipt["status"]) is int and receipt["status"] in (0, 1)
+                     and type(receipt["blockNumber"]) is int and receipt["blockNumber"] >= 0)
+        except (KeyError, TypeError, ValueError):
+            valid = False
+        if not valid:
+            raise UncertainTransaction("Некорректный receipt или другой hash; блокировка сохранена")
+
     def reconcile(self):
         operation = self.store.data.get("operation")
         if not operation:
             return "Незавершённых операций нет"
         if operation["wallet"].lower() != self.owner.lower():
             raise ValueError("Для сверки нужен тот же кошелёк, который начал операцию")
+        self.chain.check()
         for record in operation["transactions"]:
             try:
                 receipt = self.chain.w3.eth.get_transaction_receipt(record["hash"])
             except TransactionNotFound:
                 raise UncertainTransaction(f"Не найден receipt {record['hash']}; блокировка сохранена") from None
+            self.validate_receipt(receipt, record["hash"])
             record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
+            record["block"] = receipt["blockNumber"]
         # Do not clear the latch automatically: balances/position also need review.
         self.store.save()
         return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"

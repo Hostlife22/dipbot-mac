@@ -273,6 +273,8 @@ class Worker(QThread):
                     self.event.emit("selected", self.pool)
             self.log.emit("ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist")
         elif name == "remove_profile":
+            if self.store.data.get("operation"):
+                raise UncertainTransaction("Сначала выполните сверку незавершённой операции")
             self.require_chain()
             symbol = data["symbol"]
             dynamic_profiles = self.store.data.get("dynamic_profiles", {})
@@ -292,6 +294,7 @@ class Worker(QThread):
             self.pool = None
             self.event.emit("pools", [])
             self.event.emit("profiles", self.store.data.get("dynamic_profiles", {}))
+            self.event.emit("profile_removed", symbol)
         elif name in ("start", "buy"):
             self.configure(data)
             if self.mode == "LIVE":
@@ -515,7 +518,8 @@ class Worker(QThread):
             if self.stop_event.is_set():
                 return
             self.live.begin("SWEEP TARGET " + pool.token)
-            self.live.swap(pool,amount,False,self.strategy.settings.slippage)
+            self.live.swap(pool,amount,False,self.strategy.settings.slippage,
+                           simulate=True, deadline_seconds=60)
             positions = self.store.data.get("positions", {})
             for key in list(positions):
                 if key.startswith(self.live.owner.lower()+":") and positions[key]["pool"]["token"].lower() == pool.token.lower():
@@ -541,17 +545,14 @@ class Worker(QThread):
                 continue
             if not amount:
                 continue
-            # Select registry context per base; a V3-only base must not inherit
-            # an unrelated V2 trading selection. Conflicts require explicit context.
-            registered = [r for r in dynamic.records(self.store).values()
-                          if address(r["token_address"]) == token]
             original_router = getattr(self.live, "trade_router", None)
-            context = next((r["trade_router"] for r in registered
-                            if r["trade_router"] == original_router), None)
-            if context is None and len(registered) == 1:
-                context = registered[0]["trade_router"]
-            self.live.trade_router = context or original_router
             try:
+                try:
+                    self.live.trade_router = wallet_registry.base_router(symbol, token, catalogs)
+                except ValueError as exc:
+                    skipped.append(token)
+                    self.log.emit("SWEEP BASE " + symbol + ": " + safe_error(exc))
+                    continue
                 # Missing route can be skipped only before a durable operation.
                 if token != address(WBNB):
                     try:
