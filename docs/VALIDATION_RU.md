@@ -62,3 +62,18 @@
 - Это проверка чтения контрактного интерфейса, не исполнения swap; LIVE, reorg и Windows runtime parity не подтверждены.
 
 Итог этой итерации: 101 passed, 0 failed; одно предупреждение websockets.legacy. Source GUI smoke, BUILD_MAC.command, нативный Cocoa smoke новой .app, codesign --verify --deep --strict и git diff --check завершились с кодом 0. Архитектура сборки x86_64; commit/push не выполнялись.
+
+## Дополнительный статический аудит — 2026-09-24, после f1a69b3
+
+Оригинал не запускался. Выполнено:
+
+- `uv run --frozen pytest -q`: **117 passed**, 1 прежнее предупреждение websockets.legacy.
+- Source GUI smoke с `QT_QPA_PLATFORM=offscreen`: exit 0.
+- Два последовательных Window с временным Store: DIP/GAS/interval восстановлены; второй запуск DEMO, без chain/live; Keychain и RPC не использовались.
+- `./BUILD_MAC.command`: exit 0, новый `dist/DipBot Mac.app`, x86_64, ad-hoc подпись.
+- Cocoa smoke готового `Contents/MacOS/DipBot Mac --smoke-test`: exit 0.
+- `codesign --verify --deep --strict 'dist/DipBot Mac.app'`: exit 0.
+- `tools.recovery_native.inspect`: восемь диапазонов и выбранные константы точно воспроизводят JSON после нормализации tuple/list при сериализации.
+- `git diff --check`: без ошибок. Commit/push не выполнялись в этом проходе.
+
+Результаты, исправления и оставшиеся различия: [STATIC_RECOVERY_AUDIT_RU.md](STATIC_RECOVERY_AUDIT_RU.md). Эти проверки не подтверждают Windows runtime parity или LIVE-торговлю.

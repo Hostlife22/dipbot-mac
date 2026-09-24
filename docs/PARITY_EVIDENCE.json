@@ -1166,5 +1166,24 @@
     "original_runtime_executions": 0,
     "architecture": "x86_64",
     "artifact": "dist/DipBot Mac.app"
+  },
+  "static_recovery_followup": {
+    "baseline_commit": "f1a69b3",
+    "original_executed": false,
+    "public_rpc_used": false,
+    "report": "STATIC_RECOVERY_AUDIT_RU.md",
+    "native_evidence": "RECOVERY_EVIDENCE.json",
+    "tests_passed": 117,
+    "source_smoke": "exit 0",
+    "built_cocoa_smoke": "exit 0",
+    "codesign": "exit 0",
+    "source_sha256": {
+      "dipbot/worker.py": "9c62a3ef0de43366ee611ce267f83909bf7d43db0ea3d711d7b3c3c6e73ef00f",
+      "dipbot/app.py": "a5af31e148d957cb8a7f528000d79e807b8715761db31e1e7fdb033512e4cfea",
+      "dipbot/preferences.py": "bb9a2c4ab1be9bb615d50c9500fedeea623cc81eab9a8084b199373dea0bf349",
+      "tests/test_recovery_audit.py": "5be36de30cf8f3fa3f693752c734e2ed13eec2e9a909a25b41f303800b62a4f1",
+      "tests/test_preferences.py": "50a7aef6ca4b781354196dd4c296978d39783179a25bac72311a23c4b0aaeb0c",
+      "tools/recovery_native.py": "fcfac5aeb203da321647f446aba924dd7482abf61711a83a0a5cf54a85cde3ce"
+    }
   }
 }

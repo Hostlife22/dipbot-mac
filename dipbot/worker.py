@@ -221,10 +221,10 @@ class Worker(QThread):
             sample = 10**16  # 0.01 WBNB
             amount = sample
             if self.pool.quote != address(WBNB):
-                for pool in helper.conversion_route(WBNB, self.pool.quote, amount):
-                    amount = self.chain.quote(pool, amount, True)
-                for pool in helper.conversion_route(self.pool.quote, WBNB, amount):
-                    amount = self.chain.quote(pool, amount, True)
+                route = helper.conversion_route(WBNB, self.pool.quote, amount)
+                amount = self.chain.quote_route(route, amount)
+                route = helper.conversion_route(self.pool.quote, WBNB, amount)
+                amount = self.chain.quote_route(route, amount)
             if amount < sample * 90 // 100:
                 raise ValueError("Round-trip loss для 0.01 WBNB превышает 10%")
             symbol = "CUSTOM-" + self.pool.quote[2:10]
@@ -251,6 +251,12 @@ class Worker(QThread):
             self.event.emit("profiles", dynamic)
         elif name in ("start", "buy"):
             self.configure(data)
+            if self.mode == "LIVE":
+                other_positions = [key for key in self.store.data.get("positions", {})
+                                   if key.startswith(self.live.owner.lower() + ":")
+                                   and key != self.position_key()]
+                if other_positions:
+                    raise ValueError("Есть сохранённая позиция другого пула: выберите её пул или используйте SELL WALLET → BNB")
             if self.stop_event.is_set():
                 raise ValueError("STOP запрошен во время подготовки")
             if name == "start":
@@ -280,9 +286,13 @@ class Worker(QThread):
         elif name == "convert":
             self.configure(data)
             self.require_live()
+            if self.stop_event.is_set():
+                raise ValueError("STOP запрошен во время подготовки")
             amount = raw_amount(D(data["amount"]), 18) if data["buy"] else self.chain.balance(self.pool.quote, self.live.owner)
             if amount <= 0:
                 raise ValueError("Нулевой баланс")
+            if self.stop_event.is_set():
+                raise ValueError("STOP запрошен во время чтения баланса")
             self.live.begin("Converter BUY" if data["buy"] else "Converter SELL ALL")
             self.live.convert(self.pool.quote, amount, data["buy"], self.strategy.settings.slippage)
             self.live.finish()
@@ -363,6 +373,8 @@ class Worker(QThread):
         settings = self.strategy.settings
         if self.mode == "LIVE":
             self.require_live()
+            if self.stop_event.is_set():
+                raise ValueError("STOP запрошен во время подготовки")
             amount = raw_amount(settings.amount, self.pool.quote_decimals)
             bound = snapshot_minimum(amount, self.current_price, self.pool.quote_decimals,
                                      self.pool.token_decimals, settings.buy_tolerance)
@@ -411,7 +423,12 @@ class Worker(QThread):
 
     def sweep(self):
         self.log.emit("SWEEP: зарегистрированные target, затем базовые активы → BNB")
-        pools = list(self.store.data.get("known_pools", {}).values())
+        # Saved positions remain recoverable even if another selection replaced
+        # the known-pool entry for the same target before a restart.
+        saved = [p["pool"] for key, p in self.store.data.get("positions", {}).items()
+                 if key.startswith(self.live.owner.lower() + ":")]
+        candidates = saved + list(self.store.data.get("known_pools", {}).values())
+        pools = list({p["address"].lower(): p for p in candidates}.values())
         failures = []
         for raw in pools:
             if self.stop_event.is_set():
@@ -428,6 +445,9 @@ class Worker(QThread):
             except ValueError:
                 failures.append(pool.token)
                 continue
+            if self.stop_event.is_set():
+                self.log.emit("SWEEP остановлен после проверки маршрута")
+                return
             self.live.begin("SWEEP TARGET " + pool.token)
             try:
                 self.live.swap(pool, amount, False, self.strategy.settings.slippage)
@@ -461,10 +481,15 @@ class Worker(QThread):
                     failures.append(symbol)
                     self.log.emit("Нет маршрута: " + symbol)
                     continue
+            if self.stop_event.is_set():
+                self.log.emit("SWEEP остановлен после проверки маршрута")
+                return
             self.live.begin("SWEEP BASE " + symbol)
             self.live.convert(token, amount, False, self.strategy.settings.slippage)
             self.live.finish()
-        self.strategy.entry = None
+        # A skipped target still has an open position and must retain TP/SL.
+        position = self.position()
+        self.strategy.entry = D(position["entry"]) if position else None
         self.log.emit("SWEEP завершён" + ("; без маршрута: " + ", ".join(failures) if failures else ""))
         # Always report residual balances, including dust or transfer-tax artifacts.
         self.command("balance", {"wallet": self.live.owner})

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPush
 from .chain import profiles
 from .storage import Store, Vault, data_dir
 from .worker import Worker
+from . import preferences
 
 
 STYLE = """
@@ -127,6 +128,16 @@ class Window(QMainWindow):
         self.footer = QLabel("Готов к DEMO. Реальные сделки доступны только в LIVE.")
         self.footer.setObjectName("muted")
         layout.addWidget(self.footer)
+        saved_preferences = self.store.data.get("ui_preferences")
+        if saved_preferences is not None:
+            try:
+                saved_preferences = preferences.normalize(saved_preferences)
+                for key, value in saved_preferences["settings"].items():
+                    self.params[key].setText(value)
+                self.gas.setText(saved_preferences["gas"])
+                self.interval.setValue(float(saved_preferences["interval"]))
+            except ValueError:
+                self.log("Сохранённые параметры некорректны: использованы значения по умолчанию")
         self.mode_changed()
         self.update_profiles()
         if self.locked:
@@ -479,6 +490,14 @@ class Window(QMainWindow):
         if not self.worker.wait(1500):
             event.ignore()
             return
+        # The worker has exited: saving cannot race its transaction journal.
+        try:
+            preferences.save(self.store, {"version": 1,
+                "settings": {key: field.text().strip() for key, field in self.params.items()},
+                "gas": self.gas.text().strip(), "interval": str(self.interval.value())})
+        except (ValueError, OSError):
+            QMessageBox.warning(self, "Настройки не сохранены",
+                                "Не удалось сохранить параметры. Предыдущие настройки сохранены, если запись не была заменена.")
         event.accept()
 
 

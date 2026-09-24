@@ -103,3 +103,7 @@ BUY сохраняет `max(snapshot minimum, pre-approve quote minimum, post-ap
 | V2 converter Slippage=2%, output=10000 | Восстановленная модель min=9300 при tax buffer 5% | Строже, без 5% | Строже: min=9800; намеренно |
 
 Expected для стратегии хранится в `tests/fixtures/parity/strategy.json`: 13 заранее заданных сценариев с hash/VA, без вызова тестируемой реализации для генерации expected. Тесты журнала/очереди — инварианты Mac; ABI tests — контрактный интерфейс; ни одна из этих групп не является записью исполнения оригинального Windows.
+
+## Уточнение восстановления и STOP (2026-09-24)
+
+STOP проверяется до начала Converter и после RPC-подготовки каждого этапа Sweep. При пропуске непроданного target сохраняется entry. Sweep включает пулы сохранённых позиций текущего кошелька. START/BUY другого пула при сохранённой позиции того же кошелька отклоняется. Подробности и границы Windows-соответствия: [STATIC_RECOVERY_AUDIT_RU.md](STATIC_RECOVERY_AUDIT_RU.md).
