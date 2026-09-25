@@ -141,8 +141,13 @@ class Worker(QThread):
                         self.event.emit("position_comparison_error" if name == "compare_positions" else "receipt_review", safe_error(exc))
                     self.running = False
                     self.halt_reason = safe_error(exc)
-                    self.log.emit("ОШИБКА: " + safe_error(exc))
-                    if name == "compare_routes":
+                    stopped_entry = (name in ('buy','start') and isinstance(exc,EntryRejected)
+                                     and self.stop_event.is_set() and not self.store.data.get('operation')
+                                     and not self.paper.position and not self.position())
+                    self.log.emit(('STOP: ' if stopped_entry else 'ОШИБКА: ') + safe_error(exc))
+                    if stopped_entry:
+                        pass  # Normal cancellation; STOP handling below clears queued commands.
+                    elif name == "compare_routes":
                         self.discovery_emit(data.get("generation"), "route_comparison_error", safe_error(exc))
                     elif name in ("discover", "verify", "select"):
                         self.pool = None
@@ -340,6 +345,7 @@ class Worker(QThread):
                 self.broadcast_chain.max_block_age = policy.max_block_age
             live.trade_router = self.pool.router
             live.rates = self.rates
+            live.stop_requested = self.stop_event.is_set
             live.reserve_wei = raw_amount(sizing.reserve_bnb, 18) if sizing.reserve_bnb else 0
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")

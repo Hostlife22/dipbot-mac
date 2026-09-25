@@ -57,10 +57,25 @@ class LiveTrader:
             raise
         self.operation = None
 
+    def abort_entry_if_stopped(self, label):
+        operation = self.operation
+        entry = label == 'BUY' or (label.startswith('APPROVE') and
+                operation and operation.get('description','').split(' ',1)[0].upper() == 'BUY')
+        stopped = getattr(self,'stop_requested',None)
+        if not entry or stopped is None or not stopped():
+            return
+        if operation is None or any(r.get('status') != 'confirmed' for r in operation['transactions']):
+            raise UncertainTransaction('STOP: предыдущая транзакция не завершена; нужна сверка')
+        operation['outcome'] = 'stopped_before_buy'
+        self.finish()
+        from .entry_guard import EntryRejected
+        raise EntryRejected('STOP: BUY не подписан; завершённые approve сохранены в журнале')
+
     @timed("trader.send")
     def send(self, function, label, value=0):
         if self.operation is None:
             raise RuntimeError("Отправка вне записанной операции запрещена")
+        self.abort_entry_if_stopped(label)
         self.chain.check()
         w3 = self.chain.w3
         broadcaster = getattr(self, 'broadcast_chain', None) or self.chain
@@ -85,6 +100,7 @@ class LiveTrader:
             raise ValueError('Построенная транзакция изменила сеть, nonce, сумму или газ')
         if tx.get('from', self.owner).lower() != self.owner.lower():
             raise ValueError('Построенная транзакция изменила отправителя')
+        self.abort_entry_if_stopped(label)
         with TIMINGS.measure("execution.sign"):
             signed = self.account.sign_transaction(tx)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))

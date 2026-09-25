@@ -4,7 +4,7 @@ from decimal import Decimal, localcontext
 
 
 class EntryRejected(ValueError):
-    """A market check rejected entry before any transaction intent exists."""
+    """No BUY intent remains; pre-entry checks or a STOP after completed approvals."""
 
 
 @dataclass(frozen=True)
