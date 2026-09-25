@@ -731,7 +731,10 @@ class Window(QMainWindow):
         if operation:
             details.append('Кошелёк операции: ' + str(operation.get('wallet', 'не указан')))
             for tx in operation.get('transactions', []):
-                details.append(str(tx.get('hash', 'hash не записан')) + ' · ' + str(tx.get('status', 'неизвестно')))
+                details.append(str(tx.get('hash', 'hash не записан')) + ' · ' + str(tx.get('status', 'неизвестно')) + ' · ' +
+                    {'prepared': 'записана до отправки; отправка могла произойти',
+                     'submitted': 'RPC принял отправку; ожидается receipt',
+                     'receipt_validated': 'receipt проверен'}.get(tx.get('stage'), 'этап не записан'))
             if not operation.get('transactions'):
                 details.append('Hash транзакции не записан; перед снятием блокировки проверьте балансы.')
         selected = self.saved_positions.currentData()

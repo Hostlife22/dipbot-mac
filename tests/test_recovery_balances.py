@@ -33,3 +33,22 @@ def test_ui_shows_mismatch_and_failed_comparison(window):
     assert '0.99' in window.position_comparison.text()
     window.on_event('position_comparison_error','TimeoutError')
     assert 'Сверка не выполнена' in window.position_comparison.text()
+
+
+def test_same_wallet_token_is_compared_as_total_not_per_pool(tmp_path):
+    store=Store(tmp_path/'state.json')
+    owner='0x'+'34'*20
+    second=asdict(POOL) | {'address':'0x'+'56'*20}
+    store.data['positions']={owner+':a':{'amount':100,'pool':asdict(POOL)},
+                             owner+':b':{'amount':50,'pool':second}}
+    calls=[]
+    chain=SimpleNamespace(check=lambda **kw:12,
+        w3=SimpleNamespace(eth=SimpleNamespace(get_block=lambda n:{'hash':b'a'})),
+        balance_at=lambda *args:(calls.append(args) or 150))
+    result=compare_positions(chain,store)
+    assert len(result['rows'])==len(calls)==1
+    assert result['rows'][0]['matches'] and result['rows'][0]['saved_raw']==150
+    assert result['rows'][0]['position_count']==2
+    second['token_decimals']+=1
+    with pytest.raises(ValueError,match='decimals'):
+        compare_positions(chain,store)

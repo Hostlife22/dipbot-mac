@@ -74,10 +74,17 @@ class LiveTrader:
         if w3.eth.get_balance(self.owner) < value + gas * self.gas_price:
             raise ValueError("Недостаточно BNB для суммы и газа")
         tx = function.build_transaction({**tx_base, "gas": gas})
+        if any(type(tx.get(k)) is not int or tx[k] != v for k, v in
+               {'chainId': 56, 'nonce': nonce, 'value': value, 'gas': gas, 'gasPrice': self.gas_price}.items()):
+            raise ValueError('Построенная транзакция изменила сеть, nonce, сумму или газ')
+        if tx.get('from', self.owner).lower() != self.owner.lower():
+            raise ValueError('Построенная транзакция изменила отправителя')
         with TIMINGS.measure("execution.sign"):
             signed = self.account.sign_transaction(tx)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
-        record = {"hash": local_hash, "label": label, "nonce": nonce, "status": "pending"}
+        record = {"hash": local_hash, "label": label, "nonce": nonce, "status": "pending",
+                  "stage": "prepared", "prepared_at": int(time.time()),
+                  "request": {k: tx[k] for k in ('chainId', 'nonce', 'value', 'gas', 'gasPrice', 'to')}}
         self.operation["transactions"].append(record)
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
         self.log(f"{label}: {local_hash}")
@@ -94,6 +101,9 @@ class LiveTrader:
                 remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
+            record['stage'] = 'submitted'
+            record['submitted_at'] = int(time.time())
+            self.store.save()
             with TIMINGS.measure("execution.receipt_wait"):
                 receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
         except Exception:
@@ -102,6 +112,8 @@ class LiveTrader:
         self.check_canonical(receipt)
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
+        record["stage"] = "receipt_validated"
+        record["receipt_at"] = int(time.time())
         if 'blockHash' in receipt:
             record['block_hash'] = Web3.to_hex(receipt['blockHash'])
         if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
@@ -329,6 +341,10 @@ def reconcile_receipts(chain, store, owner):
             record['block_hash'] = Web3.to_hex(receipt['blockHash'])
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
+        record["stage"] = "receipt_validated"
+        record["receipt_at"] = int(time.time())
+        if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
+            record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
     # Do not clear the latch automatically: balances/position also need review.
     store.save()
     return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"

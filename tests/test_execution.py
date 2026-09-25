@@ -126,7 +126,6 @@ def test_approve_is_exact_and_resets_nonzero(trader):
 def test_disk_failure_at_send_boundaries_survives_restart(trader, boundary):
     trader.begin('crash boundary')
     save = trader.store.save
-    count = 0
     broadcasts = []
     broadcast = trader.chain.w3.eth.send_raw_transaction
     def send(raw):
@@ -134,9 +133,8 @@ def test_disk_failure_at_send_boundaries_survives_restart(trader, boundary):
         return broadcast(raw)
     trader.chain.w3.eth.send_raw_transaction = send
     def fault():
-        nonlocal count
-        count += 1
-        if count == (1 if boundary == 'hash' else 2):
+        stage = trader.operation['transactions'][-1]['stage']
+        if stage == ('prepared' if boundary == 'hash' else 'receipt_validated'):
             raise OSError('simulated disk failure')
         save()
     trader.store.save = fault
