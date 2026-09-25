@@ -1396,6 +1396,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--position-check", help="Offline synthetic position UI audit directory")
     parser.add_argument("--position-check-resume", action="store_true")
+    parser.add_argument("--market-paper-modern", action="store_true", help="Exercise window DIP, quote exits, activity filter and adaptive RPC in PAPER audit")
     parser.add_argument("--market-paper-token", help="Isolated visible PAPER market audit token")
     parser.add_argument("--market-paper-pool", help="Canonical pool for market audit")
     parser.add_argument("--market-paper-output", help="New directory for market audit")
@@ -1420,7 +1421,7 @@ def main():
         from pathlib import Path
         from tools.token_ui_paper_check import run
         return run(args.market_paper_token, Path(args.market_paper_output), args.acceptance_seconds,
-                   args.market_paper_pool, exercise_recovery=True, close_after=True)
+                   args.market_paper_pool, exercise_recovery=True, close_after=True, modern=args.market_paper_modern)
     if args.display_check:
         if not args.display_replay:
             parser.error('--display-check requires --display-replay')

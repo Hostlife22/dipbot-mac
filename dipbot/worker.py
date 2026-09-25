@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError as RPCConnectionError, Timeout a
 
 from PySide6.QtCore import QThread, Signal
 from eth_account import Account
+from web3.exceptions import Web3RPCError
 
 from .chain import Chain, Pool, WBNB, address, profiles
 from .storage import Store, Vault, SaveAfterReplaceError
@@ -778,7 +779,18 @@ class Worker(QThread):
             settings = replace(settings, amount=self.sizing.amount_quote(self.requested_amount, self.pool.quote, self.rates))
         if self.mode in ('LIVE', 'PAPER') and settings.min_swaps:
             from .activity import swap_count
-            activity = swap_count(self.chain, self.pool)
+            try:
+                activity = swap_count(self.chain, self.pool)
+            except (Web3RPCError, RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+                if self.backup_chain is None:
+                    raise EntryRejected('Не удалось прочитать активность пула; вход запрещён') from exc
+                if self.backup_chain.verify_pool(self.pool.address, self.pool.token) != self.pool:
+                    raise ValueError('Резервный RPC вернул другой пул')
+                try:
+                    activity = swap_count(self.backup_chain, self.pool)
+                except (Web3RPCError, RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as second:
+                    raise EntryRejected('Активность недоступна на обоих RPC; вход запрещён') from second
+                self.log.emit('Активность проверена через резервный RPC')
             self.log.emit(f"Активность пула: {activity['count']} Swap за блоки {activity['from_block']}–{activity['to_block']}")
             if activity['count'] < settings.min_swaps:
                 raise EntryRejected('Вход пропущен: недостаточно Swap в выбранном пуле')

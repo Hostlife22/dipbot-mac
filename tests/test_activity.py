@@ -66,3 +66,25 @@ def test_insufficient_activity_rejects_before_paper_buy(tmp_path, monkeypatch):
     with pytest.raises(EntryRejected, match='недостаточно'):
         w.open_position()
     assert not w.paper.position and not w.store.data.get('operation')
+
+
+def test_activity_failure_checks_backup_before_buy(tmp_path, monkeypatch):
+    from dipbot.worker import Worker
+    from dipbot.storage import Store
+    from dipbot.entry_guard import EntryRejected
+    from web3.exceptions import Web3RPCError
+    w = Worker(Store(tmp_path/'state.json'))
+    w.mode, w.pool, w.current_price = 'PAPER', POOL, D(1)
+    w.strategy.settings = Settings(min_swaps=D(5))
+    w.chain = object()
+    w.backup_chain = NS(verify_pool=lambda *a:POOL)
+    seen = []
+    def count(chain, pool):
+        seen.append(chain)
+        if chain is w.chain: raise Web3RPCError('limit exceeded')
+        return dict(count=4,from_block=1,to_block=100)
+    monkeypatch.setattr('dipbot.activity.swap_count', count)
+    with pytest.raises(EntryRejected, match='недостаточно'):
+        w.open_position()
+    assert seen == [w.chain,w.backup_chain]
+    assert not w.paper.position

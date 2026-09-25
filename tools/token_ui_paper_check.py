@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False):
     directory.mkdir(parents=True, exist_ok=False)
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(STYLE)
@@ -34,8 +34,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
         return result
     phase = ['setup']
     original = Chain.__init__
-    def init(chain, endpoint):
-        original(chain, endpoint)
+    def init(chain, endpoint, **kwargs):
+        original(chain, endpoint, **kwargs)
         rpc.append(guard_provider(chain.w3.provider))
     def forbidden(*a, **kw):
         raise RuntimeError('Wallet/LIVE disabled in PAPER test')
@@ -91,6 +91,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
         try:
             w.rpc.setText('https://bsc-dataseed.binance.org')
             w.save_rpc.setChecked(False)
+            w.adaptive_rpc.setChecked(modern)
             next(b for b in w.findChildren(QPushButton) if b.text() == 'Подключить').click()
             wait(lambda:not w.busy)
             w.token.setText(token)
@@ -114,7 +115,18 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             w.params['amount'].setText('0.00003')
             w.params['dip'].setText('3');w.params['take_profit'].setText('2');w.params['stop_loss'].setText('2')
             w.interval.setValue(.1)
+            if modern:
+                w.signal_mode.setCurrentIndex(w.signal_mode.findData('window'))
+                w.signal_rebound.setValue(.1)
+                w.params['dip'].setText('0.5')
+                w.params['min_swaps'].setText('1')
+                w.exit_basis.setCurrentIndex(w.exit_basis.findData('quote'))
+                w.exit_fields['max_hold_seconds'].setValue(60)
+                w.exit_fields['cooldown_seconds'].setValue(3)
             report['settings'] = {k:v.text() for k,v in w.params.items()}
+            report['signal_policy'] = w.signal_policy()
+            report['exit_policy'] = w.exit_policy()
+            report['adaptive_rpc'] = modern
             # Manual PAPER actions are explicitly separate from natural strategy signals.
             phase[0] = 'manual_paper_buy'
             w.banner.setText('PAPER · ПРОВЕРКА BUY NOW · реальная цена BSC, виртуальная покупка')
@@ -129,7 +141,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['manual_realized'] = str(w.worker.paper.realized)
             capture('manual_sell')
             phase[0] = 'automatic_live_prices'
-            w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP 3% / TP 2% / SL 2%')
+            w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP '+w.params['dip'].text()+'% / TP 2% / SL 2%')
             w.start.click();wait(lambda:not w.busy)
             began = progress = time.monotonic()
             restart_after = 0
@@ -189,11 +201,11 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 from dipbot.strategy import Strategy
                 observe = Strategy.observe
                 injected = {'signal': False, 'quote': False}
-                def signal(strategy, price, now):
+                def signal(strategy, price, now, **kwargs):
                     if strategy is w.worker.strategy and not injected['signal'] and strategy.entry is None:
                         injected['signal'] = True
                         return 'BUY'
-                    return observe(strategy, price, now)
+                    return observe(strategy, price, now, **kwargs)
                 def rejected_quote(chain, pool, amount, buy):
                     if buy and not injected['quote']:
                         injected['quote'] = True

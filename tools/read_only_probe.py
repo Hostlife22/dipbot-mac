@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 from dipbot.chain import Chain, WBNB, USDT, address, POOL_ABI
 from dipbot.discovery import discover, resolve, MULTICALL, batch, request
 
-ALLOWED = {'eth_chainId','eth_getBlockByNumber','eth_getCode','eth_call'}
+ALLOWED = {'eth_chainId','eth_getBlockByNumber','eth_getCode','eth_call','eth_getLogs','eth_getBlockByHash'}
 
 
 def guard_provider(provider):

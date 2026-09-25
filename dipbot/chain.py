@@ -221,7 +221,7 @@ class Chain:
 
     def restrict_to_reads(self):
         original = self.w3.provider.make_request
-        allowed = {'eth_chainId', 'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_call', 'eth_getCode'}
+        allowed = {'eth_chainId', 'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_call', 'eth_getCode', 'eth_getLogs'}
         def request(method, params):
             if method not in allowed:
                 raise RuntimeError('Резервный RPC разрешает только чтение рынка')
