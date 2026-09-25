@@ -210,6 +210,9 @@ class Window(QMainWindow):
                 saved_preferences = preferences.normalize(saved_preferences)
                 for key, value in saved_preferences["settings"].items():
                     self.params[key].setText(value)
+                sizing = saved_preferences.get('sizing', {})
+                self.amount_unit.setCurrentIndex(self.amount_unit.findData(sizing.get('unit','quote')))
+                self.gas_reserve.setText(sizing.get('reserve_bnb','0.0001'))
                 self.record_market.setChecked(saved_preferences.get('record_market', True))
                 policy = saved_preferences.get('signal_policy', {})
                 self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
@@ -226,13 +229,15 @@ class Window(QMainWindow):
         self.update_profiles()
         saved_preferences = saved_preferences or {}
         self.pair_amounts = dict(saved_preferences.get("pair_amounts", {}))
+        self.usd_pair_amounts = dict(saved_preferences.get("usd_pair_amounts", {}))
+        self.amount_currency = self.amount_unit.currentData()
         selection = saved_preferences.get("selection", {})
         self.router.setCurrentText(selection.get("router", "AUTO"))
         if self.quote.findText(selection.get("pair", "WBNB")) >= 0:
             self.quote.setCurrentText(selection.get("pair", "WBNB"))
         self.amount_key = preferences.pair_key(self.router.currentText(), self.quote.currentText())
-        if self.amount_key in self.pair_amounts:
-            self.params["amount"].setText(self.pair_amounts[self.amount_key])
+        if self.amount_key in self.amount_map():
+            self.params["amount"].setText(self.amount_map()[self.amount_key])
         self.auto_generation = 0
         self.selection_ready = False
         self.autopair_timer = QTimer(self)
@@ -243,6 +248,7 @@ class Window(QMainWindow):
         self.pool_input.textEdited.connect(lambda: self.invalidate_discovery(clear_pool=False))
         self.router.currentTextChanged.connect(self.market_changed)
         self.quote.currentTextChanged.connect(self.market_changed)
+        self.amount_unit.currentIndexChanged.connect(self.amount_unit_changed)
         if self.locked:
             self.log("В журнале есть незавершённая LIVE-операция. Проведите сверку в настройках")
         self.update_controls()
@@ -357,13 +363,23 @@ class Window(QMainWindow):
         compact_grid = QGridLayout(compact)
         self.params = {}
         for column, (key, title, value) in enumerate([
-                ('amount', 'AMOUNT (базовый актив)', '0.02'), ('dip', 'DIP %', '3'),
+                ('amount', 'AMOUNT', '0.02'), ('dip', 'DIP %', '3'),
                 ('take_profit', 'TP %', '2'), ('stop_loss', 'STOP LOSS %', '2')]):
             field = self.field(value)
             field.setAlignment(Qt.AlignRight)
             self.params[key] = field
             compact_grid.addWidget(QLabel(title), 0, column)
             compact_grid.addWidget(field, 1, column)
+        self.amount_unit = QComboBox()
+        self.amount_unit.addItem('База выбранной пары', 'quote')
+        self.amount_unit.addItem('USD', 'usd')
+        self.amount_unit.setMinimumContentsLength(8)
+        self.amount_unit.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.amount_unit.setToolTip('USD пересчитывается в базу перед каждым входом по свежей ориентировочной котировке; '
+            'газ не входит в AMOUNT. Доступно в PAPER/LIVE.')
+        self.editable.append(self.amount_unit)
+        compact_grid.addWidget(QLabel('Единица AMOUNT'),0,4)
+        compact_grid.addWidget(self.amount_unit,1,4)
         layout.insertWidget(0, compact)
         self.market_summary = QLabel('Рынок: DEMO · локальная модель')
         self.market_summary.setWordWrap(True)
@@ -515,6 +531,10 @@ class Window(QMainWindow):
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
+        self.gas_reserve = self.field('0.0001')
+        self.gas_reserve.setToolTip('Резерв BNB сохраняется при входах и Converter BUY; не ограничивает оборот. '
+            'При выходе SELL/Sweep можно расходовать резерв. Это заданный запас, не гарантия достаточного газа.')
+        form.addRow('Резерв газа, BNB', self.gas_reserve)
         self.gas.setMaximumWidth(180)
         self.gas.setAlignment(Qt.AlignRight)
         form.addRow("GAS GWEI", self.gas)
@@ -638,9 +658,21 @@ class Window(QMainWindow):
     def log(self, message):
         self.activity.appendPlainText(datetime.now().strftime("%H:%M:%S") + "  " + message)
 
+    def amount_map(self):
+        return self.usd_pair_amounts if self.amount_currency == 'usd' else self.pair_amounts
+
+    def restore_amount(self):
+        default = '1' if self.amount_currency == 'usd' else '0.02'
+        self.params['amount'].setText(self.amount_map().get(self.amount_key, default))
+
+    def amount_unit_changed(self):
+        self.remember_amount()
+        self.amount_currency = self.amount_unit.currentData()
+        self.restore_amount()
+
     def remember_amount(self):
         try:
-            self.pair_amounts[self.amount_key] = preferences.positive_amount(self.params["amount"].text())
+            self.amount_map()[self.amount_key] = preferences.positive_amount(self.params["amount"].text())
         except ValueError:
             pass  # Invalid edits never replace a previously valid per-pair amount.
 
@@ -649,7 +681,7 @@ class Window(QMainWindow):
             return
         self.remember_amount()
         self.amount_key = preferences.pair_key(self.router.currentText(), self.quote.currentText())
-        self.params["amount"].setText(self.pair_amounts.get(self.amount_key, "0.02"))
+        self.restore_amount()
         self.invalidate_discovery()
 
     def invalidate_discovery(self, *_, clear_pool=True):
@@ -693,18 +725,22 @@ class Window(QMainWindow):
         self.update_controls()
         self.worker.submit(name, **data)
 
+    def sizing_policy(self):
+        return {'unit':self.amount_unit.currentData(), 'reserve_bnb':self.gas_reserve.text().strip()}
+
     def signal_policy(self):
         return {'mode': self.signal_mode.currentData(), 'window_seconds': self.signal_window.value(),
                 'rebound_pct': str(self.signal_rebound.value()), 'max_block_age': self.block_age_limit.value()}
 
     def trade(self, command, **extra):
         mode = self.mode.currentText()
+        amount_unit = "USD" if self.amount_unit.currentData() == "usd" else "базового актива"
         if command in ("convert", "sweep") and mode != "LIVE":
             QMessageBox.information(self, "LIVE", "Converter и Sweep доступны только в LIVE")
             return
         if mode == "LIVE":
             description = ("Будут проданы все зарегистрированные target и базовые активы кошелька." if command == "sweep"
-                           else f"Действие: {command.upper()}\nAMOUNT: {self.params['amount'].text()} базового актива."
+                           else f"Действие: {command.upper()}\nAMOUNT: {self.params['amount'].text()} {amount_unit}."
                            if command != "convert" else f"Converter: {'BUY за '+extra['amount']+' BNB' if extra['buy'] else 'SELL всего баланса базы → BNB'}")
             if QMessageBox.question(self, "Реальная торговля BSC", description +
                    f"\nTARGET: {self.token.text()}\nPOOL: {self.pool_input.text()}\nWALLET: {self.store.data.get('wallet_address', 'Keychain')}"
@@ -712,7 +748,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1148,10 +1184,10 @@ class Window(QMainWindow):
             self.router.blockSignals(False)
             self.quote.blockSignals(False)
             self.amount_key = preferences.pair_key(payload.router, pair)
-            self.params["amount"].setText(self.pair_amounts.get(self.amount_key, "0.02"))
+            self.restore_amount()
             self.pool_input.setText(payload.address)
             self.token.setText(payload.token)
-            self.pool_label.setText(payload.label + "\nAMOUNT в активе " + payload.quote)
+            self.pool_label.setText(payload.label + "\nБазовый актив исполнения: " + self.display_unit)
             self.market_summary.setText("Рынок: " + payload.label)
         elif name == "sweep_report":
             status = {"completed": "завершён", "stopped": "остановлен — частичный результат",
@@ -1260,7 +1296,9 @@ class Window(QMainWindow):
             preferences.save(self.store, {"version": 1,
                 "selection": {"router": self.router.currentText(), "pair": self.quote.currentText()},
                 "pair_amounts": self.pair_amounts,
+                "usd_pair_amounts": self.usd_pair_amounts,
                 "signal_policy": self.signal_policy(),
+                "sizing": self.sizing_policy(),
                 "record_market": self.record_market.isChecked(),
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
                 "gas": self.gas.text().strip(), "interval": str(self.interval.value())})

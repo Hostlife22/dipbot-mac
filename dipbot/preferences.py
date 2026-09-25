@@ -1,6 +1,7 @@
 """Versioned Mac UI preferences. No credentials or automatic LIVE resume."""
 from .strategy import D, Settings
 from .signal_policy import SignalPolicy
+from .sizing import SizingPolicy
 from .storage import SaveAfterReplaceError
 
 FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic', 'max_roundtrip_loss')
@@ -20,6 +21,14 @@ def normalize(value):
         raise ValueError('Недопустимый интервал')
     result = {'version': 1, 'settings': {k: str(getattr(settings, k)) for k in FIELDS},
               'gas': str(gas), 'interval': str(interval)}
+    if 'usd_pair_amounts' in value:
+        try:
+            result['usd_pair_amounts'] = {pair_key(*key.split(':',1)):positive_amount(amount)
+                                          for key,amount in value['usd_pair_amounts'].items()}
+        except (AttributeError,TypeError) as exc:
+            raise ValueError('Повреждены USD суммы пар') from exc
+    if 'sizing' in value:
+        result['sizing'] = SizingPolicy.parse(value['sizing']).export()
     if 'record_market' in value:
         if type(value['record_market']) is not bool:
             raise ValueError('Некорректная настройка записи рынка')

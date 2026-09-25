@@ -28,7 +28,12 @@ class ReplayCosts:
         return 1-(self.fee_bps+self.impact_bps+self.tax_bps)/10000
 
 
-def replay(samples, settings, policy, costs=None):
+def replay(samples, settings, policy, costs=None, *, size_unit='quote', requested_amount=None):
+    if size_unit not in ('quote','usd'):
+        raise ValueError('Неизвестная единица replay AMOUNT')
+    requested_amount = settings.amount if requested_amount is None else D(str(requested_amount))
+    if not requested_amount.is_finite() or requested_amount <= 0:
+        raise ValueError('Некорректная сумма replay')
     costs = costs or ReplayCosts()
     strategy = Strategy(settings, policy)
     pending = None
@@ -55,15 +60,16 @@ def replay(samples, settings, policy, costs=None):
                 pending = None
                 strategy.reset_anchor()
             elif side == 'BUY':
-                output = settings.amount / price * costs.factor
-                bound = settings.amount / reference * (1-settings.buy_tolerance/100)
+                amount = pending['amount']
+                output = amount / price * costs.factor
+                bound = amount / reference * (1-settings.buy_tolerance/100)
                 if output < bound:
                     rejected.append({'t':now, 'side':side, 'reason':'snapshot_minOut'})
                     cooldown = now+5
                     strategy.reset_anchor()
                 else:
                     quantity = output
-                    cost = settings.amount+costs.gas_quote
+                    cost = amount+costs.gas_quote
                     strategy.bought(reference)  # Matches PAPER's signal-price TP/SL reference.
                     trades.append({'t':now, 'side':'BUY', 'signal_t':pending['signal_t'],
                                    'price':str(price), 'quantity':str(quantity), 'cost':str(cost)})
@@ -83,14 +89,24 @@ def replay(samples, settings, policy, costs=None):
             action = strategy.observe(price, now, observation_id=identity)
             if action:
                 # Even zero latency executes on a subsequent observation; never on future data.
-                pending = {'side':action, 'price':price, 'at':now+costs.latency_seconds, 'signal_t':now}
+                amount = requested_amount
+                if action == 'BUY' and size_unit == 'usd':
+                    rate = D(str(sample.get('quote_usd') or '0'))
+                    if not rate.is_finite() or rate <= 0:
+                        rejected.append({'t':now,'side':'BUY','reason':'missing_usd_rate'})
+                        strategy.reset_anchor()
+                        cooldown = now+5
+                        continue
+                    amount = requested_amount/rate
+                pending = {'side':action, 'price':price, 'at':now+costs.latency_seconds,
+                           'signal_t':now, 'amount':amount}
         equity = realized + (quantity*price*costs.factor-costs.gas_quote-cost if quantity else D(0))
         high_equity = max(high_equity,equity)
         drawdown = max(drawdown,high_equity-equity)
     return {'model':'causal_fixed_cost_stress_v1', 'samples':count, 'policy':policy.export(),
             'assumptions':{'fee_bps':str(costs.fee_bps),'impact_bps':str(costs.impact_bps),
                            'tax_bps':str(costs.tax_bps),'gas_quote':str(costs.gas_quote),
-                           'latency_seconds':costs.latency_seconds,
+                           'latency_seconds':costs.latency_seconds, 'size_unit':size_unit, 'requested_amount':str(requested_amount),
                            'limitations':'No pool depth, gas estimation, MEV, nonce, receipt or sellability simulation'},
             'realized_quote':str(realized), 'max_drawdown_quote':str(drawdown),
             'open_quantity':str(quantity), 'pending':pending is not None,

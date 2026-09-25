@@ -44,7 +44,9 @@ def main():
     raw=header['settings']
     settings=Settings(**{k:(float(v) if k=='max_gap' else D(str(v))) for k,v in raw.items()})
     costs=ReplayCosts(D(args.fee_bps),D(args.impact_bps),D(args.tax_bps),D(args.gas_quote),args.latency)
-    results=[replay(samples,settings,SignalPolicy(mode,args.window,D(args.rebound)),costs)
+    results=[replay(samples,settings,SignalPolicy(mode,args.window,D(args.rebound)),costs,
+                    size_unit=header.get('sizing',{}).get('unit','quote'),
+                    requested_amount=header.get('requested_amount'))
              for mode in ('legacy','window')]
     args.output.write_text(json.dumps({'source':'recorded_market','results':results,
         'profitability_proven':False,'transactions_sent':0},indent=2)+'\n')

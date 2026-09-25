@@ -17,14 +17,14 @@ def window_fixture(tmp_path, monkeypatch, *, busy=False, running=False, stopped=
         return state['stopped']
     normalized=preferences.from_windows_ui({})
     field=lambda value:NS(text=lambda:str(value))
-    window=NS(busy=busy,running=running,store=store,signal_policy=lambda: {},record_market=NS(isChecked=lambda:False),
+    window=NS(busy=busy,running=running,store=store,signal_policy=lambda: {},sizing_policy=lambda: {},record_market=NS(isChecked=lambda:False),
         usd=NS(set_token=lambda token:calls.append('usd_stop')),
         gas_usd=NS(set_token=lambda token:None),
         worker=NS(quit_event=threading.Event(),wait=wait),
         invalidate_discovery=lambda:calls.append('invalidate'),
         remember_amount=lambda:calls.append('remember'),
         router=NS(currentText=lambda:'V2'),quote=NS(currentText=lambda:'WBNB'),
-        pair_amounts=normalized['pair_amounts'],params={k:field(v) for k,v in normalized['settings'].items()},
+        usd_pair_amounts={},pair_amounts=normalized['pair_amounts'],params={k:field(v) for k,v in normalized['settings'].items()},
         gas=field('0.1'),interval=NS(value=lambda:0.1))
     event=NS(ignore=lambda:calls.append('ignore'),accept=lambda:calls.append('accept'))
     monkeypatch.setattr(QMessageBox,'information',lambda *a:calls.append('message'))

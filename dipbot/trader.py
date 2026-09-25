@@ -72,8 +72,10 @@ class LiveTrader:
         gas = (function.estimate_gas(tx_base) * 120 + 99) // 100
         if gas * self.gas_price > self.max_fee:
             raise ValueError("Расчётная комиссия превышает лимит 0.005 BNB на транзакцию")
-        if w3.eth.get_balance(self.owner) < value + gas * self.gas_price:
-            raise ValueError("Недостаточно BNB для суммы и газа")
+        exit_operation = self.operation['description'].upper().startswith(('SELL', 'SWEEP', 'CONVERTER SELL'))
+        reserve = 0 if exit_operation else getattr(self, 'reserve_wei', 0)
+        if w3.eth.get_balance(self.owner) < value + gas * self.gas_price + reserve:
+            raise ValueError("Недостаточно BNB для суммы, газа и настроенного резерва выхода")
         tx = function.build_transaction({**tx_base, "gas": gas})
         if any(type(tx.get(k)) is not int or tx[k] != v for k, v in
                {'chainId': 56, 'nonce': nonce, 'value': value, 'gas': gas, 'gasPrice': self.gas_price}.items()):

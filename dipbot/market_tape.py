@@ -9,7 +9,7 @@ import uuid
 
 FIELDS = {
     'price': {'price', 'block', 'block_hash', 'block_timestamp', 'source'},
-    'observation': {'price', 'block', 'block_hash'},
+    'observation': {'price', 'block', 'block_hash', 'quote_usd', 'quote_usd_observed_at'},
     'signal': {'action', 'price', 'base', 'entry'},
     'execution': {'side', 'price', 'reason'},
     'read_error': {'type'},
@@ -32,9 +32,10 @@ class MarketTape:
         self.started = time.monotonic()
         self.sequence = self.dropped = self.written = 0
         self.error_type = ''
-        allowed = {'mode', 'pool', 'signal_policy', 'settings', 'starts_with_position'}
+        allowed = {'mode', 'pool', 'signal_policy', 'settings', 'starts_with_position', 'sizing', 'requested_amount'}
         metadata = dict(metadata)
         nested = {
+            'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},
             'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss'},
             'signal_policy': {'mode','window_seconds','rebound_pct','max_block_age'},

@@ -1,5 +1,5 @@
 from .telemetry import timed
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import queue
 import re
 import threading
@@ -22,6 +22,7 @@ from .signal_policy import SignalPolicy
 from .head_feed import HeadFeed, HeadSchedule
 from .market_monitor import monitor_execution
 from .market_tape import MarketTape
+from .sizing import SizingPolicy
 from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
 
@@ -53,6 +54,8 @@ class Worker(QThread):
         self.head_feed = None
         self.execution_monitor = None
         self.rates = RateBook()
+        self.sizing = SizingPolicy()
+        self.requested_amount = None
         self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
         self.recorder = None
         self.recorder_notice = False
@@ -239,7 +242,13 @@ class Worker(QThread):
     def configure(self, data):
         mode = data["mode"]
         policy = SignalPolicy.parse(data.get("signal_policy", {}))
+        sizing = SizingPolicy.parse(data.get("sizing", {}))
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
+        requested_amount = settings.amount
+        if sizing.unit == 'usd':
+            if mode == 'DEMO' or self.pool is None:
+                raise ValueError('AMOUNT в USD требует PAPER/LIVE и выбранный пул')
+            settings = replace(settings, amount=sizing.amount_quote(requested_amount, self.pool.quote, self.rates))
         interval = float(data["interval"])
         if not 0.1 <= interval <= 0.5:
             raise ValueError("Интервал от 0.1 до 0.5 секунд (защита разрыва: 0.55 с)")
@@ -267,6 +276,7 @@ class Worker(QThread):
             live = LiveTrader(self.chain, key, self.store, D(data["gas"]), self.log.emit)
             live.trade_router = self.pool.router
             live.rates = self.rates
+            live.reserve_wei = raw_amount(sizing.reserve_bnb, 18) if sizing.reserve_bnb else 0
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")
             pair_name = next((n for n,t in dynamic.catalog(self.store,self.pool.router).items()
@@ -284,6 +294,7 @@ class Worker(QThread):
                     self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
                 self.paper_context = context
         self.mode, self.interval, self.live = mode, interval, live
+        self.sizing, self.requested_amount = sizing, requested_amount
         old_entry = self.strategy.entry
         self.strategy = Strategy(settings, policy)
         if mode == "LIVE" and self.position():
@@ -303,7 +314,8 @@ class Worker(QThread):
             try:
                 self.recorder = MarketTape(self.store.path.parent / 'market-recordings', {
                     'mode': self.mode, 'pool': asdict(self.pool) if self.pool else None,
-                    'settings': asdict(settings), 'signal_policy': policy.export(),
+                    'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
+                    'requested_amount':str(requested_amount),
                     'starts_with_position': self.strategy.entry is not None})
                 self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
             except OSError:
@@ -647,8 +659,11 @@ class Worker(QThread):
         source = self.backup_chain if self.market_source != 'BSC' else self.chain
         header = getattr(source, 'price_block', None) if self.mode != 'DEMO' else None
         observation_id = (header['number'], bytes(header['hash']), price) if header else None
+        usd_mark = self.rates.snapshot(self.pool.quote) if self.pool and self.mode != 'DEMO' else None
         self.record_market('observation', price=str(price), block=header['number'] if header else None,
-                           block_hash=bytes(header['hash']).hex() if header else None)
+                           block_hash=bytes(header['hash']).hex() if header else None,
+                           quote_usd=usd_mark['usd'] if usd_mark else None,
+                           quote_usd_observed_at=usd_mark['observed_at'] if usd_mark else None)
         action = self.strategy.observe(price, now, observation_id=observation_id)
         if self.stop_event.is_set():
             return
@@ -675,6 +690,8 @@ class Worker(QThread):
         if self.strategy.entry is not None:
             raise ValueError("Позиция уже открыта")
         settings = self.strategy.settings
+        if self.sizing.unit == 'usd':
+            settings = replace(settings, amount=self.sizing.amount_quote(self.requested_amount, self.pool.quote, self.rates))
         if self.mode in ('LIVE', 'PAPER') and callable(getattr(self.chain, 'entry_quote', None)):
             if self.mode == 'LIVE':
                 self.require_live()

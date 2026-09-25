@@ -38,3 +38,16 @@ def test_gas_is_charged_on_both_sides_and_stop_does_not_auto_restart():
 def test_replay_rejects_noncausal_or_nonfinite_input():
     for rows in [[{'t':1,'price':'1'},{'t':0,'price':'2'}],[{'t':0,'price':'NaN'}]]:
         with pytest.raises(ValueError): replay(rows,Settings(),SignalPolicy())
+
+
+def test_usd_size_uses_only_fx_available_at_signal_and_missing_rate_rejects():
+    rows=samples([100,96,96])
+    rows[1]['quote_usd']='100'
+    rows[2]['quote_usd']='200'
+    result=replay(rows,Settings(),SignalPolicy('window'),ReplayCosts(latency_seconds=0),
+                  size_unit='usd',requested_amount=D(1))
+    assert D(result['trades'][0]['cost'])==D('.01')
+    rows[1].pop('quote_usd')
+    result=replay(rows,Settings(),SignalPolicy('window'),ReplayCosts(latency_seconds=0),
+                  size_unit='usd',requested_amount=D(1))
+    assert result['rejected'][0]['reason']=='missing_usd_rate' and not result['trades']
