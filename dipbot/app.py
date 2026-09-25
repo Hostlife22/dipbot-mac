@@ -1284,11 +1284,11 @@ class Window(QMainWindow):
             self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
             self.entry_notice = payload.get('entry_notice', '')
-            quote_exit = payload.get('exit_basis') == 'quote' and D(payload.get('position', '0')) > 0
+            quote_exit = payload.get('exit_basis') == 'quote' and Decimal(payload.get('position', '0')) > 0
             self.exit_status.setVisible(quote_exit)
             result = payload.get('exit_return')
             self.exit_status.setText('TP/SL по продаже позиции: ' +
-                (f'{D(result):+.2f}%' if result is not None and not payload.get('quote_unavailable') else 'ожидание свежей котировки') +
+                (f'{Decimal(result):+.2f}%' if result is not None and not payload.get('quote_unavailable') else 'ожидание свежей котировки') +
                 ' · без газа и token tax')
             self.halt_reason = payload.get('halt_reason', '')
             self.running, self.active_mode, self.locked = payload["running"], payload["mode"], payload["locked"]

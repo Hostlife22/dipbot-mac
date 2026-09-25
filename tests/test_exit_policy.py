@@ -160,3 +160,20 @@ def test_ui_quote_exit_is_labeled_without_spot_thresholds(tmp_path):
     assert payload['exit_basis'] == 'quote'
     assert 'TP' not in payload['levels'] and 'SL' not in payload['levels']
     assert payload['levels']['TRAIL'] == '95.00'
+
+
+def test_quote_status_renders_in_actual_qt_window(window):
+    from dipbot.worker import Worker
+    w = window
+    w.worker.strategy = strategy(tp_sl_basis='quote')
+    w.worker.strategy.bought(D(100), now=0)
+    w.worker.paper.position = D(1)
+    w.worker.exit_return = '1.23'
+    w.worker.event.connect(w.on_event)
+    w.worker.status()
+    assert '+1.23%' in w.exit_status.text()
+    assert not w.exit_status.isHidden()
+    w.worker.paper.position = D(0)
+    w.worker.status()
+    assert w.exit_status.isHidden()
+from test_app_autopair_flow import window
