@@ -1,0 +1,430 @@
+{
+  "mode": "PAPER",
+  "seconds_requested": 600,
+  "transactions_sent": 0,
+  "natural_signals_only": true,
+  "test_driver_restarts": 0,
+  "continue_after_risk_exit": true,
+  "markets": [
+    {
+      "token": "0xe545FAaa94Da6fb3Cc0AAB88c3E188B13B637777",
+      "pool": "0x869B02c5425C89D88048f5e8Ce0c723E119FCdd5",
+      "prices": 1853,
+      "signals": {},
+      "exits": {},
+      "fills": {},
+      "errors": [],
+      "active_seconds": 600.0140933780058,
+      "running": false,
+      "initial_quote_usd": "2.76",
+      "paper_fee_quote": "0.003623188405797101449275362319",
+      "paper_fee_usd_at_start": "0.01",
+      "settings": {
+        "amount": "1",
+        "dip": "0.5",
+        "take_profit": "2",
+        "stop_loss": "2",
+        "slippage": "3",
+        "dynamic": "150",
+        "max_roundtrip_loss": "3",
+        "min_swaps": "0"
+      },
+      "signal_policy": {
+        "mode": "window",
+        "window_seconds": 60,
+        "rebound_pct": "0.1",
+        "max_block_age": 5
+      },
+      "exit_policy": {
+        "tp_sl_basis": "quote",
+        "continue_after_risk_exit": true,
+        "trailing_pct": "0.75",
+        "max_hold_seconds": 180,
+        "cooldown_seconds": 5
+      },
+      "rpc_methods": {
+        "eth_chainId": 4527,
+        "eth_getBlockByNumber": 3182,
+        "eth_getCode": 4,
+        "eth_call": 1335
+      },
+      "position": "0",
+      "quote_unavailable": false
+    },
+    {
+      "token": "0x3A91c7d22D8D306EB109c9E9fA78aC162CcA7777",
+      "pool": "0x2FD5EDe569c2223870E291D951839E18E3e1D071",
+      "prices": 1731,
+      "signals": {},
+      "exits": {},
+      "fills": {},
+      "errors": [],
+      "active_seconds": 600.0140933780058,
+      "running": false,
+      "initial_quote_usd": "34.14",
+      "paper_fee_quote": "0.0002929115407147041593438781488",
+      "paper_fee_usd_at_start": "0.01",
+      "settings": {
+        "amount": "1",
+        "dip": "0.5",
+        "take_profit": "2",
+        "stop_loss": "2",
+        "slippage": "3",
+        "dynamic": "150",
+        "max_roundtrip_loss": "3",
+        "min_swaps": "0"
+      },
+      "signal_policy": {
+        "mode": "window",
+        "window_seconds": 60,
+        "rebound_pct": "0.1",
+        "max_block_age": 5
+      },
+      "exit_policy": {
+        "tp_sl_basis": "quote",
+        "continue_after_risk_exit": true,
+        "trailing_pct": "0.75",
+        "max_hold_seconds": 180,
+        "cooldown_seconds": 5
+      },
+      "rpc_methods": {
+        "eth_chainId": 4387,
+        "eth_getBlockByNumber": 3051,
+        "eth_getCode": 4,
+        "eth_call": 1326
+      },
+      "position": "0",
+      "quote_unavailable": false
+    }
+  ],
+  "started_at": 1790356712,
+  "setup_seconds": 5.386230753996642,
+  "duration_completed": true,
+  "workers_joined": true,
+  "clean_stop": true,
+  "recordings": [
+    {
+      "file": "market-20260925-201830-abf15d4cb66b45b3acd1a611da5dbe10-0.jsonl",
+      "written": 3706,
+      "dropped": 0,
+      "error_type": "",
+      "writer_joined": true,
+      "completed": true,
+      "segments": 1
+    },
+    {
+      "file": "market-20260925-201832-4b129cfa4b254c2d920cce9d6ca63564-0.jsonl",
+      "written": 3462,
+      "dropped": 0,
+      "error_type": "",
+      "writer_joined": true,
+      "completed": true,
+      "segments": 1
+    }
+  ],
+  "recordings_complete": true,
+  "trading_checks_passed": true,
+  "passed": true,
+  "elapsed_seconds": 600.6510026210017,
+  "resources": [
+    {
+      "peak_rss_bytes": 105680896,
+      "python_threads": 4,
+      "native_threads": 12,
+      "cpu_user_seconds": 1.6649159999999998,
+      "cpu_system_seconds": 0.214115,
+      "monotonic_seconds": 33872.87687434,
+      "current_rss_bytes": 105750528,
+      "elapsed_seconds": 0.02160215500043705
+    },
+    {
+      "peak_rss_bytes": 108048384,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 3.689416,
+      "cpu_system_seconds": 0.485062,
+      "monotonic_seconds": 33902.895123624,
+      "current_rss_bytes": 108044288,
+      "elapsed_seconds": 30.03929316400172
+    },
+    {
+      "peak_rss_bytes": 108314624,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 5.807516,
+      "cpu_system_seconds": 0.745466,
+      "monotonic_seconds": 33932.903266688,
+      "current_rss_bytes": 108310528,
+      "elapsed_seconds": 60.047390234001796
+    },
+    {
+      "peak_rss_bytes": 108498944,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 7.636293,
+      "cpu_system_seconds": 0.9869119999999999,
+      "monotonic_seconds": 33962.932216863,
+      "current_rss_bytes": 108490752,
+      "elapsed_seconds": 90.07719939399976
+    },
+    {
+      "peak_rss_bytes": 108584960,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 9.809195,
+      "cpu_system_seconds": 1.266138,
+      "monotonic_seconds": 33992.937654897,
+      "current_rss_bytes": 108580864,
+      "elapsed_seconds": 120.08208598900092
+    },
+    {
+      "peak_rss_bytes": 108621824,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 11.785782,
+      "cpu_system_seconds": 1.5148,
+      "monotonic_seconds": 34022.942227216,
+      "current_rss_bytes": 108617728,
+      "elapsed_seconds": 150.08668468000542
+    },
+    {
+      "peak_rss_bytes": 108679168,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 13.769868,
+      "cpu_system_seconds": 1.7755269999999999,
+      "monotonic_seconds": 34052.953100114,
+      "current_rss_bytes": 108675072,
+      "elapsed_seconds": 180.0975188320008
+    },
+    {
+      "peak_rss_bytes": 108716032,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 15.426926,
+      "cpu_system_seconds": 1.984957,
+      "monotonic_seconds": 34082.958127991,
+      "current_rss_bytes": 108711936,
+      "elapsed_seconds": 210.1021132370006
+    },
+    {
+      "peak_rss_bytes": 108847104,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 16.848207,
+      "cpu_system_seconds": 2.163402,
+      "monotonic_seconds": 34112.980289555,
+      "current_rss_bytes": 108838912,
+      "elapsed_seconds": 240.1240504380039
+    },
+    {
+      "peak_rss_bytes": 108945408,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 18.594695,
+      "cpu_system_seconds": 2.381934,
+      "monotonic_seconds": 34142.99655005,
+      "current_rss_bytes": 108941312,
+      "elapsed_seconds": 270.1402312729988
+    },
+    {
+      "peak_rss_bytes": 109027328,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 20.450093,
+      "cpu_system_seconds": 2.61204,
+      "monotonic_seconds": 34172.99947045,
+      "current_rss_bytes": 109047808,
+      "elapsed_seconds": 300.1432865040042
+    },
+    {
+      "peak_rss_bytes": 109207552,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 22.354334,
+      "cpu_system_seconds": 2.86524,
+      "monotonic_seconds": 34203.008991632,
+      "current_rss_bytes": 109203456,
+      "elapsed_seconds": 330.15278608000517
+    },
+    {
+      "peak_rss_bytes": 109244416,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 24.289987,
+      "cpu_system_seconds": 3.107277,
+      "monotonic_seconds": 34233.013145005,
+      "current_rss_bytes": 109236224,
+      "elapsed_seconds": 360.15654216900293
+    },
+    {
+      "peak_rss_bytes": 109375488,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 26.138018,
+      "cpu_system_seconds": 3.3616099999999998,
+      "monotonic_seconds": 34263.026343713,
+      "current_rss_bytes": 109367296,
+      "elapsed_seconds": 390.17138133299886
+    },
+    {
+      "peak_rss_bytes": 109441024,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 28.066774,
+      "cpu_system_seconds": 3.612134,
+      "monotonic_seconds": 34293.043519054,
+      "current_rss_bytes": 109436928,
+      "elapsed_seconds": 420.1884094900015
+    },
+    {
+      "peak_rss_bytes": 109473792,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 29.985232,
+      "cpu_system_seconds": 3.855337,
+      "monotonic_seconds": 34323.05685863,
+      "current_rss_bytes": 109469696,
+      "elapsed_seconds": 450.206243902001
+    },
+    {
+      "peak_rss_bytes": 109514752,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 31.857428,
+      "cpu_system_seconds": 4.120927,
+      "monotonic_seconds": 34353.068040296,
+      "current_rss_bytes": 109506560,
+      "elapsed_seconds": 480.21357342000556
+    },
+    {
+      "peak_rss_bytes": 109543424,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 33.760301,
+      "cpu_system_seconds": 4.357872,
+      "monotonic_seconds": 34383.088806337,
+      "current_rss_bytes": 109539328,
+      "elapsed_seconds": 510.23309680799866
+    },
+    {
+      "peak_rss_bytes": 109555712,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 35.65668,
+      "cpu_system_seconds": 4.612513,
+      "monotonic_seconds": 34413.110927356,
+      "current_rss_bytes": 109547520,
+      "elapsed_seconds": 540.2551228209995
+    },
+    {
+      "peak_rss_bytes": 109555712,
+      "python_threads": 4,
+      "native_threads": 9,
+      "cpu_user_seconds": 37.643527,
+      "cpu_system_seconds": 4.8701989999999995,
+      "monotonic_seconds": 34443.130714878,
+      "current_rss_bytes": 109551616,
+      "elapsed_seconds": 570.2755603760015
+    },
+    {
+      "peak_rss_bytes": 110501888,
+      "python_threads": 6,
+      "native_threads": 7,
+      "cpu_user_seconds": 39.729211,
+      "cpu_system_seconds": 5.129294,
+      "monotonic_seconds": 34473.506895503,
+      "current_rss_bytes": 110456832,
+      "elapsed_seconds": 600.6509886080021
+    }
+  ],
+  "final": true,
+  "cycle_audits": [
+    {
+      "token": "0xe545FAaa94Da6fb3Cc0AAB88c3E188B13B637777",
+      "archive": {
+        "consistent": true,
+        "errors": [],
+        "fills": {},
+        "exits": {},
+        "open_position": false,
+        "natural_completed_cycles": 0,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 5.0,
+        "observed_natural_exits": [],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof"
+      },
+      "stress_replay": {
+        "model": "causal_fixed_cost_stress_v1",
+        "samples": 1853,
+        "policy": {
+          "mode": "window",
+          "window_seconds": 60.0,
+          "rebound_pct": "0.1",
+          "max_block_age": 5.0,
+          "volatility_multiplier": "2"
+        },
+        "assumptions": {
+          "fee_bps": "25",
+          "impact_bps": "0",
+          "tax_bps": "0",
+          "gas_quote": "0.003623188405797101449275362319",
+          "latency_seconds": 0.25,
+          "size_unit": "usd",
+          "requested_amount": "1",
+          "limitations": "No pool depth, gas estimation, MEV, nonce, receipt or sellability simulation"
+        },
+        "realized_quote": "0",
+        "max_drawdown_quote": "0",
+        "open_quantity": "0",
+        "pending": false,
+        "stopped": false,
+        "trades": [],
+        "rejected": []
+      }
+    },
+    {
+      "token": "0x3A91c7d22D8D306EB109c9E9fA78aC162CcA7777",
+      "archive": {
+        "consistent": true,
+        "errors": [],
+        "fills": {},
+        "exits": {},
+        "open_position": false,
+        "natural_completed_cycles": 0,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 5.0,
+        "observed_natural_exits": [],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof"
+      },
+      "stress_replay": {
+        "model": "causal_fixed_cost_stress_v1",
+        "samples": 1731,
+        "policy": {
+          "mode": "window",
+          "window_seconds": 60.0,
+          "rebound_pct": "0.1",
+          "max_block_age": 5.0,
+          "volatility_multiplier": "2"
+        },
+        "assumptions": {
+          "fee_bps": "25",
+          "impact_bps": "0",
+          "tax_bps": "0",
+          "gas_quote": "0.0002929115407147041593438781488",
+          "latency_seconds": 0.25,
+          "size_unit": "usd",
+          "requested_amount": "1",
+          "limitations": "No pool depth, gas estimation, MEV, nonce, receipt or sellability simulation"
+        },
+        "realized_quote": "0",
+        "max_drawdown_quote": "0",
+        "open_quantity": "0",
+        "pending": false,
+        "stopped": false,
+        "trades": [],
+        "rejected": []
+      }
+    }
+  ]
+}
