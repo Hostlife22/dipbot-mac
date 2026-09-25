@@ -66,3 +66,35 @@ def test_close_refuses_manual_position_or_pending_stop(tmp_path, monkeypatch, fi
     Window.closeEvent(window, event)
     assert calls == ['message', 'ignore']
     assert not window.worker.quit_event.is_set()
+
+
+def test_direct_application_quit_joins_worker_before_qt_cleanup(tmp_path):
+    import os
+    import subprocess
+    import sys
+    script = r"""
+import sys, time
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from dipbot.app import Window
+from dipbot.storage import Store
+from dipbot.worker import Worker
+
+def slow_run(self):
+    while not self.quit_event.wait(.01):
+        pass
+    time.sleep(.2)
+    self.store.data['worker_finished'] = True
+    self.store.save()
+Worker.run = slow_run
+app = QApplication([])
+window = Window(Store(sys.argv[1]))
+QTimer.singleShot(50, app.quit)
+app.exec()
+assert not window.worker.isRunning()
+assert Store(sys.argv[1]).data['worker_finished']
+"""
+    result = subprocess.run([sys.executable, '-c', script, str(tmp_path/'quit.json')],
+                            env={**os.environ, 'QT_QPA_PLATFORM': 'offscreen'},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr

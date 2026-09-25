@@ -27,11 +27,13 @@ class Store:
     @timed("storage.save")
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # Serialize once before touching disk; preserve the durable replace protocol.
+        payload = json.dumps(self.data, ensure_ascii=False, separators=(",", ":"))
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".state-")
         replaced = False
         try:
             with os.fdopen(fd, "w") as stream:
-                json.dump(self.data, stream, ensure_ascii=False, indent=2)
+                stream.write(payload)
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(tmp, self.path)

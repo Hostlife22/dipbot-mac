@@ -315,7 +315,15 @@ class Window(QMainWindow):
         if self.locked:
             self.log("В журнале есть незавершённая LIVE-операция. Проведите сверку в настройках")
         self.update_controls()
+        QApplication.instance().aboutToQuit.connect(self.join_worker_at_exit)
         self.worker.start()
+
+    def join_worker_at_exit(self):
+        # QApplication.quit() can bypass closeEvent. Do not let Qt destroy a
+        # running worker. Let an in-flight operation finish its durable writes;
+        # this is process teardown, not a new STOP/sell command.
+        self.worker.quit_event.set()
+        self.worker.wait()
 
     def button(self, text, callback, kind=None):
         button = QPushButton(text)

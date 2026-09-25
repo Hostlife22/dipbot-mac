@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None):
     directory.mkdir(parents=True, exist_ok=False)
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(STYLE)
@@ -112,7 +112,16 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['router'] = pool.router
             report['token_decimals'] = pool.token_decimals
             w.market_toggle.setChecked(False)
-            w.params['amount'].setText('0.00003')
+            if amount_usd is not None:
+                if not D(amount_usd).is_finite() or not 0 < D(amount_usd) <= 1:
+                    raise ValueError('Audit USD amount must be in (0, 1]')
+                w.amount_unit.setCurrentIndex(w.amount_unit.findData('usd'))
+                w.params['amount'].setText(str(amount_usd))
+            else:
+                w.params['amount'].setText('0.00003')
+            report['sizing'] = w.sizing_policy()
+            report['quote_token'] = pool.quote
+            report['paper_policy'] = w.paper_policy()
             w.params['dip'].setText('3');w.params['take_profit'].setText('2');w.params['stop_loss'].setText('2')
             w.interval.setValue(.1)
             if modern:
@@ -127,6 +136,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['signal_policy'] = w.signal_policy()
             report['exit_policy'] = w.exit_policy()
             report['adaptive_rpc'] = modern
+            if amount_usd is not None:
+                wait(lambda: w.worker.rates.snapshot(pool.quote) is not None, 60)
             # Manual PAPER actions are explicitly separate from natural strategy signals.
             phase[0] = 'manual_paper_buy'
             w.banner.setText('PAPER · ПРОВЕРКА BUY NOW · реальная цена BSC, виртуальная покупка')
@@ -265,4 +276,9 @@ if __name__ == '__main__':
     parser.add_argument('--seconds',type=int,default=300)
     parser.add_argument('--pool',help='Explicit pool, still verified against canonical factory')
     parser.add_argument('--exercise-recovery',action='store_true',help='Controlled quote timeout and STOP/restart during PAPER')
-    args=parser.parse_args();run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery)
+    parser.add_argument('--modern', action='store_true')
+    parser.add_argument('--close-after', action='store_true')
+    parser.add_argument('--amount-usd', help='Virtual USD amount, at most 1; no real trades')
+    args=parser.parse_args()
+    raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd))

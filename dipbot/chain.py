@@ -419,7 +419,7 @@ class Chain:
         block = self.check(force_network=False)
         header = dict(self.checked_header)
         output = self.quote(pool, amount, buy, block=block)
-        if type(output) is not int or not 0 < output < 2**256:
+        if type(output) is not int or not 0 <= output < 2**256:
             raise ValueError('Некорректная котировка PAPER')
         self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
         self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}

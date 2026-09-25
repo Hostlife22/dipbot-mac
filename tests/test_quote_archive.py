@@ -40,3 +40,9 @@ def test_archive_retains_raw_quote_without_credentials(tmp_path):
     assert rows[1]['amount_in_raw']==10**18 and rows[1]['amount_out_raw']==123
     assert rows[1]['block']==42 and rows[1]['pool']==POOL.address
     assert 'SECRET' not in worker.recorder.path.read_text()
+
+
+def test_zero_paper_quote_reaches_existing_minout_policy():
+    chain = fake_chain()
+    chain.quote = lambda *args, **kwargs: 0
+    assert chain.paper_quote(POOL, 100, True) == 0
