@@ -1,0 +1,24 @@
+{
+  "mode": "LIVE",
+  "scenarios": [
+    "LIVE converter BNB -> WBNB",
+    "LIVE V2 BUY via UI",
+    "LIVE STOP closes V2 position",
+    "LIVE V3 BUY -> SELL via UI",
+    "LIVE converter WBNB -> BNB",
+    "LIVE converter BNB -> USDT",
+    "LIVE converter USDT -> BNB",
+    "LIVE reconcile with no pending operation",
+    "LIVE scoped Sweep: WBNB unwrap; catalog restricted to WBNB, zero USDT target",
+    "LIVE scoped Sweep: tracked USDT target then remaining WBNB base; restricted catalog"
+  ],
+  "errors": [],
+  "passed": true,
+  "journal_locked": false,
+  "max_total_cost_usd": "1",
+  "conservative_cost_bound_usd": "0.3630297214631340",
+  "remaining_wbnb_raw": 0,
+  "remaining_usdt_raw": 0,
+  "gas_fee_wei": 154723900000000,
+  "native_balance_delta_wei": 155022681035262
+}

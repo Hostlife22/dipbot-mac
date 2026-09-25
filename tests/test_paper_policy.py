@@ -77,3 +77,58 @@ def test_stop_during_router_quote_prevents_virtual_fill(tmp_path):
     w.chain=NS(quote=quote)
     with pytest.raises(EntryRejected,match='STOP'):w.open_position()
     assert not w.paper.position
+
+
+
+def test_gas_model_uses_fresh_base_and_native_fx_without_pool_fee_double_count():
+    import time
+    from dipbot.accounting import RateBook
+    from dipbot.chain import WBNB
+    rates = RateBook();now = time.monotonic()
+    rates.update(POOL.quote, D(2), now);rates.update(WBNB, D(800), now)
+    p = PaperPolicy(gas_units=200000, fee_quote=D('.001'))
+    assert p.operation_cost(D('.1'),POOL.quote,rates) == D('.009')
+    assert p.operation_cost(D('.1'),WBNB,rates) == D('.00102')
+    assert PaperPolicy.parse(p.export()) == p
+
+
+def test_missing_fx_cannot_become_free_gas():
+    from dipbot.accounting import RateBook
+    with pytest.raises(TimeoutError):
+        PaperPolicy(gas_units=200000).operation_cost(D('.1'),POOL.quote,RateBook())
+
+
+@pytest.mark.parametrize('value',[-1,True,1.5,2000001])
+def test_invalid_gas_units_are_rejected(value):
+    with pytest.raises(ValueError):PaperPolicy.parse({'gas_units':value})
+
+
+def test_worker_gas_model_charges_both_fills(tmp_path):
+    import time
+    from dipbot.chain import WBNB
+    w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
+    w.paper_policy=PaperPolicy(0,D('.001'),200000)
+    w.rates.update(POOL.quote,D(2),time.monotonic())
+    w.rates.update(WBNB,D(800),time.monotonic())
+    w.strategy.settings=replace(w.strategy.settings,amount=D(1),slippage=D(0),dynamic=D(0))
+    w.chain=NS(quote=lambda pool,amount,buy:amount)
+    w.open_position()
+    assert w.paper.cost==D('1.009') and w.paper.position==1
+    w.read_price=lambda:D(1)
+    w.close_position('MANUAL')
+    assert w.paper.realized==D('-.018')
+
+
+def test_gas_fx_expiring_during_quote_prevents_fill(tmp_path):
+    import time
+    from dipbot.chain import WBNB
+    w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
+    w.paper_policy=PaperPolicy(0,D(0),200000)
+    w.rates.update(POOL.quote,D(2),time.monotonic())
+    w.rates.update(WBNB,D(800),time.monotonic())
+    def quote(pool,amount,buy):
+        w.rates.rates.clear()
+        return amount
+    w.chain=NS(quote=quote)
+    with pytest.raises(EntryRejected,match='курсы'):w.open_position()
+    assert not w.paper.position

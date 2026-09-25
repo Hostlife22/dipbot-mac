@@ -241,6 +241,9 @@ class Worker(QThread):
             block=context.get('block'), block_hash=context.get('block_hash'),
             pool=self.pool.address if self.pool else None)
 
+    def paper_operation_cost(self):
+        return self.paper_policy.operation_cost(self.gas_gwei, self.pool.quote, self.rates)
+
     def status(self):
         settings = self.strategy.settings
         realized = str(self.paper.realized) if self.mode != 'LIVE' else '—'
@@ -811,7 +814,7 @@ class Worker(QThread):
                 if time.monotonic()-self.price_time > self.strategy.settings.max_gap:
                     raise TimeoutError("Снимок цены устарел во время котировки выхода")
                 if self.mode == 'PAPER':
-                    proceeds -= self.paper_policy.fee_quote
+                    proceeds -= self.paper_operation_cost()
                 exit_return = (proceeds/cost-1)*100
             self.exit_return = str(exit_return) if exit_return is not None else None
         except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
@@ -943,6 +946,10 @@ class Worker(QThread):
             self.set_position(received, entry)
             self.live.finish()
         else:
+            try:
+                paper_fee = self.paper_operation_cost() if self.mode == 'PAPER' and self.pool else self.paper_policy.fee_quote
+            except TimeoutError as exc:
+                raise EntryRejected(str(exc)) from None
             signal_price = self.current_price
             entry = self.current_price
             if self.mode == 'PAPER' and self.stop_event.wait(self.paper_policy.latency_seconds):
@@ -960,10 +967,14 @@ class Worker(QThread):
                                          self.pool.token_decimals, settings.buy_tolerance)
                 if quoted < bound:
                     raise EntryRejected('PAPER BUY: котировка ниже minOut снимка; покупка не исполнена')
-                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals+self.paper_policy.fee_quote,
+                try:
+                    paper_fee = self.paper_operation_cost()
+                except TimeoutError as exc:
+                    raise EntryRejected(str(exc)) from None
+                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals+paper_fee,
                     D(quoted)/D(10)**self.pool.token_decimals)
                 self.log.emit(f'PAPER: router quote после задержки {self.paper_policy.latency_seconds:g} с; '
-                    f'стоимость операции {self.paper_policy.fee_quote} в базе добавлена по модели; token tax не учтён')
+                    f'стоимость операции {paper_fee} в базе добавлена по модели; token tax не учтён')
             else:
                 execution = self.paper.buy(settings.amount, self.current_price)
             self.paper_usd['entry'] = marked_value(self.paper.cost,
@@ -1010,8 +1021,9 @@ class Worker(QThread):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 output = quote(self.pool, amount, False)
+                paper_fee = self.paper_operation_cost()
                 self.record_quote(self.chain, 'paper_fill', 'SELL', amount, output)
-                pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, self.paper_policy.fee_quote)
+                pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, paper_fee)
             else:
                 pnl = self.paper.sell(price)
             proceeds_usd = marked_value(paper_cost+pnl,

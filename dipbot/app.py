@@ -275,6 +275,7 @@ class Window(QMainWindow):
                 paper_model = saved_preferences.get('paper_policy',{})
                 self.paper_delay.setValue(float(paper_model.get('latency_seconds',.25)))
                 self.paper_fee.setText(paper_model.get('fee_quote','0'))
+                self.paper_gas.setValue(paper_model.get('gas_units',0))
                 costs = saved_preferences.get('entry_cost_policy', {})
                 self.cost_limit.setValue(float(costs.get('maximum_pct',0)))
                 self.cost_gas.setValue(float(costs.get('roundtrip_gas',400000)))
@@ -577,6 +578,13 @@ class Window(QMainWindow):
         grid.addRow(section)
         grid.addRow('Задержка исполнения PAPER', self.paper_delay)
         grid.addRow('Стоимость операции PAPER · база', self.paper_fee)
+        self.paper_gas = QDoubleSpinBox()
+        self.paper_gas.setRange(0,2000000);self.paper_gas.setDecimals(0)
+        self.paper_gas.setToolTip('Газ на каждую виртуальную BUY/SELL: units × GAS GWEI, '
+            'пересчёт в базу по свежим USD-курсам. Это заданная модель, не estimateGas. '
+            'Добавляется к фиксированной стоимости; комиссии пула уже в router quote. 0 отключает.')
+        self.editable.append(self.paper_gas)
+        grid.addRow('Газ PAPER на операцию · 0 выкл.', self.paper_gas)
         self.cost_limit = QDoubleSpinBox()
         self.cost_limit.setRange(0,100)
         self.cost_limit.setSuffix(' %')
@@ -938,7 +946,7 @@ class Window(QMainWindow):
             cost_policy=self.entry_cost_policy(), gas=self.gas.text().strip())
 
     def paper_policy(self):
-        return {'latency_seconds':self.paper_delay.value(),'fee_quote':self.paper_fee.text().strip()}
+        return {'gas_units':int(self.paper_gas.value()),'latency_seconds':self.paper_delay.value(),'fee_quote':self.paper_fee.text().strip()}
 
     def entry_cost_policy(self):
         return {'maximum_pct':str(self.cost_limit.value()),'roundtrip_gas':int(self.cost_gas.value())}
@@ -1484,7 +1492,7 @@ class Window(QMainWindow):
                       if addr.lower() == payload['quote'].lower()), payload['quote']))
             if payload['source'] == 'BSC' and self.isVisible():
                 self.usd.set_token(payload['quote'])
-                self.gas_usd.set_token(WBNB if (self.mode.currentText() == 'LIVE' or (self.mode.currentText() == 'PAPER' and self.cost_limit.value() > 0)) and payload['quote'].lower() != WBNB.lower() else '')
+                self.gas_usd.set_token(WBNB if (self.mode.currentText() == 'LIVE' or (self.mode.currentText() == 'PAPER' and (self.cost_limit.value() > 0 or self.paper_gas.value() > 0))) and payload['quote'].lower() != WBNB.lower() else '')
         elif name == "price":
             if self.mode.currentText() != 'DEMO' and not self.selection_ready:
                 return
