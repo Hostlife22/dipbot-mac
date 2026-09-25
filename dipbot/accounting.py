@@ -78,12 +78,41 @@ def record_close(store, owner, pool, position, received, operation, exit_rate, *
         'wallet':owner.lower(), 'pool':pool.address, 'token':pool.token, 'quote':pool.quote,
         'closed_at':int(time.time()), 'inventory_matches':inventory_matches, 'cost_quote':position.get('cost_quote'),
         'proceeds_quote':str(proceeds), 'entry_cost_usd':entry_usd,
+        'entry_gas_hashes':position.get('entry_gas_hashes'),
+        'exit_gas_hashes':[row['hash'] for row in rows],
         'proceeds_usd':proceeds_usd, 'exit_rate':exit_rate, 'exit_fees':fees,
         'net_usd':str(net) if net is not None else None})
 
 
+
+def expense_summary(store, owner):
+    closed = [r for r in store.data.get('closed_trades',{}).values() if r['wallet']==owner.lower()]
+    gas = {h:r for h,r in store.data.get('gas_ledger',{}).items() if r['wallet']==owner.lower()}
+    allocated = set()
+    complete = all(row.get('net_usd') is not None for row in closed)
+    for row in closed:
+        entry, exit_ = row.get('entry_gas_hashes'), row.get('exit_gas_hashes')
+        if not isinstance(entry,list) or not isinstance(exit_,list) or not entry or not exit_:
+            complete = False
+            continue
+        hashes = set(entry+exit_)
+        if not hashes <= gas.keys() or allocated & hashes:
+            complete = False
+        allocated.update(hashes)
+    other = [r for h,r in gas.items() if h not in allocated]
+    missing = sum(row.get('usd') is None for row in other)
+    known = sum((D(row['usd']) for row in other if row.get('usd') is not None),D(0))
+    realized = sum((D(row['net_usd']) for row in closed if row.get('net_usd') is not None),D(0))
+    return {'unallocated_gas_usd':str(known) if complete and not missing else None,
+            'unallocated_known_usd':str(known), 'unallocated_missing':missing,
+            'realized_less_other_gas_usd':str(realized-known) if complete and not missing else None,
+            'allocation_complete':complete,
+            'scope':'tracked_closed_positions_less_all_other_recorded_gas_not_portfolio_nav'}
+
+
 def accounting_report(store, owner):
     summary = closed_summary(store, owner)
+    expenses = expense_summary(store, owner)
     rows = [r for r in store.data.get('gas_ledger', {}).values() if r['wallet'] == owner.lower()]
     missing = sum(row.get('usd') is None for row in rows)
     known = sum((D(row['usd']) for row in rows if row.get('usd') is not None),D(0))
@@ -92,7 +121,10 @@ def accounting_report(store, owner):
              'P&L закрытых позиций: '+(summary['value']+' USD (газ BUY/SELL учтён)' if summary['value'] is not None else 'недостаточно данных'),
              f'Газ всех записанных транзакций: {len(rows)} receipts; без USD-курса: {missing}.',
              f'Известная часть расходов газа: {known} USD.',
-             'Газ Converter/Sweep/revert включён в список расходов; в P&L закрытых позиций он отдельно не распределён.',
+             'Газ Converter/Sweep/revert/CANCEL и открытых позиций включён в общий журнал.',
+             'Прочий газ, не включённый в P&L закрытий: '+(expenses['unallocated_gas_usd']+' USD' if expenses['unallocated_gas_usd'] is not None else 'неполное распределение / USD-курсы'),
+             'Закрытия минус прочий газ: '+(expenses['realized_less_other_gas_usd']+' USD' if expenses['realized_less_other_gas_usd'] is not None else 'недостаточно данных'),
+             'Это не NAV портфеля: открытые активы, внешние переводы и изменение стоимости BASE не переоцениваются.',
              'Курсы — ориентировочные отметки DEX Screener, а не точная цена фиатного исполнения.']
     recent = [r for r in store.data.get('closed_trades', {}).values() if r['wallet']==owner.lower()][-20:]
     for row in reversed(recent):
@@ -115,6 +147,8 @@ def record_sweep_exit(store, owner, token, sold, residual, proceeds, quote, quot
     same_quote = all(p['pool']['quote'].lower()==quote.lower() and 'cost_quote' in p for p in positions)
     combined = {'entry_cost_usd':str(entry_usd) if entry_usd is not None else None,
                 'cost_quote':str(sum((D(p['cost_quote']) for p in positions),D(0))) if same_quote else None}
+    gas_groups = [p.get('entry_gas_hashes') for p in positions]
+    combined['entry_gas_hashes'] = sorted({h for group in gas_groups for h in group}) if all(isinstance(g,list) and g for g in gas_groups) else None
     pool = SimpleNamespace(address=pool_address,token=token,quote=quote,quote_decimals=quote_decimals)
     record_close(store,owner,pool,combined,proceeds,operation,exit_rate,inventory_matches=total==sold and residual==0)
     rows=operation.get('transactions',[]) if operation else []

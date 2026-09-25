@@ -916,6 +916,8 @@ class Worker(QThread):
             cost_usd = marked_value(D(amount)/D(10)**self.pool.quote_decimals, rate)
             self.position()['entry_rate'] = rate
             self.position()['entry_fees'] = fees
+            operation = getattr(self.live,'operation',None)
+            self.position()['entry_gas_hashes'] = [row['hash'] for row in operation['transactions']] if operation else None
             self.position()['entry_cost_usd'] = (str(D(cost_usd)+D(fees['usd']))
                 if cost_usd is not None and fees['usd'] is not None else None)
             self.store.save()
