@@ -1,4 +1,5 @@
 import time
+import pytest
 from decimal import Decimal as D
 from dipbot.trade_view import entry_view, exit_view
 from test_app_autopair_flow import window
@@ -44,7 +45,8 @@ def test_ui_separates_closed_result_and_stale_open_estimate(window):
     assert 'Нет данных' in w.trade_details.text()
 
 
-def test_worker_breakdown_matches_paper_ledger(tmp_path):
+@pytest.mark.parametrize('fx,fee',[('1','.01'),('775.31','.00001289973039563473123411720695')])
+def test_worker_breakdown_matches_paper_ledger(tmp_path,fx,fee):
     from types import SimpleNamespace
     from dipbot.worker import Worker
     from dipbot.storage import Store
@@ -54,15 +56,16 @@ def test_worker_breakdown_matches_paper_ledger(tmp_path):
     from dataclasses import replace
     w.strategy.settings=replace(w.strategy.settings,amount=D(1))
     w.current_price=D('.01');w.read_price=lambda:D('.01')
-    w.paper_policy=PaperPolicy(fee_quote=D('.01'),latency_seconds=0)
-    w.rates.update(POOL.quote,D(1),time.monotonic())
+    w.paper_policy=PaperPolicy(fee_quote=D(fee),latency_seconds=0)
+    w.rates.update(POOL.quote,D(fx),time.monotonic())
     w.chain=SimpleNamespace(quote=lambda pool,amount,buy:100*10**18 if buy else 10059*10**14)
     w.open_position()
-    assert D(w.trade_detail['buy_price_usd'])==D('.01')
-    assert D(w.trade_detail['entry_total_usd'])==D('1.01')
+    assert D(w.trade_detail['buy_price_usd'])==D('.01')*D(fx)
+    assert D(w.trade_detail['entry_total_usd'])==w.paper.cost*D(fx)
     w.close_position('TIME_EXIT')
-    assert D(w.trade_detail['sell_price_usd'])==D('.010059')
-    assert D(w.trade_detail['net_usd'])==w.paper.realized==w.paper_usd['value']==D('-.0141')
+    assert D(w.trade_detail['sell_price_usd'])==D('.010059')*D(fx)
+    assert D(w.trade_detail['net_usd'])==w.paper_usd['value']
+    if fx=='1':assert w.paper.realized==D('-.0141')
 
 
 def test_missing_legacy_live_cost_is_not_zero(tmp_path):
@@ -75,3 +78,15 @@ def test_missing_legacy_live_cost_is_not_zero(tmp_path):
     w.set_position(100,D(1))
     detail=w.current_trade_detail()
     assert detail['entry_gross_usd'] is None and detail['entry_total_usd'] is None
+
+
+def test_ui_missing_usd_never_displays_zero_profit(window):
+    from test_autopair_dynamic import POOL
+    w=window;w.mode.setCurrentText('PAPER');w.on_event('selected',POOL)
+    status(w,position='100',trade_detail=entry_view(D(100),D(1),None,None),
+           open_estimate={'at':time.monotonic(),'value_usd':None,'pnl_usd':None,'excludes_exit_gas':False})
+    assert 'нет данных' in w.position_estimate.text()
+    assert '$0' not in w.position_estimate.text()
+    assert 'нет данных' in w.trade_details.text()
+    status(w,position='0',open_estimate=None)
+    assert w.position_estimate.text()=='Открытая позиция, USD: —'

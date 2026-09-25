@@ -1390,13 +1390,13 @@ class Window(QMainWindow):
         if not self.running and not self.busy and not self.stop_pending and not self.locked and not getattr(self, 'selection_ready', False) and self.mode.currentText() != 'DEMO':
             self.strategy_status.setText(self.pool_label.text() if 'DEMO' not in self.pool_label.text() else 'Выберите рынок · раскройте AutoPair')
             return
-        if self.stop_pending:
-            self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
-            return
         retry = getattr(self, 'exit_retry', None)
         if retry:
             remaining = max(0, retry['retry_at']-time.monotonic())
-            self.strategy_status.setText(f"Позиция открыта, выход ожидает RPC · {retry['error']} · попытка {retry['attempt']}/{retry['limit']} через {remaining:.1f} с")
+            self.strategy_status.setText(('Останавливается · ' if self.stop_pending else '') + f"Позиция открыта, выход ожидает RPC · {retry['error']} · попытка {retry['attempt']}/{retry['limit']} через {remaining:.1f} с")
+            return
+        if self.stop_pending:
+            self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
             return
         if self.busy and getattr(self, 'ui_command', '') in ('buy', 'sell', 'convert', 'sweep'):
             self.strategy_status.setText({'buy': 'Покупка', 'sell': 'Продажа', 'convert': 'Конвертация', 'sweep': 'Продажа остатков'}[self.ui_command] + ' · ожидается результат исполнения')

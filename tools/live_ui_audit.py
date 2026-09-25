@@ -21,11 +21,24 @@ from dipbot.trader import LiveTrader
 from dipbot.usd import select_rate
 
 
-def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, sweep_stop=False):
+def reserve_cost_usd(previous, gas_wei, value_wei, fx):
+    """Historical USD reservations cannot shrink with refunds or exchange rates."""
+    previous, fx = D(previous), D(fx)
+    if not previous.is_finite() or previous < 0 or not fx.is_finite() or fx <= 0:
+        raise ValueError('Invalid audit budget/rate')
+    if type(gas_wei) is not int or type(value_wei) is not int or min(gas_wei,value_wei)<0:
+        raise ValueError('Invalid audit reservation')
+    total=previous+D(gas_wei+value_wei)/10**18*fx
+    if total>D('.90'):
+        raise ValueError('Audit cost ceiling: stop before signing')
+    return total
+
+
+def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, sweep_stop=False, exit_retry=False):
     sweep_mode = sweep_only or sweep_multi or sweep_stop
     multi = sweep_multi or sweep_stop
     sweep_state = "state-sweep-stop.json" if sweep_stop else "state-sweep-multi.json" if sweep_multi else "state-sweep.json"
-    directory.mkdir(parents=True, exist_ok=resume or sweep_mode)
+    directory.mkdir(parents=True, exist_ok=resume or sweep_mode or exit_retry)
     key = key_path.read_text().strip()
     account = Account.from_key(key)
     chain = Chain('https://bsc-dataseed.binance.org')
@@ -42,12 +55,12 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
     report = {'mode':'LIVE','scenarios':[],'receipts':[],'errors':[],
               'max_position_usd':'1','max_total_cost_usd':'1','gross_native_value':0,
               'reserved_gas_wei':0,'ui_mismatches':[]}
-    if resume or sweep_mode:
+    if resume or sweep_mode or exit_retry:
         report=json.loads((directory/'report.json').read_text())
-        if sweep_mode:
+        if sweep_mode or exit_retry:
             assert report.get('passed') and not report.get('journal_locked')
             assert not Store(directory/'state.json').data.get('operation')
-            assert not (directory/sweep_state).exists(), 'Sweep audit already attempted; review it first'
+            assert not (directory/('state-exit-retry.json' if exit_retry else sweep_state)).exists(), 'Audit already attempted; review it first'
         report['earlier_errors']=report.get('earlier_errors',[])+report['errors']
         report['errors']=[]
         report.pop('failure_type', None)
@@ -67,12 +80,11 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
                 response=requests.get('https://api.dexscreener.com/tokens/v1/bsc/'+WBNB,timeout=10)
                 response.raise_for_status()
                 fx=select_rate(response.json(),WBNB)*D('1.10')
-                next_total=report['reserved_gas_wei']+gas*trader.gas_price+report['gross_native_value']+value
-                assert D(next_total)/10**18*fx <= D('.90'), 'Audit cost ceiling: stop before signing'
+                next_usd = reserve_cost_usd(report.get('conservative_cost_bound_usd','0'), gas*trader.gas_price,value,fx)
                 assert D(value)/10**18*fx <= D('1'), 'Position cap exceeded'
                 report['reserved_gas_wei']+=gas*trader.gas_price
                 report['gross_native_value']+=value
-                report['conservative_cost_bound_usd']=str(D(next_total)/10**18*fx)
+                report['conservative_cost_bound_usd']=str(next_usd)
                 report['bnb_usd_with_10pct_margin']=str(fx)
                 save()  # Retain the whole reservation even after an uncertain result.
                 return estimate
@@ -98,7 +110,7 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
          patch.object(QMessageBox,'warning',lambda *a:report['errors'].append(a[2])), \
          (patch('dipbot.worker.profiles', lambda: {'WBNB': WBNB}) if sweep_mode else nullcontext()), \
          (patch('dipbot.dynamic.catalog', lambda store, router: {'WBNB':WBNB}) if multi else nullcontext()):
-        w=Window(Store(directory/(sweep_state if sweep_mode else 'state.json')))
+        w=Window(Store(directory/('state-exit-retry.json' if exit_retry else sweep_state if sweep_mode else 'state.json')))
         if sweep_mode:
             assert not w.store.data.get('operation') and not w.store.data.get('positions'), 'Unfinished Sweep audit'
         w.setWindowTitle('DipBot · LIVE audit · $1 position / $1 total cost cap')
@@ -154,6 +166,48 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
                 assert not w.store.data.get('operation') and not w.locked
                 report['scenarios'].append('LIVE recovery: RPC change -> receipt -> balance verification -> unlock; no resend')
             select(v2)
+            if exit_retry:
+                # One real round trip. Only a pre-send read failure is injected.
+                from requests import Response
+                from requests.exceptions import HTTPError
+                w.backup_rpc.setText('https://bsc-rpc.publicnode.com')
+                click('Подключить');select(v2)
+                deadline=time.monotonic()+60
+                while w.worker.rates.snapshot(WBNB) is None:
+                    pump()
+                    if time.monotonic()>deadline:raise TimeoutError('USD rate unavailable before LIVE test')
+                w.convert_amount.setText('0.00003');click('BUY BASE')
+                w.params['amount'].setText('0.00002');click('BUY NOW')
+                assert chain.balance(USDT,account.address)>0
+                capture('exit_retry_position')
+                fault=[]; retries=[]; original_quote=Chain.quote
+                def quote(source,pool,amount,buy,**kwargs):
+                    if not buy and source is w.worker.chain and not fault:
+                        fault.append('controlled HTTP 503 before quote')
+                        response=Response();response.status_code=503
+                        raise HTTPError(response=response)
+                    return original_quote(source,pool,amount,buy,**kwargs)
+                def inspect_retry(kind,payload):
+                    if kind=='exit_retry' and payload:
+                        retries.append(dict(payload))
+                        capture('exit_retry_wait')
+                w.worker.event.connect(inspect_retry)
+                with patch.object(Chain,'quote',quote):
+                    w.stop.click();wait()
+                assert fault and retries and chain.balance(USDT,account.address)==0
+                assert not w.store.data.get('operation') and not w.worker.position()
+                report['exit_retry_detail']=dict(w.worker.trade_detail or {})
+                closed=list(w.store.data.get('closed_trades',{}).values())
+                assert len(closed)==1 and report['exit_retry_detail'].get('net_usd') is not None
+                assert D(report['exit_retry_detail']['net_usd'])==D(closed[0]['net_usd'])
+                report['exit_retry_usd_matches_ledger']=True
+                report['exit_retry_events']=retries
+                report['scenarios'].append('LIVE V2 BUY -> STOP: injected read-only HTTP 503, backup quote, SELL receipt; no resend')
+                capture('exit_retry_sold')
+                click('SELL ALL BASE → BNB')
+                assert chain.balance(WBNB,account.address)==0
+                report['passed']=not report['ui_mismatches']
+                return
             if sweep_mode:
                 w.convert_amount.setText('0.00005' if multi else '0.00002');click('BUY BASE')
                 assert chain.balance(WBNB,account.address)==(50000000000000 if multi else 20000000000000)
@@ -239,8 +293,9 @@ if __name__=='__main__':
     p.add_argument('--resume',action='store_true',help='Only recover the single initial wrap, preserving the same budget')
     p.add_argument('--sweep-only',action='store_true',help='Continue existing budget with a WBNB-only Sweep audit')
     p.add_argument('--sweep-multi',action='store_true',help='Continue existing budget: USDT target and WBNB base Sweep only')
+    p.add_argument('--exit-retry',action='store_true',help='Continue existing budget: one small LIVE BUY/STOP with controlled quote failure')
     p.add_argument('--sweep-stop',action='store_true',help='Continue existing budget: controlled STOP after target receipt, then resume remaining base')
     a=p.parse_args()
-    if sum([a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop])>1:p.error('Choose one continuation mode')
+    if sum([a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry])>1:p.error('Choose one continuation mode')
     if not a.execute:p.error('Explicit --execute and user authorization required')
-    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop)
+    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry)

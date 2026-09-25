@@ -179,3 +179,11 @@ def test_retry_ui_event_does_not_change_live_lock(window):
     assert 'выход ожидает RPC' in w.strategy_status.text()
     w.on_event('exit_retry',None)
     assert w.exit_retry is None and w.locked==before
+
+
+def test_stop_retains_rpc_reason_and_countdown(window):
+    w=window;w.stop_pending=True
+    w.on_event('exit_retry',{'error':'HTTPError','attempt':1,'limit':3,'retry_at':time.monotonic()+2})
+    assert w.metrics['state'].text()=='STOPPING'
+    assert 'Останавливается' in w.strategy_status.text()
+    assert 'HTTPError' in w.strategy_status.text() and 'через' in w.strategy_status.text()

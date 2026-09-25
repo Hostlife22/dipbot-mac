@@ -1,0 +1,12 @@
+{
+  "consistent": true,
+  "errors": [],
+  "fills": {},
+  "exits": {},
+  "open_position": false,
+  "natural_completed_cycles": 0,
+  "reentry_signal_gaps_seconds": [],
+  "cooldown_seconds": 3.0,
+  "observed_natural_exits": [],
+  "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof"
+}

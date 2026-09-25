@@ -1017,17 +1017,19 @@ class Worker(QThread):
                     paper_fee = self.paper_operation_cost()
                 except TimeoutError as exc:
                     raise EntryRejected(str(exc)) from None
-                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals+paper_fee,
+                paper_gross = D(raw)/D(10)**self.pool.quote_decimals
+                execution = self.paper.buy_quoted(paper_gross+paper_fee,
                     D(quoted)/D(10)**self.pool.token_decimals)
                 self.log.emit(f'PAPER: router quote после задержки {self.paper_policy.latency_seconds:g} с; '
                     f'стоимость операции {paper_fee} в базе добавлена по модели; token tax не учтён')
             else:
                 execution = self.paper.buy(settings.amount, self.current_price)
+                paper_gross = self.paper.cost-paper_fee
             self.paper_usd['entry'] = marked_value(self.paper.cost,
                 self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
         if self.mode == 'PAPER' and self.pool:
             rate = self.rates.snapshot(self.pool.quote)
-            self.trade_detail = entry_view(self.paper.position, self.paper.cost-paper_fee,
+            self.trade_detail = entry_view(self.paper.position, paper_gross,
                 marked_value(paper_fee, rate), rate, total_usd=self.paper_usd['entry'])
         elif self.mode == 'LIVE':
             pos = self.position()
@@ -1137,8 +1139,14 @@ class Worker(QThread):
             self.paper_usd['closed'] += 1
             if proceeds_usd is None or self.paper_usd['entry'] is None:
                 self.paper_usd['missing'] += 1
+                if self.trade_detail is not None:
+                    self.trade_detail['net_usd'] = None
             else:
-                self.paper_usd['value'] += D(proceeds_usd)-D(self.paper_usd['entry'])
+                closed_delta = D(proceeds_usd)-D(self.paper_usd['entry'])
+                self.paper_usd['value'] += closed_delta
+                if self.trade_detail is not None:
+                    # Show the ledger result, not a differently ordered Decimal recomputation.
+                    self.trade_detail['net_usd'] = str(closed_delta)
             self.paper_usd['entry'] = None
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (стоимость операции по модели; token tax не учтён)")
         self.open_estimate = None

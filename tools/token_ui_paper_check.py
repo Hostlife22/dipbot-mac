@@ -17,8 +17,8 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc=''):
-    if automatic_only and exercise_recovery:
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc='', observe_manual_position=False, min_swaps='1'):
+    if automatic_only and (exercise_recovery or observe_manual_position):
         raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
         raise ValueError('Invalid PAPER fee model')
@@ -85,6 +85,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             elif kind == 'status':
                 report.setdefault('ui_states', {})[w.metrics['state'].text()] = report.setdefault('ui_states', {}).get(w.metrics['state'].text(), 0) + 1
                 report['checks'] += 1
+                if payload.get('open_estimate') and D(payload['position']) > 0:
+                    report['open_estimate_observations'] = report.get('open_estimate_observations',0)+1
                 if w.metrics['position'].text() != f"{float(payload['position']):.8g}":
                     report['mismatches'].append('target quantity')
                 expected = payload['levels'] if payload['running'] or D(payload['position']) > 0 else {}
@@ -95,6 +97,19 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     report['mismatches'].append('DIP chart reference differs from metric')
             elif kind == 'trade_marker':
                 report['trades'].append(dict(payload, phase=phase[0]))
+                detail = dict(w.worker.trade_detail or {})
+                report.setdefault('trade_views', []).append({'side':payload['side'], 'detail':detail,
+                    'closed_usd':str(w.worker.paper_usd['value']), 'closed_count':w.worker.paper_usd['closed'],
+                    'ui_details':w.trade_details.text(), 'ui_open':w.position_estimate.text(), 'footer':w.footer.text()})
+                if payload['side'] == 'SELL':
+                    if w.worker.open_estimate is not None or w.position_estimate.text() != 'Открытая позиция, USD: —':
+                        report['mismatches'].append('open estimate survived SELL')
+                    closes = [r for r in report['trade_views'] if r['side']=='SELL']
+                    if len(closes) != w.worker.paper_usd['closed']:
+                        report['mismatches'].append('closed counter differs from SELL markers')
+                    if all(r['detail'].get('net_usd') is not None for r in closes):
+                        if sum((D(r['detail']['net_usd']) for r in closes),D(0)) != w.worker.paper_usd['value']:
+                            report['mismatches'].append('trade USD details differ from ledger')
                 if (w.display_position > 0) != (payload['side'] == 'BUY'):
                     report['mismatches'].append('trade marker precedes settled position display')
                 if payload['side'] == 'BUY':
@@ -147,7 +162,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 w.signal_mode.setCurrentIndex(w.signal_mode.findData('window'))
                 w.signal_rebound.setValue(.1)
                 w.params['dip'].setText('0.5')
-                w.params['min_swaps'].setText('1')
+                w.params['min_swaps'].setText(min_swaps)
                 w.exit_basis.setCurrentIndex(w.exit_basis.findData('quote'))
                 w.exit_fields['max_hold_seconds'].setValue(60)
                 w.exit_fields['cooldown_seconds'].setValue(3)
@@ -173,10 +188,17 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 w.buy.click();wait(lambda:not w.busy)
                 assert w.worker.paper.position > 0, report['errors']
                 capture('manual_buy')
+                if observe_manual_position:
+                    w.start.click();wait(lambda:not w.busy)
                 until = time.monotonic()+12
                 while time.monotonic()<until:pump()
+                if observe_manual_position:
+                    capture('manual_open_estimate')
                 phase[0] = 'manual_paper_sell'
-                w.sell.click();wait(lambda:not w.busy)
+                if observe_manual_position:
+                    w.stop.click();wait(lambda:not w.stop_pending and not w.busy)
+                else:
+                    w.sell.click();wait(lambda:not w.busy)
                 assert not w.worker.paper.position, report['errors']
                 report['manual_realized'] = str(w.worker.paper.realized)
                 capture('manual_sell')
@@ -312,6 +334,8 @@ if __name__ == '__main__':
     parser.add_argument('--automatic-only', action='store_true', help='Observe natural entries without forcing manual BUY')
     parser.add_argument('--fee-usd', default='0.01', help='Fixed PAPER operation cost converted at setup; an assumption, not actual gas')
     parser.add_argument('--adaptive-rpc', action='store_true')
+    parser.add_argument('--min-swaps',default='1')
+    parser.add_argument('--observe-manual-position',action='store_true')
     parser.add_argument('--backup-rpc',default='')
     parser.add_argument('--rpc',default='https://bsc-dataseed.binance.org')
     parser.add_argument('--take-profit',default='2');parser.add_argument('--stop-loss',default='2')
@@ -319,4 +343,4 @@ if __name__ == '__main__':
     if args.automatic_only and args.exercise_recovery:
         parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc,observe_manual_position=args.observe_manual_position,min_swaps=args.min_swaps))
