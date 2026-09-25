@@ -40,7 +40,7 @@ class MarketTape:
             'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},
             'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss','min_swaps'},
-            'signal_policy': {'mode','window_seconds','rebound_pct','max_block_age'},
+            'signal_policy': {'mode','window_seconds','rebound_pct','max_block_age','volatility_multiplier'},
         }
         for name, keys in nested.items():
             if isinstance(metadata.get(name), dict):

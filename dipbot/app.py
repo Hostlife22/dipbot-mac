@@ -225,6 +225,7 @@ class Window(QMainWindow):
                 policy = saved_preferences.get('signal_policy', {})
                 self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
                 self.signal_window.setValue(float(policy.get('window_seconds', 60)))
+                self.signal_volatility.setValue(float(policy.get('volatility_multiplier',2)))
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
                 costs = saved_preferences.get('entry_cost_policy', {})
@@ -386,7 +387,7 @@ class Window(QMainWindow):
             compact_grid.addWidget(QLabel(title), 0, column)
             compact_grid.addWidget(field, 1, column)
         self.amount_unit = QComboBox()
-        self.amount_unit.addItem('База выбранной пары', 'quote')
+        self.amount_unit.addItem('База пары', 'quote')
         self.amount_unit.addItem('USD', 'usd')
         self.amount_unit.setMinimumContentsLength(8)
         self.amount_unit.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
@@ -454,6 +455,14 @@ class Window(QMainWindow):
         self.signal_mode.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.signal_mode.addItem('Совместимость · два снижения', 'legacy')
         self.signal_mode.addItem('DIP от максимума за окно', 'window')
+        self.signal_mode.addItem('DIP с порогом волатильности', 'volatility')
+        self.signal_volatility = QDoubleSpinBox()
+        self.signal_volatility.setRange(.1,20)
+        self.signal_volatility.setValue(2)
+        self.signal_volatility.setToolTip('Эксперимент: max(DIP, min(20%, множитель × σ доходностей новых блоков)). '
+            'Нужно 10 изменений; без block ID берётся не больше одного наблюдения в секунду. '
+            'Доходность не подтверждена.')
+        self.editable.append(self.signal_volatility)
         self.signal_window = QDoubleSpinBox()
         self.signal_window.setRange(1, 300)
         self.signal_window.setValue(60)
@@ -472,6 +481,7 @@ class Window(QMainWindow):
             'Это отдельно от предела разрыва наблюдений 0.55 с; timestamp блока имеет секундную точность.')
         grid.addRow('Расчёт DIP', self.signal_mode)
         grid.addRow('Окно максимума', self.signal_window)
+        grid.addRow('Множитель волатильности', self.signal_volatility)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
         self.cost_limit = QDoubleSpinBox()
@@ -818,7 +828,8 @@ class Window(QMainWindow):
 
     def signal_policy(self):
         return {'mode': self.signal_mode.currentData(), 'window_seconds': self.signal_window.value(),
-                'rebound_pct': str(self.signal_rebound.value()), 'max_block_age': self.block_age_limit.value()}
+                'rebound_pct': str(self.signal_rebound.value()), 'max_block_age': self.block_age_limit.value(),
+                'volatility_multiplier':str(self.signal_volatility.value())}
 
     def trade(self, command, **extra):
         mode = self.mode.currentText()
@@ -1133,6 +1144,8 @@ class Window(QMainWindow):
             action = (' · позиция сохранена; после устранения причины повторите SELL POSITION или STOP'
                       if self.display_position > 0 else ' · проверьте причину перед START')
             text = 'Остановлен из-за ошибки · ' + self.halt_reason + action
+        elif getattr(self, 'signal_notice', '') and self.running and not self.display_position:
+            text = self.signal_notice
         elif getattr(self, 'entry_notice', '') and self.running:
             text = self.entry_notice if self.entry_notice.startswith('Пауза после выхода:') else 'Вход пропущен · ' + self.entry_notice
         elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
@@ -1359,6 +1372,7 @@ class Window(QMainWindow):
                 row['source'] + ': ' + (f"{row['median_ms']:.0f} мс" if row['median_ms'] is not None else 'нет замеров') +
                 f", ошибок подряд {row['consecutive_errors']}" + (' (предпочтительный)' if row['preferred'] else '')
                 for row in health))
+            self.signal_notice = payload.get('signal_notice', '')
             self.entry_notice = payload.get('entry_notice', '')
             quote_exit = payload.get('exit_basis') == 'quote' and Decimal(payload.get('position', '0')) > 0
             self.exit_status.setVisible(quote_exit)

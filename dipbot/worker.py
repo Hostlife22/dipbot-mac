@@ -207,7 +207,7 @@ class Worker(QThread):
         base, entry = self.strategy.base or D(0), self.strategy.entry or D(0)
         levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
                    'SL': str(entry*(1-settings.stop_loss/100))} if entry else
-                  {'DIP': str(base*(1-settings.dip/100))})
+                  {'DIP': str(base*(1-self.strategy.effective_dip/100))})
         if entry and self.strategy.exit_policy.tp_sl_basis == 'quote':
             levels.pop('TP', None)
             levels.pop('SL', None)
@@ -221,6 +221,9 @@ class Worker(QThread):
                          "exit_basis": self.strategy.exit_policy.tp_sl_basis,
                          "exit_return": getattr(self, "exit_return", None),
                          "signal_mode": self.strategy.policy.mode,
+                         "signal_notice": (f'Прогрев волатильности: {len(self.strategy.volatility.rows)}/10 изменений'
+                             if self.strategy.policy.mode == 'volatility' and len(self.strategy.volatility.rows)<10 else ''),
+                         "effective_dip": str(self.strategy.effective_dip),
                          "base_reason": self.strategy.base_reason,
                          "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
                          "entry": str(self.strategy.entry or 0),

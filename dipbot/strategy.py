@@ -5,6 +5,7 @@ import math
 from collections import deque
 from .signal_policy import SignalPolicy
 from .exit_policy import ExitPolicy
+from .volatility import RollingVolatility
 
 D = Decimal
 
@@ -92,6 +93,8 @@ class Strategy:
         self.base_time = None
         self.base_reason = "Ожидание первого наблюдения"
         self.settings = settings
+        self.volatility = RollingVolatility()
+        self.effective_dip = settings.dip
         self.base: D | None = None
         self.entry: D | None = None
         self.last_time: float | None = None
@@ -114,10 +117,12 @@ class Strategy:
             self.cooldown_until = None
         gap = self.last_time is not None and now - self.last_time > self.settings.max_gap
         previous = self.last_price
+        if self.policy.mode == 'volatility' and observation_id is None:
+            observation_id = int(now)  # Explicit fallback for DEMO/price-only tapes.
         duplicate = observation_id is not None and observation_id == self.last_observation_id
         self.last_observation_id = observation_id
         self.last_time, self.last_price = now, price
-        if self.entry is None and self.policy.mode == 'window' and duplicate and not gap:
+        if self.entry is None and self.policy.mode in ('window','volatility') and duplicate and not gap:
             return None
         if self.entry is not None:
             if self.entry_time is None:
@@ -138,7 +143,7 @@ class Strategy:
             if self.exit_policy.max_hold_seconds and now-self.entry_time >= self.exit_policy.max_hold_seconds:
                 return 'TIME_EXIT'
             return None
-        if self.policy.mode == 'window':
+        if self.policy.mode in ('window','volatility'):
             return self.observe_window(price, now, gap)
         if self.base is None or gap:
             self.base_time = now
@@ -171,11 +176,17 @@ class Strategy:
         self.trough = None
         self.last_observation_id = None
         self.base_reason = 'Ожидание нового сигнала'
+        self.volatility.clear()
+        self.effective_dip = self.settings.dip
 
     def observe_window(self, price, now, gap):
         if gap or self.base is None:
+            self.volatility.clear()
             self.highs.clear()
             self.trough = None
+        if self.policy.mode == 'volatility':
+            sigma = self.volatility.add(price, now, self.policy.window_seconds)
+            self.effective_dip = max(self.settings.dip, min(D(20), sigma*self.policy.volatility_multiplier))
         cutoff = now - self.policy.window_seconds
         while self.highs and self.highs[0][0] < cutoff:
             self.highs.popleft()
@@ -186,10 +197,11 @@ class Strategy:
         self.highs.append((now, price))
         self.base_time, self.base = self.highs[0]
         self.base_reason = 'Разрыв наблюдений' if gap else 'Максимум временного окна'
-        if gap:
+        if gap or (self.policy.mode == 'volatility' and len(self.volatility.rows) < 10):
+            self.trough = None
             return None
         dip = (1 - price / self.base) * 100
-        if dip < self.settings.dip:
+        if dip < self.effective_dip:
             self.trough = None
             return None
         self.trough = min(self.trough, price) if self.trough is not None else price
@@ -208,6 +220,8 @@ class Strategy:
     def sold(self, price: D, reason: str, now=None):
         self.entry = None
         self.entry_time = self.peak_price = None
+        self.volatility.clear()
+        self.effective_dip = self.settings.dip
         now = (self.last_time or 0) if now is None else now
         self.cooldown_until = now+self.exit_policy.cooldown_seconds if self.exit_policy.cooldown_seconds else None
         self.highs.clear()

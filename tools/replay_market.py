@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--impact-bps',default='0')
     parser.add_argument('--tax-bps',default='0')
     parser.add_argument('--gas-quote',default='0')
+    parser.add_argument('--modes', nargs='+', choices=['legacy','window','volatility'], default=['legacy','window','volatility'])
     parser.add_argument('--window',type=float,default=60)
     parser.add_argument('--rebound',default='0')
     args=parser.parse_args()
@@ -51,7 +52,7 @@ def main():
                     size_unit=header.get('sizing',{}).get('unit','quote'),
                     requested_amount=header.get('requested_amount'),
                     exit_policy=ExitPolicy.parse(header.get('exit_policy',{})))
-             for mode in ('legacy','window')]
+             for mode in args.modes]
     args.output.write_text(json.dumps({'source':'recorded_market','results':results,
         'profitability_proven':False,'transactions_sent':0},indent=2)+'\n')
     print(json.dumps([{'policy':r['policy']['mode'],'trades':len(r['trades']),

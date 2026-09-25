@@ -20,7 +20,7 @@ def walk_forward(samples, settings, *, costs=None, folds=3, minimum_closed=3):
     costs = costs or ReplayCosts()
     candidates = [
         (f'{mode}:dip={dip}', replace(settings,dip=D(dip)), SignalPolicy(mode=mode))
-        for mode in ('legacy','window') for dip in ('0.5','1','2','3')
+        for mode in ('legacy','window','volatility') for dip in ('0.5','1','2','3')
     ]
     begin, end = times[0],times[-1]
     span = end-begin
