@@ -36,7 +36,7 @@ def test_sweep_simulates_exact_sell_after_approval_before_send(monkeypatch,versi
     function=SimpleNamespace(call=simulate)
     def build(*args):params.append(args);return function
     functions=SimpleNamespace(swapExactTokensForTokensSupportingFeeOnTransferTokens=build,exactInputSingle=build)
-    balances=iter([1000,10,110])
+    balances=iter([1000,10,1000,110,980])
     trader.chain=SimpleNamespace(verify_pool=lambda *args:pool,balance=lambda *args:next(balances),
         quote=lambda *args:100,contract=lambda *args:SimpleNamespace(functions=functions))
     trader.verify_router=lambda p:(V2_ROUTER if version=='V2' else V3_ROUTER,[])

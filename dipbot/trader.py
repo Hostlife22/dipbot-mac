@@ -176,6 +176,8 @@ class LiveTrader:
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
         before, snapshot = self.balance_snapshot(dest)
+        source_before = (self.chain.balance_at(src, self.owner, snapshot['blockNumber'])
+                         if snapshot is not None else self.chain.balance(src, self.owner))
         deadline = int(time.time()) + deadline_seconds
         contract = self.chain.contract(router, abi)
         if pool.router == "V2":
@@ -188,6 +190,21 @@ class LiveTrader:
             function.call({"from": self.owner})
         receipt = self.send(function, "BUY" if buy else "SELL")
         received = self.balance_after(dest, receipt, snapshot) - before
+        spent = source_before - self.balance_after(src, receipt, snapshot)
+        operation = getattr(self, 'operation', None)
+        if operation is not None:
+            operation.setdefault('asset_flows', []).append({
+                'source': src, 'destination': dest, 'requested': amount,
+                'source_debit': spent, 'destination_credit': received,
+                'source_matches': spent == amount,
+                'snapshot_block': snapshot['blockNumber'] if snapshot else None,
+                'receipt_block': receipt['blockNumber'],
+                'transaction_hash': Web3.to_hex(receipt['transactionHash']),
+                'basis': 'canonical_balance_interval'})
+            self.store.save()
+        if spent != amount:
+            raise UncertainTransaction('Списание исходного актива отличается от суммы сделки; '
+                'возможны tax/rebase или внешние переводы. Нужна сверка, повтор заблокирован')
         if received < min_out:
             raise UncertainTransaction("Сделка подтверждена, но изменение баланса ниже minOut. Нужна сверка")
         return received

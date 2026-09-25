@@ -155,6 +155,7 @@ def run(anvil, endpoint, token, pool_address, amount, output):
             report.update(passed=True,quoted_buy=str(quoted_buy),received=str(received),
                           quoted_sell=str(quoted_sell),returned_wei=str(returned),
                           roundtrip_loss_pct=str((D(amount)-D(returned))*100/D(amount)),
+                          asset_flows=[flow for op in store.data['history'] for flow in op.get('asset_flows',[])],
                           local_transactions=len(receipts)+1,
                           bootstrap_local_transactions=1,
                           local_gas_wei=str(sum(r.get('gas_fee_wei',0) for r in receipts)))

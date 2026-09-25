@@ -14,7 +14,7 @@ def test_swap_keeps_preapproval_bound_and_accounts_received(version, buy, signal
     trader.owner = address("0x"+"34"*20)
     sent = []
     approvals = []
-    balances = iter([1000, 10, 110])
+    balances = iter([1000, 10, 1000, 110, 980])
     quotes = iter([100, 95])  # Price worsened while approval was mined.
     functions = SimpleNamespace(
         swapExactTokensForTokensSupportingFeeOnTransferTokens=lambda *args: ("V2", args),
@@ -43,7 +43,7 @@ def test_token_balance_change_below_minimum_latches_error():
     pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
     trader = object.__new__(LiveTrader)
     trader.owner = address("0x"+"34"*20)
-    balances = iter([1000, 0, 50])
+    balances = iter([1000, 0, 1000, 50, 980])
     trader.chain = SimpleNamespace(verify_pool=lambda *args: pool,
         balance=lambda *args: next(balances), quote=lambda *args: 100,
         contract=lambda *args: SimpleNamespace(functions=SimpleNamespace(
@@ -72,3 +72,37 @@ def test_converter_rejects_actual_amount_roundtrip_loss(returned, accepted):
         with pytest.raises(ValueError, match='15%'):
             trader.conversion_route(WBNB, USDT, 100)
     assert calls == [(100, True), (200, False)]
+
+
+@pytest.mark.parametrize('spent', [20,19,21])
+def test_source_debit_evidence_persists_and_mismatch_latches(tmp_path,spent):
+    from dipbot.storage import Store
+    pool=Pool(address('0x'+'12'*20),'V2',address(USDT),address(WBNB),18,18,False)
+    trader=object.__new__(LiveTrader)
+    trader.owner=address('0x'+'34'*20)
+    trader.store=Store(tmp_path/'state.json')
+    trader.operation={'transactions':[]}
+    trader.store.data['operation']=trader.operation
+    receipt={'blockNumber':43,'transactionHash':b'\x12'*32}
+    read_blocks=[]
+    def balance_at(token,owner,number):
+        read_blocks.append(number)
+        return 1000
+    trader.chain=SimpleNamespace(verify_pool=lambda *a:pool,balance=lambda *a:1000,
+        quote=lambda *a:100,balance_at=balance_at,
+        balance_snapshot=lambda *a:(10,{'blockNumber':42,'blockHash':b'a'*32}),
+        receipt_balance=lambda token,*a:110 if token==pool.token else 1000-spent,
+        contract=lambda *a:SimpleNamespace(functions=SimpleNamespace(
+            swapExactTokensForTokensSupportingFeeOnTransferTokens=lambda *a:a)))
+    trader.verify_router=lambda p:(V2_ROUTER,[])
+    trader.approve=lambda *a:None
+    trader.send=lambda *a:receipt
+    if spent==20:
+        assert trader.swap(pool,20,True,D(2))==100
+    else:
+        with pytest.raises(UncertainTransaction,match='Списание'):
+            trader.swap(pool,20,True,D(2))
+    row=Store(trader.store.path).data['operation']['asset_flows'][0]
+    assert row['source_debit']==spent and row['source_matches']==(spent==20)
+    assert row['snapshot_block']==42 and row['receipt_block']==43
+    assert read_blocks==[42]
