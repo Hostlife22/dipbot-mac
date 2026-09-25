@@ -198,12 +198,17 @@ class Worker(QThread):
         levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
                    'SL': str(entry*(1-settings.stop_loss/100))} if entry else
                   {'DIP': str(base*(1-settings.dip/100))})
+        if entry and self.strategy.exit_policy.tp_sl_basis == 'quote':
+            levels.pop('TP', None)
+            levels.pop('SL', None)
         if entry and self.strategy.exit_policy.trailing_pct and self.strategy.peak_price:
             levels['TRAIL'] = str(self.strategy.peak_price*(1-self.strategy.exit_policy.trailing_pct/100))
         self.event.emit("status", {"running": self.running, "mode": self.mode,
                          "levels": levels,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
+                         "exit_basis": self.strategy.exit_policy.tp_sl_basis,
+                         "exit_return": getattr(self, "exit_return", None),
                          "signal_mode": self.strategy.policy.mode,
                          "base_reason": self.strategy.base_reason,
                          "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
@@ -650,6 +655,25 @@ class Worker(QThread):
             raise UncertainTransaction("Незавершённая операция: автоматические сделки заблокированы")
         try:
             price = self.read_price()
+            exit_return = None
+            if self.strategy.entry is not None and self.strategy.exit_policy.tp_sl_basis == 'quote':
+                if self.mode == 'LIVE':
+                    position = self.position()
+                    amount, cost = position['amount'], D(position.get('cost_quote', 0))
+                else:
+                    cost = self.paper.cost
+                    amount = raw_amount(self.paper.position, self.pool.token_decimals) if self.pool else 0
+                if cost <= 0:
+                    raise ValueError('Неизвестна себестоимость позиции: TP/SL по выходу недоступен')
+                if self.mode == 'DEMO':
+                    proceeds = self.paper.position*price
+                else:
+                    source = self.backup_chain if self.market_source != 'BSC' else self.chain
+                    proceeds = D(source.exit_quote(self.pool, amount))/D(10)**self.pool.quote_decimals
+                if time.monotonic()-self.price_time > self.strategy.settings.max_gap:
+                    raise TimeoutError("Снимок цены устарел во время котировки выхода")
+                exit_return = (proceeds/cost-1)*100
+            self.exit_return = str(exit_return) if exit_return is not None else None
         except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
             if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
                 raise
@@ -658,6 +682,7 @@ class Worker(QThread):
             if not self.quote_unavailable:
                 self.log.emit("Котировки недоступны: входы запрещены, повтор чтения с паузой до 5 с. Открытая позиция сохраняется")
             self.quote_unavailable = True
+            self.exit_return = None
             return
         if self.quote_unavailable:
             self.log.emit("Чтение котировок восстановлено; проверка позиции возобновлена")
@@ -681,7 +706,7 @@ class Worker(QThread):
                            block_hash=bytes(header['hash']).hex() if header else None,
                            quote_usd=usd_mark['usd'] if usd_mark else None,
                            quote_usd_observed_at=usd_mark['observed_at'] if usd_mark else None)
-        action = self.strategy.observe(price, now, observation_id=observation_id)
+        action = self.strategy.observe(price, now, observation_id=observation_id, exit_return=exit_return)
         if self.mode == 'LIVE' and self.strategy.entry is not None and self.strategy.peak_price is not None:
             position = self.position()
             if position and self.strategy.peak_price > D(position.get('peak_price', position['entry'])):

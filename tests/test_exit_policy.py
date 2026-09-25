@@ -90,3 +90,73 @@ def test_exit_preferences_roundtrip(tmp_path):
     preferences.save(store, data)
     restored = preferences.normalize(Store(store.path).data['ui_preferences'])
     assert ExitPolicy.parse(restored['exit_policy']) == ExitPolicy(D('1.25'), 300, 12)
+
+
+def test_quote_exit_uses_proceeds_not_chart_price():
+    s = strategy(tp_sl_basis='quote')
+    s.bought(D(100), now=0)
+    # Spot is up 60%, but selling the entire position returns only +1%.
+    assert s.observe(D(160), .1, exit_return=D(1)) is None
+    assert s.observe(D(160), .2, exit_return=D(-20)) == 'STOP_LOSS'
+
+
+def test_quote_exit_refuses_missing_proceeds():
+    s = strategy(tp_sl_basis='quote')
+    s.bought(D(100), now=0)
+    with pytest.raises(ValueError, match='котировки выхода'):
+        s.observe(D(160), .1)
+
+
+def test_canonical_exit_quote_checks_hash_and_raw_bounds():
+    from dipbot.chain import Chain
+    c = object.__new__(Chain)
+    c.checked_header = {'hash': b'a'*32}
+    c.check = lambda **kw: 123
+    calls = []
+    c.quote = lambda pool, amount, buy, **kw: calls.append((amount, buy, kw)) or 1234
+    c.canonical_receipt = lambda receipt: calls.append(receipt)
+    assert c.exit_quote(None, 42) == 1234
+    assert calls == [(42, False, {'block':123}), {'blockNumber':123, 'blockHash':b'a'*32}]
+    c.quote = lambda *a, **kw: -1
+    with pytest.raises(ValueError):
+        c.exit_quote(None, 42)
+
+
+def test_worker_quote_failure_does_not_sell_or_use_old_return(tmp_path):
+    from types import SimpleNamespace
+    from dipbot.worker import Worker
+    from dipbot.storage import Store
+    from test_autopair_dynamic import POOL
+    import time
+    w = Worker(Store(tmp_path/'state.json'))
+    w.mode = 'PAPER'
+    w.pool = POOL
+    w.strategy = strategy(tp_sl_basis='quote')
+    w.strategy.bought(D(100), now=time.monotonic())
+    w.paper.position, w.paper.cost = D(1), D(100)
+    w.price_time = time.monotonic()
+    w.read_price = lambda: D(200)
+    w.market_source = 'BSC'
+    def fail(*args):
+        raise TimeoutError('test')
+    w.chain = SimpleNamespace(exit_quote=fail)
+    w.exit_return = '100'
+    w.observe()
+    assert w.quote_unavailable and w.exit_return is None
+    assert w.paper.position == 1
+
+
+def test_ui_quote_exit_is_labeled_without_spot_thresholds(tmp_path):
+    from dipbot.worker import Worker
+    from dipbot.storage import Store
+    w = Worker(Store(tmp_path/'state.json'))
+    w.strategy = strategy(tp_sl_basis='quote', trailing_pct=D(5))
+    w.strategy.bought(D(100), now=0)
+    w.paper.position = D(1)
+    rows = []
+    w.event.connect(lambda name, payload: rows.append((name, payload)))
+    w.status()
+    payload = dict(rows)['status']
+    assert payload['exit_basis'] == 'quote'
+    assert 'TP' not in payload['levels'] and 'SL' not in payload['levels']
+    assert payload['levels']['TRAIL'] == '95.00'

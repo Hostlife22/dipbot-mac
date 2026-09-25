@@ -200,6 +200,11 @@ class Window(QMainWindow):
         self.journal_toggle.toggled.connect(self.toggle_journal)
         layout.addWidget(self.journal_toggle)
         layout.addWidget(self.activity)
+        self.exit_status = QLabel('')
+        self.exit_status.setObjectName('muted')
+        self.exit_status.setWordWrap(True)
+        self.exit_status.hide()
+        layout.addWidget(self.exit_status)
         self.footer = QLabel("Готов к DEMO. Реальные сделки доступны только в LIVE.")
         self.footer.setObjectName("muted")
         self.footer.setWordWrap(True)
@@ -220,6 +225,7 @@ class Window(QMainWindow):
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
                 exits = saved_preferences.get('exit_policy', {})
+                self.exit_basis.setCurrentIndex(self.exit_basis.findData(exits.get('tp_sl_basis','spot')))
                 for key, field in self.exit_fields.items():
                     field.setValue(float(exits.get(key, 0)))
                 self.gas.setText(saved_preferences["gas"])
@@ -461,6 +467,14 @@ class Window(QMainWindow):
         grid.addRow('Окно максимума', self.signal_window)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.exit_basis = QComboBox()
+        self.exit_basis.addItem('Цена пула (совместимость)', 'spot')
+        self.exit_basis.addItem('Котировка продажи позиции', 'quote')
+        self.exit_basis.setToolTip('Router quote всей позиции относительно вложенной суммы. '
+            'Включает комиссии пула и impact, исключает газ и token tax. '
+            'Линии TP/SL по spot в этом режиме скрыты; trailing остаётся по цене пула.')
+        self.editable.append(self.exit_basis)
+        grid.addRow('База TP/SL', self.exit_basis)
         self.exit_fields = {}
         for key, label, maximum, suffix in (
                 ('trailing_pct', 'Trailing stop · 0 выкл.', 99.99, ' %'),
@@ -746,7 +760,8 @@ class Window(QMainWindow):
         self.worker.submit(name, **data)
 
     def exit_policy(self):
-        return {key: str(field.value()) for key, field in self.exit_fields.items()}
+        return {'tp_sl_basis':self.exit_basis.currentData(),
+                **{key: str(field.value()) for key, field in self.exit_fields.items()}}
 
     def sizing_policy(self):
         return {'unit':self.amount_unit.currentData(), 'reserve_bnb':self.gas_reserve.text().strip()}
@@ -1269,6 +1284,12 @@ class Window(QMainWindow):
             self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
             self.entry_notice = payload.get('entry_notice', '')
+            quote_exit = payload.get('exit_basis') == 'quote' and D(payload.get('position', '0')) > 0
+            self.exit_status.setVisible(quote_exit)
+            result = payload.get('exit_return')
+            self.exit_status.setText('TP/SL по продаже позиции: ' +
+                (f'{D(result):+.2f}%' if result is not None and not payload.get('quote_unavailable') else 'ожидание свежей котировки') +
+                ' · без газа и token tax')
             self.halt_reason = payload.get('halt_reason', '')
             self.running, self.active_mode, self.locked = payload["running"], payload["mode"], payload["locked"]
             if not self.running and not self.busy and not self.worker.stop_event.is_set():

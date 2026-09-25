@@ -86,7 +86,8 @@ def replay(samples, settings, policy, costs=None, *, size_unit='quote', requeste
         if pending is None and not strategy.stopped and now >= cooldown:
             block = sample.get('block')
             identity = (block, sample.get('block_hash')) if block is not None else None
-            action = strategy.observe(price, now, observation_id=identity)
+            exit_return = ((quantity*price*costs.factor-costs.gas_quote)/cost-1)*100 if quantity and cost else None
+            action = strategy.observe(price, now, observation_id=identity, exit_return=exit_return)
             if action:
                 # Even zero latency executes on a subsequent observation; never on future data.
                 amount = requested_amount

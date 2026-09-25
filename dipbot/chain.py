@@ -390,6 +390,16 @@ class Chain:
         self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
         return assess(amount, target, reverse, block, maximum)
 
+    @timed("chain.exit_quote")
+    def exit_quote(self, pool, amount):
+        block = self.check(force_network=False)
+        header = dict(self.checked_header)
+        output = self.quote(pool, amount, False, block=block)
+        if type(output) is not int or not 0 <= output < 2**256:
+            raise ValueError('Некорректная котировка выхода')
+        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
+        return output
+
     def paper_quote(self, pool, amount, buy):
         # One immutable block for this simulated fill; no approval or signature.
         return self.quote(pool, amount, buy, block=self.check(force_network=False))

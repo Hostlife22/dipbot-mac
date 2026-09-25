@@ -35,7 +35,7 @@ class MarketTape:
         allowed = {'mode', 'pool', 'signal_policy', 'settings', 'starts_with_position', 'sizing', 'requested_amount', 'exit_policy'}
         metadata = dict(metadata)
         nested = {
-            'exit_policy': {'trailing_pct','max_hold_seconds','cooldown_seconds'},
+            'exit_policy': {'tp_sl_basis','trailing_pct','max_hold_seconds','cooldown_seconds'},
             'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},
             'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss'},

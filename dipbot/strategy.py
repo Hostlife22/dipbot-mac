@@ -96,7 +96,7 @@ class Strategy:
         self.down_streak = 0
         self.stopped = False
 
-    def observe(self, price: D, now: float, observation_id=None) -> str | None:
+    def observe(self, price: D, now: float, observation_id=None, exit_return=None) -> str | None:
         if not price.is_finite() or price <= 0 or not math.isfinite(now):
             raise ValueError("Некорректная цена")
         if self.stopped:
@@ -120,7 +120,12 @@ class Strategy:
             if self.entry_time is None:
                 self.entry_time = now
             self.peak_price = max(self.peak_price or self.entry, price)
-            change = (price / self.entry - 1) * 100
+            if self.exit_policy.tp_sl_basis == 'quote':
+                if exit_return is None or not exit_return.is_finite():
+                    raise ValueError('Для TP/SL нет свежей котировки выхода')
+                change = exit_return
+            else:
+                change = (price / self.entry - 1) * 100
             if change >= self.settings.take_profit:
                 return "TAKE_PROFIT"
             if change <= -self.settings.stop_loss:
