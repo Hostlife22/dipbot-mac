@@ -1,3 +1,4 @@
+from .telemetry import timed
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 import json
@@ -270,6 +271,7 @@ class Chain:
             self.price(pool)
         return pool
 
+    @timed("chain.price")
     def price(self, pool: Pool) -> D:
         block = self.check(force_network=False)
         header = getattr(self, 'checked_header', None)
@@ -353,6 +355,7 @@ class Chain:
                         raise
         return result
 
+    @timed("chain.quote")
     def quote(self, pool: Pool, amount: int, buy: bool, *, block="latest"):
         if amount <= 0:
             raise ValueError("Нулевая сумма")

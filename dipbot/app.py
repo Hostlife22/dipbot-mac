@@ -1160,6 +1160,7 @@ def main():
     parser.add_argument("--acceptance-resume", action="store_true")
     parser.add_argument("--acceptance-endpoint", default="https://bsc-dataseed.binance.org")
     args = parser.parse_args()
+    diagnostics = None
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
@@ -1203,13 +1204,31 @@ def main():
         if not lock.tryLock(0):
             QMessageBox.warning(None, "DipBot Mac", "Другой экземпляр приложения уже запущен")
             return 1
+        from .diagnostics import Diagnostics
+        try:
+            diagnostics = Diagnostics(data_dir() / 'diagnostics')
+        except (OSError, ValueError):
+            diagnostics = None
         try:
             window = Window()
         except Exception:
+            if diagnostics is not None:
+                diagnostics.close(clean=False)
             QMessageBox.critical(None, "Данные приложения", "Не удалось прочитать state.json. Сохраните его копию для сверки; торговля не запущена")
             return 1
+        if diagnostics is not None and diagnostics.previous_unclean:
+            window.log('Предыдущая сессия завершилась без отметки штатного выхода. Проверьте позиции и журнал восстановления; диагностика сохранена локально.')
         window.show()
-    return app.exec()
+    try:
+        result = app.exec()
+    except BaseException:
+        if diagnostics is not None:
+            diagnostics.exception(*sys.exc_info())
+            diagnostics.close(clean=False)
+        raise
+    if diagnostics is not None:
+        diagnostics.close(clean=result == 0)
+    return result
 
 
 if __name__ == "__main__":

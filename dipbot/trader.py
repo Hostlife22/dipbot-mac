@@ -1,3 +1,4 @@
+from .telemetry import timed, TIMINGS
 """Sequential execution, durable transaction intent, explicit receipt accounting."""
 from dataclasses import asdict
 import time
@@ -55,6 +56,7 @@ class LiveTrader:
             raise
         self.operation = None
 
+    @timed("trader.send")
     def send(self, function, label, value=0):
         if self.operation is None:
             raise RuntimeError("Отправка вне записанной операции запрещена")
@@ -72,7 +74,8 @@ class LiveTrader:
         if w3.eth.get_balance(self.owner) < value + gas * self.gas_price:
             raise ValueError("Недостаточно BNB для суммы и газа")
         tx = function.build_transaction({**tx_base, "gas": gas})
-        signed = self.account.sign_transaction(tx)
+        with TIMINGS.measure("execution.sign"):
+            signed = self.account.sign_transaction(tx)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
         record = {"hash": local_hash, "label": label, "nonce": nonce, "status": "pending"}
         self.operation["transactions"].append(record)
@@ -80,7 +83,8 @@ class LiveTrader:
         self.log(f"{label}: {local_hash}")
         try:
             try:
-                remote_hash = Web3.to_hex(w3.eth.send_raw_transaction(signed.raw_transaction))
+                with TIMINGS.measure("execution.broadcast_ack"):
+                    remote_hash = Web3.to_hex(w3.eth.send_raw_transaction(signed.raw_transaction))
             except Exception as exc:
                 message = str(exc).lower()
                 if not any(text in message for text in ("already known", "known transaction")):
@@ -90,7 +94,8 @@ class LiveTrader:
                 remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
-            receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
+            with TIMINGS.measure("execution.receipt_wait"):
+                receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
         except Exception:
             raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
         self.validate_receipt(receipt, local_hash)

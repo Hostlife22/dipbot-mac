@@ -1,3 +1,4 @@
+from .telemetry import timed
 from dataclasses import asdict
 import queue
 import re
@@ -481,6 +482,7 @@ class Worker(QThread):
         self.log.emit("Выбран " + self.pool.label)
         self.read_price(force_chain=True)
 
+    @timed("worker.read_price")
     def read_price(self, force_chain=False):
         if self.mode == "DEMO" and not force_chain:
             # Deterministic local market; no network, funds or signing.
@@ -536,6 +538,7 @@ class Worker(QThread):
         self.market_source = 'BSC · резервный RPC'
         return price
 
+    @timed("worker.observe")
     def observe(self):
         # Retry only a failed read, never an execution or post-receipt failure.
         if self.store.data.get("operation"):
@@ -584,6 +587,7 @@ class Worker(QThread):
             if self.strategy.stopped:
                 self.running = False
 
+    @timed("worker.open_position")
     def open_position(self):
         if self.strategy.entry is not None:
             raise ValueError("Позиция уже открыта")
@@ -626,6 +630,7 @@ class Worker(QThread):
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
+    @timed("worker.close_position")
     def close_position(self, reason):
         if self.mode == "LIVE":
             self.require_live()

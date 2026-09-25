@@ -2,6 +2,7 @@
 import threading
 import time
 from web3 import HTTPProvider
+from .telemetry import TIMINGS
 
 
 class BscHTTPProvider(HTTPProvider):
@@ -26,7 +27,14 @@ class BscHTTPProvider(HTTPProvider):
         endpoint = str(self.endpoint_uri)
         started = time.monotonic()
         try:
-            response = super().make_request(method, params)
+            # Use an allowlist so caller-controlled strings cannot leak into reports.
+            label = method if method in {'eth_chainId', 'eth_call', 'eth_getBlockByNumber',
+                'eth_getTransactionReceipt', 'eth_getTransactionCount', 'eth_estimateGas',
+                'eth_sendRawTransaction', 'eth_getBalance', 'eth_blockNumber', 'eth_gasPrice'} else 'other'
+            with TIMINGS.measure('rpc.' + label):
+                response = super().make_request(method, params)
+                if 'error' in response:
+                    TIMINGS.record('rpc.json_error', 0, failed=True)
         except Exception:
             self.invalidate_network()
             raise
