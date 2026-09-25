@@ -17,6 +17,7 @@ from .dynamic import catalog
 from .storage import Store, Vault, data_dir
 from .worker import Worker
 from .telemetry import TIMINGS
+from .pending import LABELS as PENDING_LABELS
 from . import preferences
 from .usd import UsdRate, price_text
 
@@ -858,6 +859,10 @@ class Window(QMainWindow):
                     {'prepared': 'записана до отправки; отправка могла произойти',
                      'submitted': 'RPC принял отправку; ожидается receipt',
                      'receipt_validated': 'receipt проверен'}.get(tx.get('stage'), 'этап не записан'))
+                review = tx.get('receipt_review')
+                if review:
+                    details.append(PENDING_LABELS.get(review.get('state'), 'Неизвестный результат сверки') +
+                                   ' · повторная отправка автоматически запрещена')
             if not operation.get('transactions'):
                 details.append('Hash транзакции не записан; перед снятием блокировки проверьте балансы.')
         selected = self.saved_positions.currentData()

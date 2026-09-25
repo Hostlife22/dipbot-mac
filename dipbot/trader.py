@@ -117,6 +117,7 @@ class LiveTrader:
         record["block"] = receipt["blockNumber"]
         record["stage"] = "receipt_validated"
         record["receipt_at"] = int(time.time())
+        record.pop("receipt_review", None)
         if 'blockHash' in receipt:
             record['block_hash'] = Web3.to_hex(receipt['blockHash'])
         if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
@@ -341,7 +342,11 @@ def reconcile_receipts(chain, store, owner):
         try:
             receipt = chain.w3.eth.get_transaction_receipt(record["hash"])
         except TransactionNotFound:
-            raise UncertainTransaction(f"Не найден receipt {record['hash']}; блокировка сохранена") from None
+            from .pending import inspect_missing, LABELS
+            record['receipt_review'] = inspect_missing(chain, owner, record)
+            store.save()
+            detail = LABELS[record['receipt_review']['state']]
+            raise UncertainTransaction(f"Не найден receipt {record['hash']}; {detail}; блокировка сохранена") from None
         LiveTrader.validate_receipt(receipt, record["hash"])
         if hasattr(chain, "canonical_receipt"):
             LiveTrader.retry_read(lambda: chain.canonical_receipt(receipt))
@@ -353,9 +358,11 @@ def reconcile_receipts(chain, store, owner):
         record["block"] = receipt["blockNumber"]
         record["stage"] = "receipt_validated"
         record["receipt_at"] = int(time.time())
+        record.pop("receipt_review", None)
         if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
             record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
             record_gas(store, owner, record)
+        store.save()
     # Do not clear the latch automatically: balances/position also need review.
     store.save()
     return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"

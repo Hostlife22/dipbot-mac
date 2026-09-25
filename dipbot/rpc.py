@@ -29,7 +29,7 @@ class BscHTTPProvider(HTTPProvider):
         try:
             # Use an allowlist so caller-controlled strings cannot leak into reports.
             label = method if method in {'eth_chainId', 'eth_call', 'eth_getBlockByNumber',
-                'eth_getTransactionReceipt', 'eth_getTransactionCount', 'eth_estimateGas',
+                'eth_getTransactionReceipt', 'eth_getTransactionByHash', 'eth_getTransactionCount', 'eth_estimateGas',
                 'eth_sendRawTransaction', 'eth_getLogs', 'eth_getBalance', 'eth_blockNumber', 'eth_gasPrice'} else 'other'
             with TIMINGS.measure('rpc.' + label):
                 response = super().make_request(method, params)
