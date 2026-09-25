@@ -793,7 +793,9 @@ class Window(QMainWindow):
         if self.locked and self.mode.currentText() == 'LIVE':
             text = 'Требуется сверка LIVE · проверьте незавершённую операцию'
         elif getattr(self, 'halt_reason', '') and not self.running:
-            text = 'Остановлен из-за ошибки · ' + self.halt_reason + ' · проверьте причину перед START'
+            action = (' · позиция сохранена; после устранения причины повторите SELL POSITION или STOP'
+                      if self.display_position > 0 else ' · проверьте причину перед START')
+            text = 'Остановлен из-за ошибки · ' + self.halt_reason + action
         elif getattr(self, 'entry_notice', '') and self.running:
             text = 'Вход пропущен · ' + self.entry_notice
         elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
@@ -1023,6 +1025,8 @@ class Window(QMainWindow):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--position-check", help="Offline synthetic position UI audit directory")
+    parser.add_argument("--position-check-resume", action="store_true")
     parser.add_argument("--market-paper-token", help="Isolated visible PAPER market audit token")
     parser.add_argument("--market-paper-pool", help="Canonical pool for market audit")
     parser.add_argument("--market-paper-output", help="New directory for market audit")
@@ -1037,6 +1041,9 @@ def main():
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
+    if args.position_check:
+        from .position_check import run
+        return run(app, args.position_check, args.position_check_resume)
     if args.market_paper_token:
         if not args.market_paper_output:
             parser.error('--market-paper-token requires --market-paper-output')

@@ -99,3 +99,18 @@ def test_uncertain_execution_halts_loop_and_blocks_restart_observation(tmp_path)
     with pytest.raises(UncertainTransaction):
         w.observe()
     assert calls == ['send']
+
+
+def test_successful_sale_clears_prior_stop_error_only_after_execution(tmp_path):
+    w = Worker(Store(tmp_path/'state.json'))
+    w.paper.buy_quoted(D(1), D(1)); w.strategy.bought(D(1))
+    w.halt_reason = 'Previous STOP failure'
+    def offline():
+        raise TimeoutError()
+    w.read_price = offline
+    with pytest.raises(TimeoutError):
+        w.close_position('MANUAL')
+    assert w.halt_reason and w.paper.position == 1
+    w.read_price = lambda: D(1)
+    w.close_position('MANUAL')
+    assert not w.halt_reason and not w.paper.position

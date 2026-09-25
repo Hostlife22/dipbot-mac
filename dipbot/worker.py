@@ -651,6 +651,7 @@ class Worker(QThread):
             self.strategy.base = self.read_price()
             self.strategy.last_price = self.strategy.base
             self.strategy.last_time = self.price_time
+        self.halt_reason = ""
         self.log.emit(f"{self.mode} SELL: {reason}")
 
     def sweep(self):

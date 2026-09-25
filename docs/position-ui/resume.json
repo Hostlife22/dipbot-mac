@@ -1,0 +1,15 @@
+{
+  "frozen": true,
+  "synthetic": true,
+  "resume": true,
+  "transactions_sent": 0,
+  "scenarios": [
+    "fresh_process_restores_position_and_pending_lock"
+  ],
+  "passed": true,
+  "errors": [],
+  "logs": [
+    "Выбран V2 / WBNB / 2500 · 0x1212121212121212121212121212121212121212"
+  ],
+  "trades": []
+}

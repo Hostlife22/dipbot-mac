@@ -200,3 +200,13 @@ def test_recovery_statuses_are_distinct(window):
     w.on_event('status', payload | {'running': False, 'halt_reason': 'Сбой исполнения'})
     assert w.metrics['state'].text() == 'ERROR'
     assert 'Сбой исполнения' in w.strategy_status.text() and 'START' in w.strategy_status.text()
+
+
+def test_failed_stop_guides_user_to_close_saved_position(window):
+    w = window
+    w.on_event('status', {'running': False, 'mode': 'DEMO', 'locked': False,
+        'position': '1', 'base': '1', 'entry': '1', 'realized': '0',
+        'halt_reason': 'TimeoutError', 'levels': {'ENTRY':'1'}})
+    assert 'позиция сохранена' in w.strategy_status.text()
+    assert 'SELL POSITION или STOP' in w.strategy_status.text()
+    assert w.sell.isEnabled()
