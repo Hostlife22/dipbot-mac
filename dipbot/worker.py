@@ -20,6 +20,7 @@ from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_rec
 from .entry_guard import EntryRejected
 from .signal_policy import SignalPolicy
 from .head_feed import HeadFeed, HeadSchedule
+from .market_monitor import monitor_execution
 
 
 def safe_error(exc):
@@ -48,6 +49,7 @@ class Worker(QThread):
         self.chain = None
         self.backup_chain = None
         self.head_feed = None
+        self.execution_monitor = None
         self.head_schedule = HeadSchedule()
         self.backup_until = 0.0
         self.backup_verified_pool = None
@@ -614,6 +616,7 @@ class Worker(QThread):
             if self.strategy.stopped:
                 self.running = False
 
+    @monitor_execution
     @timed("worker.open_position")
     def open_position(self):
         if self.strategy.entry is not None:
@@ -666,6 +669,7 @@ class Worker(QThread):
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
+    @monitor_execution
     @timed("worker.close_position")
     def close_position(self, reason):
         if self.mode == "LIVE":

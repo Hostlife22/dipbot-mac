@@ -129,13 +129,15 @@ def route_path(route, reverse=False):
 
 
 class Chain:
-    def __init__(self, endpoint: str):
+    def __init__(self, endpoint: str, *, request_timeout=10):
+        if not 0 < request_timeout <= 30:
+            raise ValueError("Недопустимый RPC timeout")
         parsed = urlsplit(endpoint)
         if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")):
             raise ValueError("RPC должен быть HTTPS (HTTP допустим для localhost)")
         if not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
             raise ValueError("Некорректный RPC URL")
-        self.w3 = Web3(BscHTTPProvider(endpoint, request_kwargs={"timeout": 10},
+        self.w3 = Web3(BscHTTPProvider(endpoint, request_kwargs={"timeout": request_timeout},
                                        exception_retry_configuration=None))
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         self._decimals = {}

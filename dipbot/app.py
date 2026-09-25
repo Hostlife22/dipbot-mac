@@ -583,8 +583,8 @@ class Window(QMainWindow):
              "<b>LIVE</b> — реальные транзакции. Нужны RPC, кошелёк и проверенный пул."),
             ("ЦЕНА И СТРАТЕГИЯ", "Стратегия использует стоимость <b>1 TARGET в базовом активе</b>; USD в UI — справочный пересчёт. "
              "AMOUNT задаётся в базовом активе, количество TARGET — число токенов позиции.<br><br>"
-             "Вход DIP рассчитывается от текущей базы. База обновляется при росте или двух снижениях; "
-             "проверка DIP выполняется первой. Разрыв наблюдений больше <b>0.55 с</b> сбрасывает базу входа.<br><br>"
+             "В режиме совместимости база обновляется при росте или двух снижениях; "
+             "проверка DIP выполняется первой. Оконный режим использует максимум за выбранное время и необязательный отскок. Разрыв наблюдений больше <b>0.55 с</b> сбрасывает базу входа.<br><br>"
              "В LIVE база TP/SL — цена пула после receipt BUY; в PAPER — цена сигнала. Это не средняя цена исполнения. TAKE PROFIT не гарантирует прибыль после расходов. "
              "После STOP LOSS бот останавливается; скачок цены может превысить заданный порог."),
             ("УПРАВЛЕНИЕ И ВОССТАНОВЛЕНИЕ", "<b>STOP</b> останавливает стратегию и закрывает позицию. "
@@ -965,6 +965,17 @@ class Window(QMainWindow):
         self.strategy_status.setText(text)
 
     def update_quote_age(self):
+        # Pull at UI cadence: no unbounded signal queue while an RPC/receipt blocks the executor.
+        monitor = self.worker.execution_monitor
+        if monitor is not None and self.mode.currentText() == self.worker.mode and self.selection_ready:
+            snapshot = monitor.snapshot()
+            if snapshot is not None and snapshot.pool.lower() == self.pool_input.text().lower():
+                identity = (id(monitor), snapshot.revision)
+                if identity != getattr(self, '_monitor_revision', None):
+                    self._monitor_revision = identity
+                    self.on_event('price_context', {'source': 'BSC', 'quote': snapshot.quote})
+                    self.on_event('price', str(snapshot.price))
+                    self.last_quote_at = snapshot.received_at
         self.update_strategy_status()
         self.refresh_currency()
         if self.last_quote_at is None:
