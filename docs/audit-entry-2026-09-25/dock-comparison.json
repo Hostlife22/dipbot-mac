@@ -1,0 +1,84 @@
+{
+  "passed": false,
+  "configuration_differences": [],
+  "headless": {
+    "consistent": true,
+    "errors": [],
+    "fills": {
+      "BUY": 4,
+      "SELL": 4
+    },
+    "exits": {
+      "TAKE_PROFIT": 1,
+      "STOP_LOSS": 1,
+      "TRAILING_STOP": 1,
+      "STOP": 1
+    },
+    "open_position": false,
+    "natural_completed_cycles": 3,
+    "reentry_signal_gaps_seconds": [
+      29.731532131998392,
+      22.01938178599812,
+      24.499873205997574
+    ],
+    "cooldown_seconds": 3.0,
+    "observed_natural_exits": [
+      "STOP_LOSS",
+      "TAKE_PROFIT",
+      "TRAILING_STOP"
+    ],
+    "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+    "observations": 3169,
+    "distinct_prices": 115,
+    "gaps_over_limit": 57,
+    "gap_median_seconds": 0.1100854665019142,
+    "first_signal_replay": {
+      "t": 392.84269612700155,
+      "price": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7",
+      "block": 123993136
+    },
+    "first_signal_matches": true
+  },
+  "ui": {
+    "consistent": true,
+    "errors": [],
+    "fills": {
+      "BUY": 5,
+      "SELL": 5
+    },
+    "exits": {
+      "STOP_LOSS": 2,
+      "TAKE_PROFIT": 1,
+      "TRAILING_STOP": 1,
+      "TIME_EXIT": 1
+    },
+    "open_position": false,
+    "natural_completed_cycles": 5,
+    "reentry_signal_gaps_seconds": [
+      237.0891551349996,
+      29.037809925997863,
+      21.824110693996772,
+      24.788263702997938
+    ],
+    "cooldown_seconds": 3.0,
+    "observed_natural_exits": [
+      "STOP_LOSS",
+      "TAKE_PROFIT",
+      "TIME_EXIT",
+      "TRAILING_STOP"
+    ],
+    "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+    "observations": 3120,
+    "distinct_prices": 123,
+    "gaps_over_limit": 66,
+    "gap_median_seconds": 0.1093352820025757,
+    "first_signal_replay": {
+      "t": 124.07835422399512,
+      "price": "1.85486208810521325868419294548535470771043535584637315570125697185775643658431E-7",
+      "block": 123992538
+    },
+    "first_signal_matches": true
+  },
+  "transactions_sent": 0,
+  "limits": "Independent RPC observations, not identical price streams. First-signal replay excludes execution filters. No full quote replay or profit proof."
+}

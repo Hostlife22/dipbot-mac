@@ -1,0 +1,1140 @@
+[
+  {
+    "run": "dipbot-dock-matched-headless",
+    "token": "0xd61e509004Ed608b89fD66193E88ae580e8b04Dc",
+    "settings": {
+      "amount": "0.001294079585894532513749595600",
+      "dip": "0.5",
+      "take_profit": "5",
+      "stop_loss": "5",
+      "slippage": "3",
+      "dynamic": "150",
+      "max_gap": 0.55,
+      "max_roundtrip_loss": "3",
+      "min_swaps": "1"
+    },
+    "signal_policy": {
+      "mode": "window",
+      "window_seconds": 60.0,
+      "rebound_pct": "0.1",
+      "max_block_age": 5.0,
+      "volatility_multiplier": "2"
+    },
+    "paper_policy": {
+      "gas_units": 0,
+      "latency_seconds": 0.25,
+      "fee_quote": "0.00001294079585894532513749595600"
+    },
+    "observations": 3169,
+    "gaps_over_055": 57,
+    "gap_median_seconds": 0.1100854665019142,
+    "gap_p95_seconds": 0.44263004200183786,
+    "findings": {
+      "recorded": [
+        {
+          "t": 392.84269612700155,
+          "block": 123993136,
+          "base": "2.51523048635208420944826646308697638676663679809667985480382255734010538071332E-7",
+          "price": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7"
+        }
+      ],
+      "diagnostic_without_gap_reset": [
+        {
+          "t": 143.6296781400015,
+          "block": 123992583,
+          "base": "2.11151517064994919852303567693968286160928718824799899735158007546434149505548E-7",
+          "price": "1.85421989712831179359307774765174640166716961059973270720538972925164077717017E-7"
+        }
+      ]
+    },
+    "recorded_signals": [
+      {
+        "event": "signal",
+        "sequence": 4933,
+        "t": 392.84273650999967,
+        "action": "BUY",
+        "price": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7",
+        "base": "2.51523048635208420944826646308697638676663679809667985480382255734010538071332E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 5123,
+        "t": 421.5512686389993,
+        "action": "TAKE_PROFIT",
+        "price": "2.66752481737742493366694958149948726516322890138089371132996241233271299946041E-7",
+        "base": "2.51523048635208420944826646308697638676663679809667985480382255734010538071332E-7",
+        "entry": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 5516,
+        "t": 451.88803023999935,
+        "action": "BUY",
+        "price": "2.81809005765048839819437876005401291068282204382246217976446330334353408503486E-7",
+        "base": "2.87247507646609395797047347103642485008338426114434301901931346390795582474883E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 5571,
+        "t": 463.08934937600134,
+        "action": "STOP_LOSS",
+        "price": "2.81122992387499423382145353048316040561489880015602723649491763732895265008009E-7",
+        "base": "2.87247507646609395797047347103642485008338426114434301901931346390795582474883E-7",
+        "entry": "2.81809005765048839819437876005401291068282204382246217976446330334353408503486E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 5876,
+        "t": 485.85864798299735,
+        "action": "BUY",
+        "price": "2.66416024267774380609817807700104168286637458991275356424735955304250955251366E-7",
+        "base": "2.75395730446252024350322897734121605484119001135368842469504483677132116806944E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 5934,
+        "t": 494.53252603700093,
+        "action": "TRAILING_STOP",
+        "price": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "base": "2.75395730446252024350322897734121605484119001135368842469504483677132116806944E-7",
+        "entry": "2.66416024267774380609817807700104168286637458991275356424735955304250955251366E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 6271,
+        "t": 519.6483661530001,
+        "action": "BUY",
+        "price": "2.62307792866513114037003035663051592961238318994957577798495604159440268295547E-7",
+        "base": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 6590,
+        "t": 580.9913484429999,
+        "action": "TIME_EXIT",
+        "price": "2.71185166490608639177842462534441060551494904345798573186281559056471883104910E-7",
+        "base": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "entry": "2.62307792866513114037003035663051592961238318994957577798495604159440268295547E-7"
+      }
+    ],
+    "cycle_latency": [
+      {
+        "event": "cycle_latency",
+        "sequence": 4939,
+        "t": 394.07370588400227,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993136,
+        "block_to_signal_ms": 566.6561126708984,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.014648998330812901
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.6961829935316928
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 232.13597599533387
+          },
+          {
+            "stage": "quote",
+            "ms": 515.4478529948392
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 515.7167939978535
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 767.1121179955662
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 1000.3310599931865
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1157.1176779980306
+          },
+          {
+            "stage": "quote",
+            "ms": 1157.1255799935898
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1157.62355899642
+          },
+          {
+            "stage": "completed",
+            "ms": 1230.9194069966907
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5127,
+        "t": 422.19513067299704,
+        "action": "TAKE_PROFIT",
+        "mode": "PAPER",
+        "signal_block": 123993199,
+        "block_to_signal_ms": 1275.6240367889404,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.019428000086918473
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 253.35651000204962
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 470.94938599911984
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 604.9463550007204
+          },
+          {
+            "stage": "quote",
+            "ms": 604.9833540018881
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 605.1933159978944
+          },
+          {
+            "stage": "completed",
+            "ms": 643.805384002917
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5522,
+        "t": 453.4576268969977,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993267,
+        "block_to_signal_ms": 612.8320693969727,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.010711999493651092
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.2471699994639494
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 334.79069599707145
+          },
+          {
+            "stage": "quote",
+            "ms": 687.0354720012983
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 687.2404829991865
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 937.7647569999681
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 1260.1139129983494
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1466.4970239973627
+          },
+          {
+            "stage": "quote",
+            "ms": 1466.5044639987173
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1466.6718369990122
+          },
+          {
+            "stage": "completed",
+            "ms": 1569.5447769976454
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5575,
+        "t": 463.90648235700064,
+        "action": "STOP_LOSS",
+        "mode": "PAPER",
+        "signal_block": 123993291,
+        "block_to_signal_ms": 814.3041133880615,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.0051390015869401395
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 252.86324199987575
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 550.2805150026688
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 749.5495019975351
+          },
+          {
+            "stage": "quote",
+            "ms": 749.5821550037363
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 749.8963050020393
+          },
+          {
+            "stage": "completed",
+            "ms": 817.0935500020278
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5882,
+        "t": 486.99867480099783,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993343,
+        "block_to_signal_ms": 583.9731693267822,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.01298099959967658
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 3.2055120027507655
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 221.15302800375503
+          },
+          {
+            "stage": "quote",
+            "ms": 510.81574000272667
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 511.0052860036376
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 765.6631339996238
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 983.440026997414
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1121.806793998985
+          },
+          {
+            "stage": "quote",
+            "ms": 1121.8169010026031
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1122.0052770004258
+          },
+          {
+            "stage": "completed",
+            "ms": 1139.9646510035382
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5938,
+        "t": 495.17089190099796,
+        "action": "TRAILING_STOP",
+        "mode": "PAPER",
+        "signal_block": 123993361,
+        "block_to_signal_ms": 1257.9541206359863,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.005180998414289206
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 253.24070699571166
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 476.0260289986036
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 615.7119709969265
+          },
+          {
+            "stage": "quote",
+            "ms": 615.7618799988995
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 615.9379689997877
+          },
+          {
+            "stage": "completed",
+            "ms": 638.3315019993461
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 6277,
+        "t": 520.8322022560023,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993418,
+        "block_to_signal_ms": 374.1922378540039,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.011979995178990066
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.8347819970804267
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 214.28039799502585
+          },
+          {
+            "stage": "quote",
+            "ms": 508.36294799955795
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 508.53455499600386
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 761.1869039974408
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 988.5957649967168
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1138.7689129987848
+          },
+          {
+            "stage": "quote",
+            "ms": 1138.777439999103
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1138.9557879956556
+          },
+          {
+            "stage": "completed",
+            "ms": 1183.7829739961307
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 6592,
+        "t": 581.670114859,
+        "action": "TIME_EXIT",
+        "mode": "PAPER",
+        "signal_block": 123993553,
+        "block_to_signal_ms": 718.101978302002,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.015559002349618822
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 256.4767509975354
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 473.3837499952642
+          },
+          {
+            "stage": "failed",
+            "ms": 678.7014959991211
+          }
+        ],
+        "error_type": "HTTPError",
+        "truncated": false
+      }
+    ]
+  },
+  {
+    "run": "dipbot-dock-matched-ui",
+    "token": "0xd61e509004Ed608b89fD66193E88ae580e8b04Dc",
+    "settings": {
+      "amount": "0.001294079585894532513749595600",
+      "dip": "0.5",
+      "take_profit": "5",
+      "stop_loss": "5",
+      "slippage": "3",
+      "dynamic": "150",
+      "max_gap": 0.55,
+      "max_roundtrip_loss": "3",
+      "min_swaps": "1"
+    },
+    "signal_policy": {
+      "mode": "window",
+      "window_seconds": 60.0,
+      "rebound_pct": "0.1",
+      "max_block_age": 5.0,
+      "volatility_multiplier": "2.0"
+    },
+    "paper_policy": {
+      "gas_units": 0,
+      "latency_seconds": 0.25,
+      "fee_quote": "0.00001294079585894532513749595600"
+    },
+    "observations": 3120,
+    "gaps_over_055": 66,
+    "gap_median_seconds": 0.1093352820025757,
+    "gap_p95_seconds": 0.4504508280006121,
+    "findings": {
+      "recorded": [
+        {
+          "t": 124.07835422399512,
+          "block": 123992538,
+          "base": "2.11151517064994919852303567693968286160928718824799899735158007546434149505548E-7",
+          "price": "1.85486208810521325868419294548535470771043535584637315570125697185775643658431E-7"
+        }
+      ],
+      "diagnostic_without_gap_reset": [
+        {
+          "t": 124.07835422399512,
+          "block": 123992538,
+          "base": "2.11844397843257353049980452979113592885047728747059573565752386839114841905109E-7",
+          "price": "1.85486208810521325868419294548535470771043535584637315570125697185775643658431E-7"
+        }
+      ]
+    },
+    "recorded_signals": [
+      {
+        "event": "signal",
+        "sequence": 1526,
+        "t": 124.07839098000113,
+        "action": "BUY",
+        "price": "1.85486208810521325868419294548535470771043535584637315570125697185775643658431E-7",
+        "base": "2.11151517064994919852303567693968286160928718824799899735158007546434149505548E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 1639,
+        "t": 152.07488040099997,
+        "action": "STOP_LOSS",
+        "price": "1.81768341274911203110365570754572626976035752057549870321960434213033780863747E-7",
+        "base": "2.11151517064994919852303567693968286160928718824799899735158007546434149505548E-7",
+        "entry": "1.84946832371695060507402163840968041877279587690888760154878647920413988835789E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 4656,
+        "t": 389.8356183229989,
+        "action": "BUY",
+        "price": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7",
+        "base": "2.48138393281448329249612212859856255467208113896856261251808654655742803116962E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 4846,
+        "t": 419.01324256399676,
+        "action": "TAKE_PROFIT",
+        "price": "2.70547436062940949344216047902040075276652907174793839817731929432754022129210E-7",
+        "base": "2.48138393281448329249612212859856255467208113896856261251808654655742803116962E-7",
+        "entry": "2.46560548515182669227907354962421690706596425898775786579284323097760753044686E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 5219,
+        "t": 448.76145266199455,
+        "action": "BUY",
+        "price": "2.81809005765048839819437876005401291068282204382246217976446330334353408503486E-7",
+        "base": "2.87247507646609395797047347103642485008338426114434301901931346390795582474883E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 5277,
+        "t": 460.42471380099596,
+        "action": "STOP_LOSS",
+        "price": "2.81122992387499423382145353048316040561489880015602723649491763732895265008009E-7",
+        "base": "2.87247507646609395797047347103642485008338426114434301901931346390795582474883E-7",
+        "entry": "2.81809005765048839819437876005401291068282204382246217976446330334353408503486E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 5576,
+        "t": 482.9289158679967,
+        "action": "BUY",
+        "price": "2.66416024267774380609817807700104168286637458991275356424735955304250955251366E-7",
+        "base": "2.75395730446252024350322897734121605484119001135368842469504483677132116806944E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 5631,
+        "t": 491.3169674899982,
+        "action": "TRAILING_STOP",
+        "price": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "base": "2.75395730446252024350322897734121605484119001135368842469504483677132116806944E-7",
+        "entry": "2.66416024267774380609817807700104168286637458991275356424735955304250955251366E-7"
+      },
+      {
+        "event": "signal",
+        "sequence": 5972,
+        "t": 516.7257624029953,
+        "action": "BUY",
+        "price": "2.62307792866513114037003035663051592961238318994957577798495604159440268295547E-7",
+        "base": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 6285,
+        "t": 578.289489650997,
+        "action": "TIME_EXIT",
+        "price": "2.71185166490608639177842462534441060551494904345798573186281559056471883104910E-7",
+        "base": "2.64399431562506334658909615662575402924323508161026925195407014064691897328766E-7",
+        "entry": "2.62307792866513114037003035663051592961238318994957577798495604159440268295547E-7"
+      }
+    ],
+    "cycle_latency": [
+      {
+        "event": "cycle_latency",
+        "sequence": 1532,
+        "t": 125.29128593800124,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123992538,
+        "block_to_signal_ms": 4807.374000549316,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.009969000529963523
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.6346119993831962
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 224.94787200412247
+          },
+          {
+            "stage": "quote",
+            "ms": 528.0605590014602
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 528.3159230020829
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 783.4713150004973
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 995.4124970026896
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1133.3806230031769
+          },
+          {
+            "stage": "quote",
+            "ms": 1133.3874620031565
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1133.6547570026596
+          },
+          {
+            "stage": "completed",
+            "ms": 1212.8566660030629
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 1643,
+        "t": 152.8468622779983,
+        "action": "STOP_LOSS",
+        "mode": "PAPER",
+        "signal_block": 123992607,
+        "block_to_signal_ms": 1804.2829036712646,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.00979500327957794
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 252.58356200356502
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 527.2309310021228
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 671.3582970041898
+          },
+          {
+            "stage": "quote",
+            "ms": 671.3908480014652
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 671.559412003262
+          },
+          {
+            "stage": "completed",
+            "ms": 771.9345709992922
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 4662,
+        "t": 391.2286942790015,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993136,
+        "block_to_signal_ms": 568.5858726501465,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.0050269954954274
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.193617998273112
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 398.6044619960012
+          },
+          {
+            "stage": "quote",
+            "ms": 681.8279989965959
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 682.002987996384
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 936.2891659984598
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 1178.2455259963172
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1329.5916149945697
+          },
+          {
+            "stage": "quote",
+            "ms": 1329.6004789954168
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1329.7807929993724
+          },
+          {
+            "stage": "completed",
+            "ms": 1393.038340997009
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 4850,
+        "t": 419.73061271500046,
+        "action": "TAKE_PROFIT",
+        "mode": "PAPER",
+        "signal_block": 123993200,
+        "block_to_signal_ms": 746.6509342193604,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.006471003871411085
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 252.66591800027527
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 482.01610000251094
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 710.1109040013398
+          },
+          {
+            "stage": "quote",
+            "ms": 710.1521020013024
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 710.3746830034652
+          },
+          {
+            "stage": "completed",
+            "ms": 717.3208169988357
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5225,
+        "t": 450.4651979420014,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993267,
+        "block_to_signal_ms": 495.30601501464844,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.00602700310992077
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.2834980045445263
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 325.94752500153845
+          },
+          {
+            "stage": "quote",
+            "ms": 719.1431840037694
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 719.2688170034671
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 970.9644540052977
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 1458.1626360013615
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1690.6176230040728
+          },
+          {
+            "stage": "quote",
+            "ms": 1690.6257439986803
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1690.7798860047478
+          },
+          {
+            "stage": "completed",
+            "ms": 1703.7101870009792
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5281,
+        "t": 461.1286065729946,
+        "action": "STOP_LOSS",
+        "mode": "PAPER",
+        "signal_block": 123993291,
+        "block_to_signal_ms": 1158.7400436401367,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.005476998921949416
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 256.938013000763
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 539.3363129987847
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 679.9006220026058
+          },
+          {
+            "stage": "quote",
+            "ms": 679.9444229982328
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 680.0713060001726
+          },
+          {
+            "stage": "completed",
+            "ms": 703.8498710026033
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5582,
+        "t": 484.0609073039959,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993343,
+        "block_to_signal_ms": 663.2809638977051,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.00515900319442153
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.188569000281859
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 220.82675300043775
+          },
+          {
+            "stage": "quote",
+            "ms": 514.7396910033422
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 514.8146040010033
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 769.182563002687
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 979.2382660016301
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1116.929556003015
+          },
+          {
+            "stage": "quote",
+            "ms": 1116.9363150038407
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1117.079964002187
+          },
+          {
+            "stage": "completed",
+            "ms": 1131.9616949986084
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5635,
+        "t": 492.0042909219992,
+        "action": "TRAILING_STOP",
+        "mode": "PAPER",
+        "signal_block": 123993361,
+        "block_to_signal_ms": 1051.461935043335,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.006342001142911613
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 255.38990500353975
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 480.7261410023784
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 620.370961005392
+          },
+          {
+            "stage": "quote",
+            "ms": 620.4057260038098
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 620.5083500026376
+          },
+          {
+            "stage": "completed",
+            "ms": 687.2850830040989
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 5978,
+        "t": 517.8932902140004,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123993418,
+        "block_to_signal_ms": 460.63685417175293,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.005282003257889301
+          },
+          {
+            "stage": "preflight_started",
+            "ms": 2.302697001141496
+          },
+          {
+            "stage": "activity_checked",
+            "ms": 217.59503799694357
+          },
+          {
+            "stage": "quote",
+            "ms": 502.37028099945746
+          },
+          {
+            "stage": "entry_screened",
+            "ms": 502.5950869967346
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 757.334970003285
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 990.7968999978038
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 1146.4779590023682
+          },
+          {
+            "stage": "quote",
+            "ms": 1146.4891279974836
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 1146.7300489966874
+          },
+          {
+            "stage": "completed",
+            "ms": 1167.490159998124
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 6289,
+        "t": 578.9185677369969,
+        "action": "TIME_EXIT",
+        "mode": "PAPER",
+        "signal_block": 123993554,
+        "block_to_signal_ms": 1025.2890586853027,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.006098001904319972
+          },
+          {
+            "stage": "paper_delay_finished",
+            "ms": 257.0777709988761
+          },
+          {
+            "stage": "fill_price_read",
+            "ms": 480.43399599555414
+          },
+          {
+            "stage": "fill_quote_received",
+            "ms": 628.7084470022819
+          },
+          {
+            "stage": "quote",
+            "ms": 628.7642419993063
+          },
+          {
+            "stage": "execution_applied",
+            "ms": 628.9106459953473
+          },
+          {
+            "stage": "completed",
+            "ms": 629.050688999996
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      }
+    ]
+  }
+]
