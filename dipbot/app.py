@@ -1640,6 +1640,7 @@ class Window(QMainWindow):
                       (payload['running'] or float(payload['position']) > 0) and
                       (self.mode.currentText() == 'DEMO' or self.selection_ready))
             self.base_price = Decimal(payload['base']) if active and Decimal(payload['base']) > 0 else None
+            self.chart.reference_base = self.base_price
             self.metrics['base'].setText(self.display_price(self.base_price))
             age = payload.get('base_age')
             self.metrics['base'].setToolTip(payload.get('base_reason', '') +

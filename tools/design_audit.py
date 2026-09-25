@@ -77,7 +77,7 @@ def run(output):
             report['checks'].append(f'chart/status/footer visible; no horizontal scroll {width}x{height}')
         w.resize(940,700)
         for reason, notice in (
-                ('rebound', 'DIP достигнут · ждёт отскок 0.1% от минимума; сейчас 0.00%'),
+                ('rebound', 'DIP достигнут · ждёт отскок 0.1% от минимума; сейчас ≈0.0999%'),
                 ('cooldown', 'Пауза после выхода: 3.0 с · затем новый DIP')):
             seed();status(wait_reason=reason, signal_notice=notice,
                           base='0.00000044', levels={'DIP':'0.0000004268'})

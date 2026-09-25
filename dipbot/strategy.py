@@ -1,6 +1,6 @@
 """Explicit reconstruction, not a claim of original algorithm equivalence."""
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 import math
 from collections import deque
 from .signal_policy import SignalPolicy
@@ -182,7 +182,8 @@ class Strategy:
         if self.trough is not None and self.policy.rebound_pct and self.last_price is not None:
             rebound = (self.last_price/self.trough-1)*100
             if rebound < self.policy.rebound_pct:
-                return 'rebound', f'DIP достигнут · ждёт отскок {self.policy.rebound_pct:g}% от минимума; сейчас {rebound:.2f}%'
+                shown = rebound.quantize(D('.0001'), rounding=ROUND_DOWN)
+                return 'rebound', f'DIP достигнут · ждёт отскок {self.policy.rebound_pct:g}% от минимума; сейчас ≈{shown:.4f}%'
         return 'dip', 'Ждёт падения до DIP'
 
     def reset_anchor(self):

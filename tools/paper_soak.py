@@ -59,7 +59,7 @@ def recording_health(workers):
             and all(not r['dropped'] and not r['error_type'] and r['writer_joined'] and r['completed'] for r in rows)}
 
 
-def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_usd="0", trailing="0.75", take_profit="1", stop_loss="1"):
+def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_usd="0", trailing="0.75", take_profit="1", stop_loss="1", interval=.3, min_swaps="0", max_hold=180, cooldown=5, endpoint="https://bsc-dataseed.binance.org"):
     directory.mkdir(parents=True,exist_ok=False)
     app=QCoreApplication.instance() or QCoreApplication([])
     diagnostics=Diagnostics(directory/'diagnostics')
@@ -81,7 +81,7 @@ def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_u
                 row={'token':token,'pool':pool_address,'prices':0,'signals':{},'exits':{},'fills':{},'errors':[],
                      'active_seconds':0,'running':False,'recent_prices':[]}
                 rows.append(row)
-                chain=Chain('https://bsc-dataseed.binance.org');calls=guard_provider(chain.w3.provider)
+                chain=Chain(endpoint);calls=guard_provider(chain.w3.provider)
                 pool=chain.verify_pool(pool_address,token)
                 worker=Worker(Store(directory/f'market-{i}.json'));worker.chain=chain;worker.pool=pool
                 fee_quote = D(0)
@@ -112,14 +112,16 @@ def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_u
                         reason=line.split('PAPER SELL: ')[-1];row['exits'][reason]=row['exits'].get(reason,0)+1
                 worker.event.connect(event);worker.log.connect(log)
                 policy={'mode':'window','window_seconds':60,'rebound_pct':'0.1','max_block_age':5}
-                exits={'tp_sl_basis':'quote','continue_after_risk_exit':autonomous,'trailing_pct':trailing,'max_hold_seconds':180,'cooldown_seconds':5}
-                settings={k:str(v) for k,v in asdict(Settings(amount=D(amount_usd or '.00003'),dip=D('.5'),take_profit=D(take_profit),stop_loss=D(stop_loss))).items() if k!='max_gap'}
+                exits={'tp_sl_basis':'quote','continue_after_risk_exit':autonomous,'trailing_pct':trailing,'max_hold_seconds':max_hold,'cooldown_seconds':cooldown}
+                settings={k:str(v) for k,v in asdict(Settings(amount=D(amount_usd or '.00003'),dip=D('.5'),take_profit=D(take_profit),stop_loss=D(stop_loss),min_swaps=D(min_swaps))).items() if k!='max_gap'}
                 row['settings']=settings;row['signal_policy']=policy;row['exit_policy']=exits
-                worker.command('start',{'mode':'PAPER','settings':settings,'interval':.3,'gas':'.1',
+                row['interval']=interval;row['adaptive_rpc']=False
+                worker.command('start',{'mode':'PAPER','settings':settings,'interval':interval,'gas':'.1',
                     'token':token,'pool':pool.address,'router':pool.router,'signal_policy':policy,
                     'exit_policy':exits,'record_market':True,
                     'sizing':{'unit':'usd' if amount_usd is not None else 'quote'},
                     'paper_policy':{'fee_quote':str(fee_quote),'latency_seconds':.25}})
+                row['effective_interval']=worker.interval
                 row['rpc_methods']=calls
             report['setup_seconds']=time.monotonic()-started
             started=time.monotonic();report['started_at']=int(time.time())
@@ -160,10 +162,15 @@ if __name__=='__main__':
     p.add_argument('--amount-usd')
     p.add_argument('--fee-usd',default='0',help='Fixed fee model converted to base at start; not actual gas')
     p.add_argument('--trailing',default='0.75');p.add_argument('--take-profit',default='1');p.add_argument('--stop-loss',default='1')
+    p.add_argument('--interval',type=float,default=.3)
+    p.add_argument('--min-swaps',default='0')
+    p.add_argument('--max-hold',type=float,default=180)
+    p.add_argument('--cooldown',type=float,default=5)
+    p.add_argument('--rpc',default='https://bsc-dataseed.binance.org')
     a=p.parse_args()
     if a.amount_usd is not None and (not D(a.amount_usd).is_finite() or not 0<D(a.amount_usd)<=1):p.error('USD amount must be in (0,1]')
     if not D(a.fee_usd).is_finite() or not 0<=D(a.fee_usd)<=1:p.error('Invalid fee model')
     if not 1<=a.seconds<=86400:p.error('seconds must be between 1 and 86400')
     markets=[tuple(address(x) for x in item.split(':')) for item in a.market]
     if any(len(m)!=2 for m in markets):p.error('TOKEN:POOL required')
-    raise SystemExit(run(a.output,markets,a.seconds,autonomous=a.autonomous,amount_usd=a.amount_usd,fee_usd=a.fee_usd,trailing=a.trailing,take_profit=a.take_profit,stop_loss=a.stop_loss))
+    raise SystemExit(run(a.output,markets,a.seconds,autonomous=a.autonomous,amount_usd=a.amount_usd,fee_usd=a.fee_usd,trailing=a.trailing,take_profit=a.take_profit,stop_loss=a.stop_loss,interval=a.interval,min_swaps=a.min_swaps,max_hold=a.max_hold,cooldown=a.cooldown,endpoint=a.rpc))

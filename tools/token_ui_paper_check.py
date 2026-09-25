@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01'):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2'):
     if automatic_only and exercise_recovery:
         raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
@@ -91,6 +91,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 expected = {k:v for k,v in expected.items() if D(v)>0}
                 if w.chart.levels != expected:
                     report['mismatches'].append('strategy levels')
+                if w.chart.reference_base != w.base_price:
+                    report['mismatches'].append('DIP chart reference differs from metric')
             elif kind == 'trade_marker':
                 report['trades'].append(dict(payload, phase=phase[0]))
                 if (w.display_position > 0) != (payload['side'] == 'BUY'):
@@ -105,9 +107,10 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 sources[payload['source']] = sources.get(payload['source'],0)+1
         w.worker.event.connect(check)
         try:
-            w.rpc.setText('https://bsc-dataseed.binance.org')
+            w.rpc.setText(endpoint)
             w.save_rpc.setChecked(False)
-            w.adaptive_rpc.setChecked(modern)
+            w.adaptive_rpc.setChecked(adaptive_rpc)
+            w.backup_rpc.clear()  # Controlled comparison uses one explicit endpoint.
             next(b for b in w.findChildren(QPushButton) if b.text() == 'Подключить').click()
             wait(lambda:not w.busy)
             w.token.setText(token)
@@ -138,7 +141,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['sizing'] = w.sizing_policy()
             report['quote_token'] = pool.quote
             report['paper_policy'] = w.paper_policy()
-            w.params['dip'].setText('3');w.params['take_profit'].setText('2');w.params['stop_loss'].setText('2')
+            w.params['dip'].setText('3');w.params['take_profit'].setText(take_profit);w.params['stop_loss'].setText(stop_loss)
             w.interval.setValue(.1)
             if modern:
                 w.signal_mode.setCurrentIndex(w.signal_mode.findData('window'))
@@ -154,7 +157,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['settings'] = {k:v.text() for k,v in w.params.items()}
             report['signal_policy'] = w.signal_policy()
             report['exit_policy'] = w.exit_policy()
-            report['adaptive_rpc'] = modern
+            report['adaptive_rpc'] = adaptive_rpc
+            report['interval'] = w.interval.value()
             if amount_usd is not None or D(fee_usd):
                 wait(lambda: w.worker.rates.snapshot(pool.quote) is not None, 60)
             if D(fee_usd):
@@ -177,8 +181,9 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 report['manual_realized'] = str(w.worker.paper.realized)
                 capture('manual_sell')
             phase[0] = 'automatic_live_prices'
-            w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP '+w.params['dip'].text()+'% / TP 2% / SL 2%')
+            w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP '+w.params['dip'].text()+'% / TP '+take_profit+'% / SL '+stop_loss+'%')
             w.start.click();wait(lambda:not w.busy)
+            report['effective_interval'] = w.worker.interval
             began = progress = time.monotonic()
             restart_after = 0
             original_price = w.worker.chain.price
@@ -306,8 +311,11 @@ if __name__ == '__main__':
     parser.add_argument('--amount-usd', help='Virtual USD amount, at most 1; no real trades')
     parser.add_argument('--automatic-only', action='store_true', help='Observe natural entries without forcing manual BUY')
     parser.add_argument('--fee-usd', default='0.01', help='Fixed PAPER operation cost converted at setup; an assumption, not actual gas')
+    parser.add_argument('--adaptive-rpc', action='store_true')
+    parser.add_argument('--rpc',default='https://bsc-dataseed.binance.org')
+    parser.add_argument('--take-profit',default='2');parser.add_argument('--stop-loss',default='2')
     args=parser.parse_args()
     if args.automatic_only and args.exercise_recovery:
         parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss))
