@@ -1,0 +1,94 @@
+[
+  {
+    "token": "0xbEc3c651c01dB1e70C2244eBeDa8b2eEC9177777",
+    "pool": "0x4703d291Bd4a29B31fabB1BE3B8D46c37d768de0",
+    "router": "V2",
+    "utc": "2026-09-25T08:56:26.465452+00:00",
+    "settings": {
+      "amount": "0.00003",
+      "dip": "3",
+      "take_profit": "2",
+      "stop_loss": "2",
+      "slippage": "3",
+      "dynamic": "150"
+    },
+    "observed_seconds": 900.01,
+    "checks": 11189,
+    "distinct_prices": 19,
+    "transactions_sent": 0,
+    "clean_stop": true,
+    "passed": false,
+    "errors": [
+      "PAPER BUY: котировка ниже minOut снимка; покупка не исполнена"
+    ],
+    "mismatches": [],
+    "price_sources": {
+      "BSC": 5399,
+      "BSC · резервный RPC": 194
+    },
+    "test_restarts": 2,
+    "stop_restart_passed": true,
+    "symbol": "MAME",
+    "samples": 5593,
+    "automatic_buys": 3,
+    "automatic_sells": 3,
+    "take_profit": 3,
+    "stop_loss": 0,
+    "automatic_min_native": "6.39628811557283728651180290617175402032189417840461354310131588164124162222646E-13",
+    "automatic_max_native": "1.67149385311608352551421475875171835253784259283710105395901538143597439407693E-7",
+    "automatic_range_pct": "26132147.68669427372974445656",
+    "last_vs_first_pct": "-99.99824577910974755403857901",
+    "median_observation_interval": 0.15735803100005796,
+    "gap_resets": 2,
+    "pnl_log": [
+      "PAPER P&L: -5.0275623e-7 базового актива (без газа и token tax)",
+      "PAPER P&L: +6.9928922e-7 базового актива (без газа и token tax)",
+      "PAPER P&L: +0.0000012548180 базового актива (без газа и token tax)",
+      "PAPER P&L: +0.0000010709867 базового актива (без газа и token tax)"
+    ],
+    "raw_report": "/tmp/dipbot-mame-15min/report.json"
+  },
+  {
+    "token": "0x2Ab8A4Dd2191989aC2898006Df350B236D2B7777",
+    "pool": "0xfFCa411CFbcD3194503eFfA80Fd394b55387915c",
+    "router": "V2",
+    "utc": "2026-09-25T08:57:03.280784+00:00",
+    "settings": {
+      "amount": "0.00003",
+      "dip": "3",
+      "take_profit": "2",
+      "stop_loss": "2",
+      "slippage": "3",
+      "dynamic": "150"
+    },
+    "observed_seconds": 900.02,
+    "checks": 11199,
+    "distinct_prices": 10,
+    "transactions_sent": 0,
+    "clean_stop": true,
+    "passed": true,
+    "errors": [],
+    "mismatches": [],
+    "price_sources": {
+      "BSC": 5598
+    },
+    "test_restarts": null,
+    "stop_restart_passed": null,
+    "symbol": "Sue",
+    "samples": 5598,
+    "automatic_buys": 0,
+    "automatic_sells": 0,
+    "take_profit": 0,
+    "stop_loss": 0,
+    "automatic_min_native": "0.00000242538268756744571251680053534109356053619505162809340169518368484547587053325",
+    "automatic_max_native": "0.00000245837025374296404118607722014593193767350653486293321830145756381833129841109",
+    "automatic_range_pct": "1.360097371215403355036036200",
+    "last_vs_first_pct": "-1.230989264067105822227611010",
+    "median_observation_interval": 0.15761737799948605,
+    "gap_resets": 0,
+    "pnl_log": [
+      "PAPER P&L: -1.4982410e-7 базового актива (без газа и token tax)"
+    ],
+    "raw_report": "/tmp/dipbot-sue-15min/report.json"
+  }
+]

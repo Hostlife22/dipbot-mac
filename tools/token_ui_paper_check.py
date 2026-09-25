@@ -6,6 +6,7 @@ from decimal import Decimal as D
 import json
 from pathlib import Path
 import time
+import sys
 from unittest.mock import patch
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
@@ -16,15 +17,21 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False):
     directory.mkdir(parents=True, exist_ok=False)
-    app = QApplication([])
+    app = QApplication.instance() or QApplication([])
     app.setStyleSheet(STYLE)
     app.setQuitOnLastWindowClosed(False)
     report = {'token': token, 'utc': datetime.now(timezone.utc).isoformat(), 'mode': 'PAPER',
-              'transactions_sent': 0, 'checks': 0, 'mismatches': [], 'errors': [],
+              'frozen': bool(getattr(sys, 'frozen', False)), 'transactions_sent': 0, 'checks': 0, 'mismatches': [], 'errors': [],
               'samples': [], 'trades': [], 'source': 'live BSC RPC, no replay'}
-    logs, rpc = [], []
+    logs, rpc, fills = [], [], []
+    original_quote = Chain.paper_quote
+    def paper_quote(chain, pool, amount, buy):
+        result = original_quote(chain, pool, amount, buy)
+        fills.append({'amount_raw':amount,'received_raw':result,'buy':buy,
+                      'token_decimals':pool.token_decimals,'quote_decimals':pool.quote_decimals})
+        return result
     phase = ['setup']
     original = Chain.__init__
     def init(chain, endpoint):
@@ -32,7 +39,7 @@ def run(token, directory, seconds, pool_address=None):
         rpc.append(guard_provider(chain.w3.provider))
     def forbidden(*a, **kw):
         raise RuntimeError('Wallet/LIVE disabled in PAPER test')
-    with patch.object(Chain, '__init__', init), patch.object(Vault, 'get', forbidden), \
+    with patch.object(Chain, '__init__', init), patch.object(Chain, 'paper_quote', paper_quote), patch.object(Vault, 'get', forbidden), \
          patch.object(Vault, 'save', forbidden), patch.object(LiveTrader, 'send', forbidden), \
          patch.object(QMessageBox, 'warning', lambda *a: report['errors'].append(a[2])):
         w = Window(Store(directory/'state.json'))
@@ -62,6 +69,7 @@ def run(token, directory, seconds, pool_address=None):
                 if w.metrics['price'].text() != w.display_price(payload) or w.chart.values[-1] != float(payload):
                     report['mismatches'].append('price / chart')
             elif kind == 'status':
+                report.setdefault('ui_states', {})[w.metrics['state'].text()] = report.setdefault('ui_states', {}).get(w.metrics['state'].text(), 0) + 1
                 report['checks'] += 1
                 if w.metrics['position'].text() != f"{float(payload['position']):.8g}":
                     report['mismatches'].append('target quantity')
@@ -72,12 +80,16 @@ def run(token, directory, seconds, pool_address=None):
             elif kind == 'trade_marker':
                 report['trades'].append(dict(payload, phase=phase[0]))
                 if payload['side'] == 'BUY':
-                    expected = w.worker.paper.cost/(D(payload['price'])*(1+w.worker.paper.slippage/100))
+                    assert fills and fills[-1]['buy']
+                    expected = D(fills[-1]['received_raw'])/D(10)**fills[-1]['token_decimals']
                     if w.worker.paper.position != expected:
-                        report['mismatches'].append('PAPER buy quantity formula')
+                        report['mismatches'].append('PAPER amount differs from router quote')
+            elif kind == 'price_context':
+                sources = report.setdefault('price_sources', {})
+                sources[payload['source']] = sources.get(payload['source'],0)+1
         w.worker.event.connect(check)
         try:
-            w.rpc.setText('https://bsc-rpc.publicnode.com')
+            w.rpc.setText('https://bsc-dataseed.binance.org')
             w.save_rpc.setChecked(False)
             next(b for b in w.findChildren(QPushButton) if b.text() == 'Подключить').click()
             wait(lambda:not w.busy)
@@ -101,6 +113,7 @@ def run(token, directory, seconds, pool_address=None):
             w.market_toggle.setChecked(False)
             w.params['amount'].setText('0.00003')
             w.params['dip'].setText('3');w.params['take_profit'].setText('2');w.params['stop_loss'].setText('2')
+            w.interval.setValue(.1)
             report['settings'] = {k:v.text() for k,v in w.params.items()}
             # Manual PAPER actions are explicitly separate from natural strategy signals.
             phase[0] = 'manual_paper_buy'
@@ -119,13 +132,48 @@ def run(token, directory, seconds, pool_address=None):
             w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP 3% / TP 2% / SL 2%')
             w.start.click();wait(lambda:not w.busy)
             began = progress = time.monotonic()
-            while time.monotonic()-began < seconds and w.running:
+            restart_after = 0
+            original_price = w.worker.chain.price
+            original_backup_price = w.worker.backup_chain.price if w.worker.backup_chain else None
+            outage_started = outage_finished = stop_restart_done = False
+            def timeout(_):raise TimeoutError('Synthetic read-only failure')
+            while time.monotonic()-began < seconds:
                 pump()
+                elapsed = time.monotonic()-began
+                if exercise_recovery and elapsed >= 120 and not outage_started:
+                    w.worker.chain.price = timeout
+                    if original_backup_price:
+                        w.worker.backup_chain.price = timeout
+                    outage_started = True
+                    report['controlled_rpc_outage'] = '20 seconds; primary and backup market reads only'
+                if outage_started and not outage_finished and elapsed >= 140:
+                    w.worker.chain.price = original_price
+                    if original_backup_price:
+                        w.worker.backup_chain.price = original_backup_price
+                    outage_finished = True
+                if exercise_recovery and elapsed >= 300 and not stop_restart_done:
+                    phase[0] = 'controlled_stop_restart'
+                    w.stop.click();wait(lambda:not w.running and not w.busy and not w.worker.stop_event.is_set())
+                    assert not w.worker.paper.position
+                    report['stop_restart_passed'] = True
+                    capture('midrun_stop')
+                    stop_restart_done = True
+                    phase[0] = 'automatic_live_prices'
+                if not w.running and not w.busy and not w.worker.paper.position and time.monotonic() >= restart_after:
+                    assert not report['errors'], 'Unexpected stop must not be hidden by a test restart'
+                    w.start.click();wait(lambda:not w.busy)
+                    report['test_restarts'] = report.get('test_restarts',0)+1
+                    restart_after = time.monotonic()+5
                 if time.monotonic()-progress > 30:
                     progress = time.monotonic()
                     capture('automatic')
                     print(json.dumps({'elapsed': round(progress-began), 'samples': len(report['samples']),
                         'trades': report['trades'], 'status': w.strategy_status.text()}, ensure_ascii=False), flush=True)
+                    (directory/'progress.json').write_text(json.dumps({'elapsed':round(progress-began),
+                        'samples':len(report['samples']),'trades':report['trades'],'errors':report['errors'],
+                        'mismatches':report['mismatches'],'price_sources':report.get('price_sources',{}),
+                        'running':w.running},ensure_ascii=False,indent=2))
+            w.worker.chain.price = original_price
             report['observed_seconds'] = round(time.monotonic()-began,2)
             report['automatic_running_at_end'] = w.running
             capture('automatic_end')
@@ -133,15 +181,48 @@ def run(token, directory, seconds, pool_address=None):
             w.stop.click();wait(lambda:not w.running and not w.worker.stop_event.is_set() and not w.busy)
             report['clean_stop'] = not w.worker.paper.position
             capture('stopped')
+            if exercise_recovery:
+                # Separate deterministic test after the natural market observation.
+                phase[0] = 'synthetic_minout_recovery'
+                w.start.click(); wait(lambda:not w.busy and w.running)
+                wait(lambda:not w.worker.quote_unavailable)
+                from dipbot.strategy import Strategy
+                observe = Strategy.observe
+                injected = {'signal': False, 'quote': False}
+                def signal(strategy, price, now):
+                    if strategy is w.worker.strategy and not injected['signal'] and strategy.entry is None:
+                        injected['signal'] = True
+                        return 'BUY'
+                    return observe(strategy, price, now)
+                def rejected_quote(chain, pool, amount, buy):
+                    if buy and not injected['quote']:
+                        injected['quote'] = True
+                        return 0
+                    return paper_quote(chain, pool, amount, buy)
+                with patch.object(Strategy, 'observe', signal), patch.object(Chain, 'paper_quote', rejected_quote):
+                    wait(lambda: bool(w.entry_notice))
+                    assert w.running and not w.worker.paper.position
+                    assert w.metrics['state'].text() == 'WAIT DIP'
+                    capture('minout_wait')
+                    wait(lambda:not w.entry_notice, 30)
+                    assert w.running and not report['errors']
+                report['synthetic_minout_resumed_without_start'] = True
+                w.stop.click(); wait(lambda:not w.running and not w.busy and not w.worker.stop_event.is_set())
+                assert not w.worker.paper.position
             report['passed'] = report['clean_stop'] and not report['errors'] and not report['mismatches']
         except Exception as exc:
             report['failure'] = str(exc)
             report['passed'] = False
         finally:
+            if 'original_price' in locals():
+                w.worker.chain.price = original_price
+                if original_backup_price:
+                    w.worker.backup_chain.price = original_backup_price
             w.worker.stop_event.set()
             wait(lambda:not w.worker.running and not w.worker.stop_event.is_set(), 60)
             w.worker.quit_event.set();w.worker.wait(15000)
             report['logs'] = logs
+            report['router_fills'] = fills
             calls = Counter()
             for counter in rpc:calls.update(counter)
             report['rpc_methods'] = dict(calls)
@@ -150,6 +231,9 @@ def run(token, directory, seconds, pool_address=None):
             if prices:report['price_range'] = [str(min(prices)),str(max(prices))]
             (directory/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
             print(json.dumps({k:v for k,v in report.items() if k not in {'logs','samples'}},ensure_ascii=False),flush=True)
+        if close_after:
+            w.close()
+            return 0 if report['passed'] else 1
         # Hand control back to the user; a visible app must not retain dead controls.
         w.worker.event.disconnect(check)
         w.worker.log.disconnect(logs.append)
@@ -168,4 +252,5 @@ if __name__ == '__main__':
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--seconds',type=int,default=300)
     parser.add_argument('--pool',help='Explicit pool, still verified against canonical factory')
-    args=parser.parse_args();run(args.token,args.output,args.seconds,args.pool)
+    parser.add_argument('--exercise-recovery',action='store_true',help='Controlled quote timeout and STOP/restart during PAPER')
+    args=parser.parse_args();run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery)

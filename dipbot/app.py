@@ -441,24 +441,31 @@ class Window(QMainWindow):
         layout.addStretch()
 
     def build_settings(self):
+        from .rpc_presets import MAIN, BACKUP
         layout = self.tab("RPC и кошелёк")
         group = QGroupBox("ПОДКЛЮЧЕНИЕ BSC")
         form = self.form(group)
         self.rpc = self.field(placeholder="https://… — ваш BSC HTTP RPC")
         self.rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        self.rpc_preset = self.add_rpc_presets(form, 'Источник RPC', self.rpc, MAIN)
         form.addRow("HTTP RPC", self.rpc)
+        self.backup_rpc = self.field(placeholder='Резервный HTTPS RPC · только чтение котировок')
+        self.backup_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        self.backup_rpc_preset = self.add_rpc_presets(form, 'Источник резерва', self.backup_rpc, BACKUP)
+        form.addRow('Резервный RPC', self.backup_rpc)
         self.save_rpc = QCheckBox("Сохранить RPC в macOS Keychain")
         self.editable.append(self.save_rpc)
         form.addRow(self.save_rpc)
         row = QHBoxLayout()
-        row.addWidget(self.button("Подключить", lambda: self.send("connect", rpc=self.rpc.text().strip(), save=self.save_rpc.isChecked())))
+        row.addWidget(self.button("Подключить", lambda: self.send("connect", rpc=self.rpc.text().strip(),
+            backup_rpc=self.backup_rpc.text().strip(), save=self.save_rpc.isChecked())))
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
         self.gas.setMaximumWidth(180)
         self.gas.setAlignment(Qt.AlignRight)
         form.addRow("GAS GWEI", self.gas)
-        hint = QLabel("Лимит: 0.005 BNB газа на транзакцию. Комиссии approve и нескольких шагов суммируются.")
+        hint = QLabel("Лимит: 0.005 BNB газа на транзакцию. Накопительного бюджета оборота нет; размер покупки задаётся AMOUNT.")
         hint.setWordWrap(True)
         hint.setObjectName('muted')
         form.addRow(hint)
@@ -519,14 +526,15 @@ class Window(QMainWindow):
         layout.addWidget(intro)
         sections = [
             ("РЕЖИМЫ РАБОТЫ", "<b>DEMO</b> — заданный локальный цикл цен, без RPC и кошелька.<br><br>"
-             "<b>PAPER</b> — реальные цены BSC и виртуальные сделки. Модель списывает заданное "
-             "проскальзывание, но не учитывает газ, token tax и влияние объёма.<br><br>"
+             "<b>PAPER</b> — реальные цены и router quotes на размер виртуальной сделки. "
+             "Комиссия пула и price impact входят в котировку; газ, token tax и задержка включения не моделируются. "
+             "Slippage ограничивает исполнение BUY, а не списывается как комиссия. DEMO/REPLAY сохраняют стресс-модель.<br><br>"
              "<b>LIVE</b> — реальные транзакции. Нужны RPC, кошелёк и проверенный пул."),
-            ("ЦЕНА И СТРАТЕГИЯ", "Цена показывает стоимость <b>1 TARGET в базовом активе</b>, не в долларах. "
+            ("ЦЕНА И СТРАТЕГИЯ", "Стратегия использует стоимость <b>1 TARGET в базовом активе</b>; USD в UI — справочный пересчёт. "
              "AMOUNT задаётся в базовом активе, количество TARGET — число токенов позиции.<br><br>"
              "Вход DIP рассчитывается от текущей базы. База обновляется при росте или двух снижениях; "
              "проверка DIP выполняется первой. Разрыв наблюдений больше <b>0.55 с</b> сбрасывает базу входа.<br><br>"
-             "TP и SL отсчитываются от цены сигнала. TAKE PROFIT не гарантирует прибыль после расходов. "
+             "В LIVE база TP/SL — цена пула после receipt BUY; в PAPER — цена сигнала. Это не средняя цена исполнения. TAKE PROFIT не гарантирует прибыль после расходов. "
              "После STOP LOSS бот останавливается; скачок цены может превысить заданный порог."),
             ("УПРАВЛЕНИЕ И ВОССТАНОВЛЕНИЕ", "<b>STOP</b> останавливает стратегию и закрывает позицию. "
              "Если транзакция уже отправлена, бот ждёт receipt. При неизвестном результате LIVE блокируется: "
@@ -657,8 +665,31 @@ class Window(QMainWindow):
     def load_rpc(self):
         try:
             self.rpc.setText(Vault().get("rpc") or "")
+            self.backup_rpc.setText(Vault().get('backup_rpc') or '')
         except Exception:
             QMessageBox.warning(self, "Keychain", "Не удалось прочитать RPC из Keychain")
+
+    def add_rpc_presets(self, form, title, field, presets):
+        combo = QComboBox()
+        for label, url in presets:
+            combo.addItem(label, url)
+        self.editable.append(combo)
+        form.addRow(title, combo)
+        def selected(index):
+            url = combo.itemData(index)
+            if url is not None:
+                field.setText(url)
+            else:
+                field.setFocus()
+        def edited(text):
+            index = next((i for i,(_,url) in enumerate(presets) if url == text.strip()), len(presets)-1)
+            combo.blockSignals(True)
+            combo.setCurrentIndex(index)
+            combo.blockSignals(False)
+        combo.currentIndexChanged.connect(selected)
+        field.textChanged.connect(edited)
+        field.setText(presets[0][1])
+        return combo
 
     def balances(self):
         self.send("balance", wallet=self.wallet.text().strip())
@@ -755,8 +786,16 @@ class Window(QMainWindow):
         if self.stop_pending:
             self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
             return
+        if getattr(self, 'quote_unavailable', False) and self.running:
+            self.strategy_status.setText('Нет котировок · повтор чтения; ' +
+                ('позиция открыта, TP/SL временно недоступны' if self.display_position > 0 else 'новые входы запрещены'))
+            return
         if self.locked and self.mode.currentText() == 'LIVE':
             text = 'Требуется сверка LIVE · проверьте незавершённую операцию'
+        elif getattr(self, 'halt_reason', '') and not self.running:
+            text = 'Остановлен из-за ошибки · ' + self.halt_reason + ' · проверьте причину перед START'
+        elif getattr(self, 'entry_notice', '') and self.running:
+            text = 'Вход пропущен · ' + self.entry_notice
         elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
             text = 'Котировка устарела · нет обновлений более 0,55 с'
         elif self.display_position > 0:
@@ -923,10 +962,13 @@ class Window(QMainWindow):
                     pass
                 self.table.setItem(row, 2, item)
         elif name == "status":
+            self.quote_unavailable = payload.get('quote_unavailable', False)
+            self.entry_notice = payload.get('entry_notice', '')
+            self.halt_reason = payload.get('halt_reason', '')
             self.running, self.active_mode, self.locked = payload["running"], payload["mode"], payload["locked"]
             if not self.running and not self.busy and not self.worker.stop_event.is_set():
                 self.stop_pending = False
-            self.metrics["state"].setText("STOPPING" if self.stop_pending else "LOCKED" if self.locked and self.active_mode == "LIVE" else "RUNNING" if self.running else "IDLE")
+            self.metrics["state"].setText("STOPPING" if self.stop_pending else "LOCKED" if self.locked and self.active_mode == "LIVE" else "WAIT RPC" if self.running and self.quote_unavailable else "WAIT DIP" if self.running and self.entry_notice else "RUNNING" if self.running else "ERROR" if self.halt_reason else "IDLE")
             state = self.metrics['state']
             tone = 'danger' if self.locked and self.active_mode == 'LIVE' else 'positive' if self.running else ''
             if state.property('tone') != tone:
@@ -950,7 +992,7 @@ class Window(QMainWindow):
                 for key, title in [('DIP', 'Вход DIP'), ('ENTRY', 'ENTRY'), ('TP', 'TP'), ('SL', 'SL')]))
             shown_mode = self.active_mode if self.running else self.mode.currentText()
             self.footer.setText(f"{shown_mode} · " + ("BOT работает" if self.running else "BOT остановлен") +
-                                f" · {self.active_mode} realized P&L: {format(Decimal(payload['realized']), '.8g') if payload['realized'] != '—' else '—'}" + (" · LIVE LOCKED" if self.locked else ""))
+                                f" · {self.active_mode} realized P&L (база, без газа): {format(Decimal(payload['realized']), '.8g') if payload['realized'] != '—' else '—'}" + (" · LIVE LOCKED" if self.locked else ""))
         self.update_controls()
 
     def closeEvent(self, event):
@@ -981,6 +1023,9 @@ class Window(QMainWindow):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--market-paper-token", help="Isolated visible PAPER market audit token")
+    parser.add_argument("--market-paper-pool", help="Canonical pool for market audit")
+    parser.add_argument("--market-paper-output", help="New directory for market audit")
     parser.add_argument("--smoke-test", action="store_true", help="Offline GUI startup test, temporary state")
     parser.add_argument('--display-check', help='Isolated read-only GUI audit directory')
     parser.add_argument('--display-replay', help='Recorded PAPER report with market_samples for GUI replay')
@@ -992,6 +1037,13 @@ def main():
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
+    if args.market_paper_token:
+        if not args.market_paper_output:
+            parser.error('--market-paper-token requires --market-paper-output')
+        from pathlib import Path
+        from tools.token_ui_paper_check import run
+        return run(args.market_paper_token, Path(args.market_paper_output), args.acceptance_seconds,
+                   args.market_paper_pool, exercise_recovery=True, close_after=True)
     if args.display_check:
         if not args.display_replay:
             parser.error('--display-check requires --display-replay')

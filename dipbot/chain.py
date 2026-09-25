@@ -154,6 +154,7 @@ class Chain:
         age = time.time() - block["timestamp"]
         if not -15 <= age <= 30:
             raise ValueError("RPC возвращает устаревший блок; проверьте узел и часы Mac")
+        self.checked_header = block
         return block["number"]
 
     def check_receipt_access(self):
@@ -173,6 +174,47 @@ class Chain:
             raise ValueError('No receipt probe transaction')
         except Exception:
             raise ValueError('RPC не подтверждает чтение receipts. Выберите другой RPC перед LIVE; транзакция не отправлена') from None
+
+    def canonical_receipt(self, receipt):
+        raw = receipt['blockHash']
+        expected = Web3.to_hex(hexstr=raw) if isinstance(raw, str) else Web3.to_hex(raw)
+        if len(Web3.to_bytes(hexstr=expected)) != 32:
+            raise ValueError('Некорректный hash блока receipt')
+        block = self.w3.eth.get_block(receipt['blockNumber'])
+        if Web3.to_hex(block['hash']) != expected or block['number'] != receipt['blockNumber']:
+            raise ValueError('Блок receipt не совпадает с канонической цепочкой')
+        return expected
+
+    def balance_snapshot(self, token, owner):
+        number = self.check(force_network=False)
+        header = self.w3.eth.get_block(number)
+        value = self.balance_at(token, owner, number)
+        if self.w3.eth.get_block(number)['hash'] != header['hash']:
+            raise ValueError('Блок баланса изменился во время чтения')
+        return value, {'blockNumber': number, 'blockHash': header['hash']}
+
+    def balance_at(self, token, owner, number):
+        if token is None:
+            return self.w3.eth.get_balance(owner, block_identifier=number)
+        return self.call(token, TOKEN_ABI, 'balanceOf', owner, block=number)
+
+    def receipt_balance(self, token, owner, receipt, snapshot):
+        self.canonical_receipt(snapshot)
+        if receipt['blockNumber'] < snapshot['blockNumber']:
+            raise ValueError('Receipt старше снимка баланса')
+        self.canonical_receipt(receipt)
+        value = self.balance_at(token, owner, receipt['blockNumber'])
+        self.canonical_receipt(receipt)
+        return value
+
+    def restrict_to_reads(self):
+        original = self.w3.provider.make_request
+        allowed = {'eth_chainId', 'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_call', 'eth_getCode'}
+        def request(method, params):
+            if method not in allowed:
+                raise RuntimeError('Резервный RPC разрешает только чтение рынка')
+            return original(method, params)
+        self.w3.provider.make_request = request
 
     def decimals(self, token):
         token = address(token)
@@ -230,6 +272,7 @@ class Chain:
 
     def price(self, pool: Pool) -> D:
         block = self.check(force_network=False)
+        header = getattr(self, 'checked_header', None)
         with localcontext() as context:
             context.prec = 78
             if pool.router == "V2":
@@ -252,6 +295,8 @@ class Chain:
                 ratio = D(sqrt) ** 2 / D(2) ** 192
                 if not pool.token_is_0:
                     ratio = 1 / ratio
+            if header is not None:
+                self.price_block = header
             return ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
 
     def resolve_address(self, raw, catalogs):
@@ -308,14 +353,18 @@ class Chain:
                         raise
         return result
 
-    def quote(self, pool: Pool, amount: int, buy: bool):
+    def quote(self, pool: Pool, amount: int, buy: bool, *, block="latest"):
         if amount <= 0:
             raise ValueError("Нулевая сумма")
         token_in, token_out = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
         if pool.router == "V2":
-            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, [token_in, token_out])[-1]
+            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, [token_in, token_out], block=block)[-1]
         return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInputSingle",
-                         (token_in, token_out, amount, pool.fee, 0))[0]
+                         (token_in, token_out, amount, pool.fee, 0), block=block)[0]
+
+    def paper_quote(self, pool, amount, buy):
+        # One immutable block for this simulated fill; no approval or signature.
+        return self.quote(pool, amount, buy, block=self.check(force_network=False))
 
     def quote_route(self, route, amount, reverse=False):
         if not 0 < amount < 2**256:

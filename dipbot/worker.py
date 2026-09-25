@@ -3,6 +3,7 @@ import queue
 import re
 import threading
 import time
+from requests.exceptions import ConnectionError as RPCConnectionError, Timeout as RPCTimeout, HTTPError
 
 from PySide6.QtCore import QThread, Signal
 from eth_account import Account
@@ -15,11 +16,15 @@ from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minim
 from .trader import LiveTrader, PaperTrader, UncertainTransaction
 
 
+class EntryRejected(ValueError):
+    """PAPER quote rejected before any position or transaction exists."""
+
+
 def safe_error(exc):
     if type(exc) is SaveAfterReplaceError:
         return "Файл заменён, но надёжность сохранения не подтверждена; проверьте сохранённое состояние"
     # Provider exceptions can contain RPC credentials. Do not log arbitrary text.
-    if type(exc) in (ValueError, RuntimeError, UncertainTransaction):
+    if type(exc) in (ValueError, RuntimeError, UncertainTransaction, EntryRejected):
         message = str(exc)
         if type(exc) is ValueError:
             message = re.sub(r"(?:0x)?[0-9a-fA-F]{64}", "[REDACTED]", message)
@@ -39,6 +44,10 @@ class Worker(QThread):
         self.quit_event = threading.Event()
         self.stop_event = threading.Event()
         self.chain = None
+        self.backup_chain = None
+        self.backup_until = 0.0
+        self.backup_verified_pool = None
+        self.market_source = 'BSC'
         self.pool = None
         self.mode = "DEMO"
         self.running = False
@@ -52,6 +61,11 @@ class Worker(QThread):
         self.interval = 0.1
         self.discovery_generation = 0
         self.pool_generation = None
+        self.quote_failures = 0
+        self.quote_unavailable = False
+        self.entry_retry_at = 0.0
+        self.entry_notice = ""
+        self.halt_reason = ""
 
     def discovery_current(self, generation):
         return (generation is None or generation == self.discovery_generation) and not (
@@ -82,6 +96,7 @@ class Worker(QThread):
                     if name in ("discover", "verify", "select") and not self.discovery_current(data.get("generation")):
                         continue
                     self.running = False
+                    self.halt_reason = safe_error(exc)
                     self.log.emit("ОШИБКА: " + safe_error(exc))
                     if name in ("discover", "verify", "select"):
                         self.pool = None
@@ -107,9 +122,12 @@ class Worker(QThread):
                         self.close_position("STOP")
                     self.running = False
                     self.strategy.stopped = True
+                    self.halt_reason = ""
+                    self.entry_notice = ""
                     self.log.emit("BOT остановлен")
                 except Exception as exc:
                     self.running = False
+                    self.halt_reason = safe_error(exc)
                     self.event.emit("error", safe_error(exc))
                     self.log.emit("STOP: " + safe_error(exc))
                 self.status()
@@ -118,17 +136,23 @@ class Worker(QThread):
                 try:
                     self.observe()
                 except Exception as exc:
-                    # Never continue automatically after a trade/RPC failure.
+                    # Unhandled execution failures must still halt, including uncertain LIVE results.
                     self.running = False
+                    self.halt_reason = safe_error(exc)
                     self.log.emit("BOT приостановлен: " + safe_error(exc))
                     self.event.emit("error", safe_error(exc))
                 # One observation at a time; slow RPC skips missed slots instead
                 # of queuing catch-up requests or adding another full delay.
-                next_tick = max(poll_started + self.interval, time.monotonic())
+                delay = min(5, 0.5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
+                next_tick = max(poll_started + delay, time.monotonic())
                 self.status()
 
     def status(self):
         settings = self.strategy.settings
+        realized = str(self.paper.realized) if self.mode != 'LIVE' else '—'
+        if self.mode == 'LIVE' and self.live and self.pool:
+            key = self.live.owner.lower() + ':' + self.pool.quote.lower()
+            realized = self.store.data.get('realized_quote', {}).get(key, '—')
         base, entry = self.strategy.base or D(0), self.strategy.entry or D(0)
         levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
                    'SL': str(entry*(1-settings.stop_loss/100))} if entry else
@@ -138,7 +162,10 @@ class Worker(QThread):
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
                          "entry": str(self.strategy.entry or 0),
-                         "realized": str(self.paper.realized) if self.mode != "LIVE" else "—",
+                         "realized": realized,
+                         "quote_unavailable": self.quote_unavailable,
+                         "entry_notice": self.entry_notice,
+                         "halt_reason": self.halt_reason,
                          "locked": bool(self.store.data.get("operation"))})
 
     def position_key(self):
@@ -150,7 +177,8 @@ class Worker(QThread):
     def set_position(self, amount, entry):
         positions = self.store.data.setdefault("positions", {})
         if amount:
-            positions[self.position_key()] = {"amount": amount, "entry": str(entry), "pool": asdict(self.pool)}
+            positions[self.position_key()] = {**positions.get(self.position_key(), {}),
+                "amount": amount, "entry": str(entry), "pool": asdict(self.pool)}
         else:
             positions.pop(self.position_key(), None)
         self.store.save()
@@ -212,6 +240,11 @@ class Worker(QThread):
         elif mode != "LIVE" and self.paper.position:
             self.strategy.entry = old_entry
         self.paper.slippage = settings.slippage
+        self.entry_retry_at = 0.0
+        self.entry_notice = ""
+        self.halt_reason = ""
+        self.quote_unavailable = False
+        self.quote_failures = 0
 
     def command(self, name, data):
         if self.stop_event.is_set() and name in ("start", "buy", "convert", "sweep"):
@@ -223,12 +256,21 @@ class Worker(QThread):
         if name == "connect":
             chain = Chain(data["rpc"])
             block = chain.check()
+            backup = None
+            if data.get('backup_rpc', '').strip():
+                backup = Chain(data['backup_rpc'].strip())
+                backup.restrict_to_reads()
+                backup.check()
             self.chain = chain
+            self.backup_chain = backup
+            self.backup_until = 0.0
+            self.backup_verified_pool = None
             self.pool = None
             self.event.emit("pools", [])
             self.log.emit(f"BSC подключена, chainId 56, блок {block}")
             if data.get("save"):
                 Vault().save("rpc", data["rpc"])
+                Vault().save('backup_rpc', data.get('backup_rpc', '').strip())
         elif name == "wallet":
             account = Account.from_key(data["key"])
             Vault().save("wallet", data["key"])
@@ -436,18 +478,78 @@ class Worker(QThread):
             self.require_chain()
             if not self.pool:
                 raise ValueError("Пул не выбран")
-            price = self.chain.price(self.pool)
+            price = self.market_price()
         self.current_price = price
         self.price_time = time.monotonic()
         demo = self.mode == 'DEMO' and not force_chain
-        self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', 'BSC'),
+        self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', self.market_source),
                                         'quote': '' if demo else self.pool.quote})
         self.event.emit("price", str(price))
         return price
 
+    def market_price(self):
+        # Execution always keeps self.chain / LiveTrader.chain on the primary.
+        if self.backup_chain is not None and time.monotonic() < self.backup_until:
+            return self.backup_price()
+        try:
+            price = self.chain.price(self.pool)
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+            if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+                raise
+            if self.backup_chain is None:
+                raise
+            self.backup_until = time.monotonic() + 30
+            self.log.emit('Основной RPC недоступен: котировки через резервный. Отправка сделок остаётся на основном RPC')
+            return self.backup_price()
+        if self.market_source != 'BSC':
+            self.log.emit('Котировки снова поступают с основного RPC')
+        self.market_source = 'BSC'
+        return price
+
+    def backup_price(self):
+        if self.backup_verified_pool != self.pool:
+            self.backup_chain.check()
+            verified = self.backup_chain.verify_pool(self.pool.address, self.pool.token)
+            if verified != self.pool:
+                raise ValueError('Резервный RPC вернул другой пул/маршрут; торговля приостановлена')
+            self.backup_verified_pool = verified
+        price = self.backup_chain.price(self.pool)
+        primary = getattr(self.chain, 'price_block', None)
+        backup = getattr(self.backup_chain, 'price_block', None)
+        if primary and backup and (backup['number'] < primary['number'] or
+                (backup['number'] == primary['number'] and backup['hash'] != primary['hash'])):
+            raise ValueError('Резервный RPC отстаёт или вернул другую ветвь цепочки')
+        self.market_source = 'BSC · резервный RPC'
+        return price
+
     def observe(self):
-        price = self.read_price()
+        # Retry only a failed read, never an execution or post-receipt failure.
+        if self.store.data.get("operation"):
+            raise UncertainTransaction("Незавершённая операция: автоматические сделки заблокированы")
+        try:
+            price = self.read_price()
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+            if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+                raise
+            self.quote_failures += 1
+            if not self.quote_unavailable:
+                self.log.emit("Котировки недоступны: входы запрещены, повтор чтения с паузой до 5 с. Открытая позиция сохраняется")
+            self.quote_unavailable = True
+            return
+        if self.quote_unavailable:
+            self.log.emit("Чтение котировок восстановлено; проверка позиции возобновлена")
+        self.quote_unavailable = False
+        self.quote_failures = 0
         now = time.monotonic()
+        if self.entry_notice and self.strategy.entry is None:
+            if now < self.entry_retry_at:
+                return
+            # Require a new signal from a fresh baseline, not the rejected signal.
+            self.strategy.base = None
+            self.strategy.last_time = None
+            self.strategy.last_price = None
+            self.strategy.down_streak = 0
+            self.entry_notice = ""
         if (self.strategy.entry is None and self.strategy.last_time is not None
                 and now - self.strategy.last_time > self.strategy.settings.max_gap):
             self.log.emit("Разрыв котировок > 0.55 с: база DIP сброшена")
@@ -455,7 +557,14 @@ class Worker(QThread):
         if self.stop_event.is_set():
             return
         if action == "BUY":
-            self.open_position()
+            try:
+                self.open_position()
+            except EntryRejected as exc:
+                if self.mode != "PAPER" or self.store.data.get("operation") or self.paper.position:
+                    raise
+                self.entry_retry_at = time.monotonic() + 5.0
+                self.entry_notice = str(exc) + "; пауза 5 с, затем новый сигнал DIP"
+                self.log.emit("Вход пропущен: " + self.entry_notice)
         elif action:
             self.close_position(action)
             if self.strategy.stopped:
@@ -478,11 +587,26 @@ class Worker(QThread):
             execution = (D(amount) / D(10)**self.pool.quote_decimals) / (D(received) / D(10)**self.pool.token_decimals)
             # Persist actual holdings even if the post-receipt price read fails.
             self.set_position(received, execution)
+            self.position()['cost_quote'] = str(D(amount) / D(10)**self.pool.quote_decimals)
+            self.position()['execution_price'] = str(execution)
+            self.store.save()
             entry = self.read_price()
             self.set_position(received, entry)
             self.live.finish()
         else:
-            execution = self.paper.buy(settings.amount, self.current_price)
+            if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
+                raw = raw_amount(settings.amount, self.pool.quote_decimals)
+                quote = getattr(self.chain, 'paper_quote', self.chain.quote)
+                quoted = quote(self.pool, raw, True)
+                bound = snapshot_minimum(raw, self.current_price, self.pool.quote_decimals,
+                                         self.pool.token_decimals, settings.buy_tolerance)
+                if quoted < bound:
+                    raise EntryRejected('PAPER BUY: котировка ниже minOut снимка; покупка не исполнена')
+                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals,
+                    D(quoted)/D(10)**self.pool.token_decimals)
+                self.log.emit('PAPER: router quote на сумму; комиссии/impact включены, газ и token tax не учтены')
+            else:
+                execution = self.paper.buy(settings.amount, self.current_price)
             entry = self.current_price
         self.strategy.bought(entry)
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
@@ -498,7 +622,13 @@ class Worker(QThread):
             amount = min(position["amount"], self.chain.balance(self.pool.token, self.live.owner))
             if not amount:
                 raise ValueError("Кэш позиции не совпадает с балансом; нужна сверка")
-            self.live.swap(self.pool, amount, False, self.strategy.settings.slippage)
+            received = self.live.swap(self.pool, amount, False, self.strategy.settings.slippage)
+            if isinstance(received, int) and 'cost_quote' in position:
+                pnl = D(received)/D(10)**self.pool.quote_decimals - D(position['cost_quote'])
+                key = self.live.owner.lower() + ':' + self.pool.quote.lower()
+                ledger = self.store.data.setdefault('realized_quote', {})
+                ledger[key] = str(D(ledger.get(key, '0')) + pnl)
+                self.log.emit(f'LIVE P&L: {pnl:+.8g} базового актива без газа; газ отдельно в журнале BNB')
             self.set_position(0, 0)
             self.live.finish()
             price = self.current_price or D(position["entry"])
@@ -506,7 +636,13 @@ class Worker(QThread):
             if not self.paper.position:
                 return
             price = self.read_price()
-            pnl = self.paper.sell(price)
+            if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
+                amount = raw_amount(self.paper.position, self.pool.token_decimals)
+                quote = getattr(self.chain, 'paper_quote', self.chain.quote)
+                output = quote(self.pool, amount, False)
+                pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals)
+            else:
+                pnl = self.paper.sell(price)
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
         self.strategy.sold(price, reason)
         self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})

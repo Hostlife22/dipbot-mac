@@ -1,0 +1,101 @@
+"""Offline scenarios: no wallet, signing, or network."""
+from types import SimpleNamespace
+import pytest
+from dipbot.worker import Worker
+from dipbot.storage import Store
+from dipbot.strategy import D
+from dipbot.trader import UncertainTransaction
+from test_autopair_dynamic import POOL
+from test_worker import config
+
+
+def test_rejected_dip_cools_down_reads_prices_and_requires_new_signal(tmp_path, monkeypatch):
+    clock = [10.0]
+    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
+    w = Worker(Store(tmp_path/'state.json'))
+    w.mode = 'PAPER'; w.pool = POOL; w.running = True
+    quotes = []
+    output = [0]
+    def quote(p, amount, buy):
+        quotes.append((amount, buy))
+        return output[0]
+    w.chain = SimpleNamespace(quote=quote)
+    price = [D(100)]
+    def read():
+        w.current_price = price[0]
+        return price[0]
+    w.read_price = read
+    w.observe()
+    clock[0] += .1; price[0] = D(96)
+    w.observe()
+    assert w.running and w.entry_notice and not w.paper.position
+    assert len(quotes) == 1
+    for _ in range(40):
+        clock[0] += .1; price[0] -= 1
+        w.observe()
+    assert len(quotes) == 1 and w.current_price == 56
+    clock[0] = 15.2
+    w.observe()
+    assert not w.entry_notice and w.strategy.base == 56
+    assert len(quotes) == 1  # Expiry alone cannot buy.
+    output[0] = 10**18
+    clock[0] += .1; price[0] = D(50)
+    w.observe()
+    assert len(quotes) == 2 and w.paper.position == 1 and w.running
+
+
+@pytest.mark.parametrize('recovered,reason,running', [('97', 'STOP_LOSS', False), ('103', 'TAKE_PROFIT', True)])
+def test_open_position_exits_after_rpc_recovers(tmp_path, recovered, reason, running):
+    w = Worker(Store(tmp_path/'state.json')); w.running = True
+    w.paper.buy_quoted(D(100), D(1)); w.strategy.bought(D(100))
+    logs = []; w.log.connect(logs.append)
+    def outage():
+        raise TimeoutError()
+    w.read_price = outage
+    w.observe()
+    assert w.running and w.quote_unavailable and w.paper.position == 1
+    w.read_price = lambda: D(recovered)
+    w.observe()
+    assert not w.paper.position and not w.quote_unavailable and w.running == running
+    assert any(reason in msg for msg in logs)
+
+
+def test_start_preserves_open_paper_position_then_stop_closes(tmp_path):
+    w = Worker(Store(tmp_path/'state.json'))
+    w.command('buy', config())
+    amount, entry = w.paper.position, w.strategy.entry
+    w.command('start', config())
+    assert w.paper.position == amount and w.strategy.entry == entry
+    w.stop_event.set()
+    original = w.status
+    def done():
+        original()
+        w.quit_event.set()
+    w.status = done
+    w.run()
+    assert not w.running and not w.paper.position and w.strategy.stopped
+    w.quit_event.clear()
+    w.command('start', config())
+    assert w.running and not w.strategy.stopped and w.strategy.entry is None
+
+
+def test_uncertain_execution_halts_loop_and_blocks_restart_observation(tmp_path):
+    w = Worker(Store(tmp_path/'state.json')); w.mode = 'LIVE'; w.running = True
+    w.strategy.base = D(100)
+    w.read_price = lambda: D(90)
+    calls = []
+    def uncertain():
+        calls.append('send')
+        w.store.data['operation'] = {'description': 'BUY pending'}
+        w.store.save()
+        raise UncertainTransaction('Статус неизвестен; нужна сверка')
+    w.open_position = uncertain
+    def done():
+        w.quit_event.set()
+    w.status = done
+    w.run()
+    assert not w.running and 'неизвестен' in w.halt_reason
+    assert Store(w.store.path).data['operation']
+    with pytest.raises(UncertainTransaction):
+        w.observe()
+    assert calls == ['send']

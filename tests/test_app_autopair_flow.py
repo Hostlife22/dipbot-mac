@@ -185,3 +185,18 @@ def test_stop_invalidates_inflight_search(window):
     w.stop_bot()
     w.on_event('discovery_event', (generation, 'selected', POOL))
     assert not w.selection_ready and not w.pool_input.text()
+
+
+def test_recovery_statuses_are_distinct(window):
+    w = window
+    payload = {'running': True, 'mode': 'DEMO', 'locked': False,
+               'position': '0', 'base': '1', 'entry': '0', 'realized': '0', 'levels': {}}
+    w.on_event('status', payload | {'entry_notice': 'minOut; пауза 5 с'})
+    assert w.metrics['state'].text() == 'WAIT DIP'
+    assert 'Вход пропущен' in w.strategy_status.text()
+    w.on_event('status', payload | {'quote_unavailable': True, 'position': '1'})
+    assert w.metrics['state'].text() == 'WAIT RPC'
+    assert 'TP/SL временно недоступны' in w.strategy_status.text()
+    w.on_event('status', payload | {'running': False, 'halt_reason': 'Сбой исполнения'})
+    assert w.metrics['state'].text() == 'ERROR'
+    assert 'Сбой исполнения' in w.strategy_status.text() and 'START' in w.strategy_status.text()

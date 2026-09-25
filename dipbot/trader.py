@@ -94,8 +94,13 @@ class LiveTrader:
         except Exception:
             raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
         self.validate_receipt(receipt, local_hash)
+        self.check_canonical(receipt)
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
+        if 'blockHash' in receipt:
+            record['block_hash'] = Web3.to_hex(receipt['blockHash'])
+        if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
+            record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
         self.store.save()
         if receipt["status"] != 1:
             raise RuntimeError(f"Транзакция отклонена в блокчейне: {local_hash}")
@@ -140,7 +145,7 @@ class LiveTrader:
         self.approve(src, router, amount)
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
-        before = self.chain.balance(dest, self.owner)
+        before, snapshot = self.balance_snapshot(dest)
         deadline = int(time.time()) + deadline_seconds
         contract = self.chain.contract(router, abi)
         if pool.router == "V2":
@@ -151,8 +156,8 @@ class LiveTrader:
                 (src, dest, pool.fee, self.owner, deadline, amount, min_out, 0))
         if simulate:
             function.call({"from": self.owner})
-        self.send(function, "BUY" if buy else "SELL")
-        received = self.chain.balance(dest, self.owner) - before
+        receipt = self.send(function, "BUY" if buy else "SELL")
+        received = self.balance_after(dest, receipt, snapshot) - before
         if received < min_out:
             raise UncertainTransaction("Сделка подтверждена, но изменение баланса ниже minOut. Нужна сверка")
         return received
@@ -227,8 +232,7 @@ class LiveTrader:
             raise ValueError("Round-trip loss изменился: Converter остановлен")
         minimum = max(minimum, minimum_out(fresh, slippage))
         native_sell = not buy and route[0].router == "V2"
-        before = (self.chain.w3.eth.get_balance(self.owner) if native_sell
-                  else self.chain.balance(dest, self.owner))
+        before, snapshot = self.balance_snapshot(None if native_sell else dest)
         deadline = int(time.time()) + 60
         functions = self.chain.contract(router, abi).functions
         if route[0].router == "V2":
@@ -241,16 +245,43 @@ class LiveTrader:
         receipt = self.send(function, "CONVERTER BUY" if buy else "CONVERTER SELL",
                             value=amount if buy else 0)
         if native_sell:
-            received = self.chain.w3.eth.get_balance(self.owner) - before
+            received = self.balance_after(None, receipt, snapshot) - before
             received += receipt["gasUsed"] * receipt["effectiveGasPrice"]
         else:
-            received = self.chain.balance(dest, self.owner) - before
+            received = self.balance_after(dest, receipt, snapshot) - before
         if received < minimum:
             raise UncertainTransaction("Converter подтверждён, но выход ниже minOut; нужна сверка")
         if not buy and not native_sell:
             # Like the original V3 SELL, unwrap only the newly received WBNB.
             self.unwrap(received)
         return received
+
+    def check_canonical(self, receipt):
+        if not hasattr(self.chain, 'canonical_receipt'):
+            return  # Small offline test doubles have no block provider.
+        self.retry_read(lambda: self.chain.canonical_receipt(receipt))
+
+    @staticmethod
+    def retry_read(read):
+        for attempt in range(3):
+            try:
+                return read()
+            except Exception:
+                if attempt == 2:
+                    raise UncertainTransaction('Не удалось согласовать receipt/балансы с блоком. Повторная отправка заблокирована') from None
+                time.sleep(.2)
+
+    def balance_snapshot(self, token):
+        if hasattr(self.chain, 'balance_snapshot'):
+            return self.chain.balance_snapshot(token, self.owner)
+        return (self.chain.balance(token, self.owner) if token is not None
+                else self.chain.w3.eth.get_balance(self.owner)), None
+
+    def balance_after(self, token, receipt, snapshot):
+        if snapshot is not None:
+            return self.retry_read(lambda: self.chain.receipt_balance(token, self.owner, receipt, snapshot))
+        return (self.chain.balance(token, self.owner) if token is not None
+                else self.chain.w3.eth.get_balance(self.owner))
 
     @staticmethod
     def validate_receipt(receipt, tx_hash):
@@ -281,6 +312,11 @@ class LiveTrader:
             except TransactionNotFound:
                 raise UncertainTransaction(f"Не найден receipt {record['hash']}; блокировка сохранена") from None
             self.validate_receipt(receipt, record["hash"])
+            self.check_canonical(receipt)
+            if record.get('block_hash') and record['block_hash'] != Web3.to_hex(receipt['blockHash']):
+                raise UncertainTransaction('Блок ранее подтверждённой транзакции изменился; нужна ручная сверка')
+            if 'blockHash' in receipt:
+                record['block_hash'] = Web3.to_hex(receipt['blockHash'])
             record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
             record["block"] = receipt["blockNumber"]
         # Do not clear the latch automatically: balances/position also need review.
@@ -304,6 +340,20 @@ class PaperTrader:
 
     def sell(self, price: D):
         proceeds = self.position * price * (1 - self.slippage / 100)
+        pnl = proceeds - self.cost
+        self.realized += pnl
+        self.position = self.cost = D(0)
+        return pnl
+
+    def buy_quoted(self, cost: D, received: D):
+        if self.position or cost <= 0 or received <= 0:
+            raise ValueError('Некорректная PAPER-покупка')
+        self.cost, self.position = cost, received
+        return cost / received
+
+    def sell_quoted(self, proceeds: D):
+        if not self.position or proceeds <= 0:
+            raise ValueError('Некорректная PAPER-продажа')
         pnl = proceeds - self.cost
         self.realized += pnl
         self.position = self.cost = D(0)
