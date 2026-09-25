@@ -55,3 +55,25 @@ def test_stop_during_delay_cancels_before_router_quote(tmp_path):
     w.stop_event.wait=interrupted_wait
     with pytest.raises(EntryRejected,match='STOP'):w.open_position()
     assert not calls and not w.paper.position
+
+
+def test_paper_fill_uses_fresh_spot_but_preserves_signal_minout(tmp_path):
+    w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
+    w.paper_policy=PaperPolicy(0,D(0))
+    w.strategy.settings=replace(w.strategy.settings,amount=D(1),slippage=D(0),dynamic=D(0))
+    w.chain=NS(price=lambda _:D(2),quote=lambda p,a,b:a*3//4)
+    def fresh():w.current_price=D(2);return D(2)
+    w.read_price=fresh
+    with pytest.raises(EntryRejected,match='minOut'):w.open_position()
+    assert not w.paper.position
+    w.current_price=D(1);w.chain.quote=lambda p,a,b:a
+    w.open_position()
+    assert w.strategy.entry==D(2)
+
+
+def test_stop_during_router_quote_prevents_virtual_fill(tmp_path):
+    w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
+    def quote(p,a,b):w.stop_event.set();return a
+    w.chain=NS(quote=quote)
+    with pytest.raises(EntryRejected,match='STOP'):w.open_position()
+    assert not w.paper.position

@@ -926,13 +926,19 @@ class Worker(QThread):
             self.set_position(received, entry)
             self.live.finish()
         else:
+            signal_price = self.current_price
+            entry = self.current_price
             if self.mode == 'PAPER' and self.stop_event.wait(self.paper_policy.latency_seconds):
                 raise EntryRejected('STOP во время ожидания PAPER; виртуальный вход отменён')
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 raw = raw_amount(settings.amount, self.pool.quote_decimals)
+                if callable(getattr(self.chain, 'price', None)):
+                    entry = self.read_price()
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 quoted = quote(self.pool, raw, True)
-                bound = snapshot_minimum(raw, self.current_price, self.pool.quote_decimals,
+                if self.stop_event.is_set():
+                    raise EntryRejected('STOP во время котировки PAPER; виртуальный вход отменён')
+                bound = snapshot_minimum(raw, signal_price, self.pool.quote_decimals,
                                          self.pool.token_decimals, settings.buy_tolerance)
                 if quoted < bound:
                     raise EntryRejected('PAPER BUY: котировка ниже minOut снимка; покупка не исполнена')
@@ -942,7 +948,6 @@ class Worker(QThread):
                     f'стоимость операции {self.paper_policy.fee_quote} в базе добавлена по модели; token tax не учтён')
             else:
                 execution = self.paper.buy(settings.amount, self.current_price)
-            entry = self.current_price
             self.paper_usd['entry'] = marked_value(self.paper.cost,
                 self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
         self.strategy.bought(entry, now=time.monotonic())
