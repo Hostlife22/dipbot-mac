@@ -13,6 +13,7 @@ from .routes import conversion_specs
 from .dynamic import preference
 from .storage import Store
 from .strategy import D, minimum_out
+from .accounting import marked_value, record_gas
 
 
 class UncertainTransaction(RuntimeError):
@@ -118,6 +119,11 @@ class LiveTrader:
             record['block_hash'] = Web3.to_hex(receipt['blockHash'])
         if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
             record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
+            rates = getattr(self, 'rates', None)
+            rate = rates.snapshot(WBNB) if rates is not None else None
+            record['gas_usd_rate'] = rate
+            record['gas_usd'] = marked_value(D(record['gas_fee_wei'])/D(10)**18, rate)
+            record_gas(self.store, self.owner, record)
         self.store.save()
         if receipt["status"] != 1:
             raise RuntimeError(f"Транзакция отклонена в блокчейне: {local_hash}")
@@ -310,7 +316,9 @@ class LiveTrader:
             actual = Web3.to_bytes(hexstr=raw_hash) if isinstance(raw_hash, str) else bytes(raw_hash)
             valid = (len(expected) == len(actual) == 32 and actual == expected
                      and type(receipt["status"]) is int and receipt["status"] in (0, 1)
-                     and type(receipt["blockNumber"]) is int and receipt["blockNumber"] >= 0)
+                     and type(receipt["blockNumber"]) is int and receipt["blockNumber"] >= 0
+                     and all(type(receipt[k]) is int and 0 <= receipt[k] < 2**256
+                             for k in ("gasUsed", "effectiveGasPrice") if k in receipt))
         except (KeyError, TypeError, ValueError):
             valid = False
         if not valid:
@@ -345,6 +353,7 @@ def reconcile_receipts(chain, store, owner):
         record["receipt_at"] = int(time.time())
         if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
             record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
+            record_gas(store, owner, record)
     # Do not clear the latch automatically: balances/position also need review.
     store.save()
     return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"

@@ -22,6 +22,7 @@ from .signal_policy import SignalPolicy
 from .head_feed import HeadFeed, HeadSchedule
 from .market_monitor import monitor_execution
 from .market_tape import MarketTape
+from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
 
 def safe_error(exc):
@@ -51,6 +52,8 @@ class Worker(QThread):
         self.backup_chain = None
         self.head_feed = None
         self.execution_monitor = None
+        self.rates = RateBook()
+        self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
         self.recorder = None
         self.recorder_notice = False
         self.head_schedule = HeadSchedule()
@@ -200,6 +203,9 @@ class Worker(QThread):
                          "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
                          "entry": str(self.strategy.entry or 0),
                          "realized": realized,
+                         "historical_usd": (closed_summary(self.store, self.live.owner) if self.mode == 'LIVE' and self.live else
+                             {'value':str(self.paper_usd['value']) if self.paper_usd['closed'] and not self.paper_usd['missing'] else None,
+                              'closed':self.paper_usd['closed'], 'missing':self.paper_usd['missing'], 'includes_gas':False}),
                          "pnl_quote": (self.paper_context[2] if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
                                        else self.pool.quote if self.mode != "DEMO" and self.pool else ""),
                          "quote_unavailable": self.quote_unavailable,
@@ -260,6 +266,7 @@ class Worker(QThread):
                 raise ValueError("Сначала сохраните отдельный кошелёк в Keychain")
             live = LiveTrader(self.chain, key, self.store, D(data["gas"]), self.log.emit)
             live.trade_router = self.pool.router
+            live.rates = self.rates
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")
             pair_name = next((n for n,t in dynamic.catalog(self.store,self.pool.router).items()
@@ -274,6 +281,7 @@ class Worker(QThread):
                     raise ValueError("Сначала закройте позицию предыдущего PAPER-рынка")
                 if not self.paper.position:
                     self.paper = PaperTrader(settings.slippage)
+                    self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
                 self.paper_context = context
         self.mode, self.interval, self.live = mode, interval, live
         old_entry = self.strategy.entry
@@ -304,7 +312,7 @@ class Worker(QThread):
     def command(self, name, data):
         if self.stop_event.is_set() and name in ("start", "buy", "convert", "sweep"):
             raise ValueError("STOP запрошен: новая торговая операция отменена")
-        if self.running and name not in ("sell",):
+        if self.running and name not in ("sell", "accounting_report"):
             raise ValueError("Сначала остановите BOT")
         if name in ("connect", "discover", "verify", "select", "wallet", "remove_profile") and (self.paper.position or self.position()):
             raise ValueError("Сначала закройте текущую позицию")
@@ -455,6 +463,9 @@ class Worker(QThread):
                 self.open_position()
         elif name == "sell":
             self.close_position("MANUAL")
+        elif name == 'accounting_report':
+            owner = self.live.owner if self.live else self.store.data.get('wallet_address', '')
+            self.event.emit('accounting_report', accounting_report(self.store, owner))
         elif name == "balance":
             self.require_chain()
             owner = address(data["wallet"])
@@ -688,6 +699,13 @@ class Worker(QThread):
             self.set_position(received, execution)
             self.position()['cost_quote'] = str(D(amount) / D(10)**self.pool.quote_decimals)
             self.position()['execution_price'] = str(execution)
+            rate = self.rates.snapshot(self.pool.quote)
+            fees = operation_fees(getattr(self.live, 'operation', None))
+            cost_usd = marked_value(D(amount)/D(10)**self.pool.quote_decimals, rate)
+            self.position()['entry_rate'] = rate
+            self.position()['entry_fees'] = fees
+            self.position()['entry_cost_usd'] = (str(D(cost_usd)+D(fees['usd']))
+                if cost_usd is not None and fees['usd'] is not None else None)
             self.store.save()
             entry = self.read_price()
             self.set_position(received, entry)
@@ -707,6 +725,8 @@ class Worker(QThread):
             else:
                 execution = self.paper.buy(settings.amount, self.current_price)
             entry = self.current_price
+            self.paper_usd['entry'] = marked_value(self.paper.cost,
+                self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
         self.strategy.bought(entry)
         self.record_market("execution", side="BUY", price=str(entry))
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
@@ -731,6 +751,10 @@ class Worker(QThread):
                 ledger = self.store.data.setdefault('realized_quote', {})
                 ledger[key] = str(D(ledger.get(key, '0')) + pnl)
                 self.log.emit(f'LIVE P&L: {pnl:+.8g} базового актива без газа; газ отдельно в журнале BNB')
+            if isinstance(received, int):
+                record_close(self.store, self.live.owner, self.pool, position, received,
+                             getattr(self.live, 'operation', None), self.rates.snapshot(self.pool.quote),
+                             inventory_matches=amount == position['amount'])
             self.set_position(0, 0)
             self.live.finish()
             price = self.current_price or D(position["entry"])
@@ -738,6 +762,7 @@ class Worker(QThread):
             if not self.paper.position:
                 return
             price = self.read_price()
+            paper_cost = self.paper.cost
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
@@ -745,6 +770,14 @@ class Worker(QThread):
                 pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals)
             else:
                 pnl = self.paper.sell(price)
+            proceeds_usd = marked_value(paper_cost+pnl,
+                self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
+            self.paper_usd['closed'] += 1
+            if proceeds_usd is None or self.paper_usd['entry'] is None:
+                self.paper_usd['missing'] += 1
+            else:
+                self.paper_usd['value'] += D(proceeds_usd)-D(self.paper_usd['entry'])
+            self.paper_usd['entry'] = None
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
         self.strategy.sold(price, reason)
         self.record_market("execution", side="SELL", price=str(price), reason=reason)

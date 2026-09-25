@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPush
     QGridLayout, QGroupBox, QPlainTextEdit, QTabWidget, QCheckBox, QMessageBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QSizePolicy)
 
-from .chain import profiles
+from .chain import profiles, WBNB
 from .dynamic import catalog
 from .storage import Store, Vault, data_dir
 from .worker import Worker
@@ -343,6 +343,9 @@ class Window(QMainWindow):
         layout.addWidget(self.quote_age)
         self.base_price = None
         self.usd = UsdRate(self)
+        self.gas_usd = UsdRate(self)
+        self.usd.changed.connect(self.capture_usd_rates)
+        self.gas_usd.changed.connect(self.capture_usd_rates)
         self.usd.changed.connect(self.refresh_currency)
         self.last_quote_at = None
         self.display_unit = 'условных единиц (DEMO)'
@@ -520,6 +523,15 @@ class Window(QMainWindow):
         hint.setObjectName('muted')
         form.addRow(hint)
         layout.addWidget(group)
+        accounting = QGroupBox('ИСТОРИЯ USD И РАСХОДЫ')
+        accounting_layout = QVBoxLayout(accounting)
+        self.accounting_text = QPlainTextEdit()
+        self.accounting_text.setReadOnly(True)
+        self.accounting_text.setMaximumHeight(180)
+        self.accounting_text.setPlaceholderText('Исторический USD-учёт отслеживаемых позиций и расходы газа')
+        accounting_layout.addWidget(self.accounting_text)
+        accounting_layout.addWidget(self.button('Обновить USD-учёт и расходы', lambda: self.send('accounting_report')))
+        layout.addWidget(accounting)
         wallet = QGroupBox("КОШЕЛЁК")
         form = self.form(wallet)
         self.key = self.field(placeholder="Private key отдельного BSC-кошелька")
@@ -875,6 +887,8 @@ class Window(QMainWindow):
         self.banner.style().polish(self.banner)
         if mode == 'DEMO':
             self.display_unit = 'условных единиц (DEMO)'
+        elif hasattr(self, 'quote'):
+            self.display_unit = self.quote.currentText() if self.quote.currentText() != 'ALL' else 'BASE'
         if hasattr(self, 'chart'):
             self.reset_price_display()
         if hasattr(self, "selection_ready"):
@@ -882,13 +896,15 @@ class Window(QMainWindow):
         if mode == "DEMO":
             self.market_summary.setText("Рынок: DEMO · локальная модель")
         elif hasattr(self, "pool_label"):
-            self.market_summary.setText(self.pool_label.text())
+            self.market_summary.setText(self.pool_label.text() if "DEMO" not in self.pool_label.text() else
+                                        "Рынок не выбран · AutoPair / CHECK POOL")
 
     def reset_price_display(self):
         self.market_block = self.market_block_timestamp = None
         self.market_rpc_source = "BSC"
         self.chart.clear()
         self.usd.set_token('')
+        self.gas_usd.set_token('')
         self.base_price = None
         self.last_quote_at = None
         self.last_price = None
@@ -905,6 +921,10 @@ class Window(QMainWindow):
         if self.price_source in ('DEMO', 'REPLAY'):
             return f'{float(value):.{digits}g}'
         return price_text(value, self.usd.current(), digits)
+
+    def capture_usd_rates(self):
+        for source in (self.usd, self.gas_usd):
+            self.worker.rates.update(source.token, source.current(), source.received_at)
 
     def refresh_currency(self):
         if not hasattr(self, 'usd') or not hasattr(self, 'price_source'):
@@ -929,6 +949,22 @@ class Window(QMainWindow):
             return
         mode = self.mode.currentText()
         text = f"{mode} · " + ('BOT работает' if self.running else 'BOT остановлен')
+        historical = payload.get('historical_usd') if mode != 'DEMO' and payload['mode'] == mode else None
+        if historical is not None:
+            value = historical.get('value')
+            if value is None:
+                result = '— (неполный USD-учёт)' if historical.get('missing') else '— (нет закрытых сделок)'
+            else:
+                usd = Decimal(value)
+                amount = format(abs(usd), '.2f') if abs(usd) >= Decimal('.01') or not usd else price_text(abs(usd), digits=4)
+                result = '≈ ' + ('−' if usd < 0 else '+' if usd > 0 else '') + '$' + amount
+            suffix = ' · газ BUY/SELL учтён' if historical['includes_gas'] else ' · без газа'
+            self.footer.setText(text + ' · Закрытый P&L: ' + result + suffix + (' · LIVE LOCKED' if self.locked else ''))
+            self.footer.setToolTip('USD по сохранённым ориентировочным курсам на моменты исполнения (DEX Screener, возраст до 90 с). '
+                'Смена текущего курса не пересчитывает закрытый результат. LIVE: отслеживаемые позиции этого кошелька '
+                'с начала нового USD-учёта, с газом BUY/SELL и approve; Converter/Sweep и старые сделки не включены. '
+                f"Закрыто: {historical.get('closed', 0)}, неполных: {historical.get('missing', 0)}. PAPER исключает газ и token tax.")
+            return
         if payload['mode'] != mode or payload['realized'] == '—':
             result = '—'
         else:
@@ -1070,6 +1106,7 @@ class Window(QMainWindow):
                       if addr.lower() == payload['quote'].lower()), payload['quote']))
             if payload['source'] == 'BSC' and self.isVisible():
                 self.usd.set_token(payload['quote'])
+                self.gas_usd.set_token(WBNB if self.mode.currentText() == 'LIVE' and payload['quote'].lower() != WBNB.lower() else '')
         elif name == "price":
             if self.mode.currentText() != 'DEMO' and not self.selection_ready:
                 return
@@ -1164,6 +1201,8 @@ class Window(QMainWindow):
             if not payload['rows']:
                 lines.append('Сохранённых позиций нет.')
             self.position_comparison.setText('\n'.join(lines))
+        elif name == 'accounting_report':
+            self.accounting_text.setPlainText(payload)
         elif name == "receipt_review":
             self.receipt_result.setText(payload)
             self.refresh_recovery()
@@ -1229,6 +1268,7 @@ class Window(QMainWindow):
             QMessageBox.warning(self, "Настройки не сохранены",
                                 "Не удалось сохранить параметры. Предыдущие настройки сохранены, если запись не была заменена.")
         self.usd.set_token('')
+        self.gas_usd.set_token('')
         event.accept()
 
 

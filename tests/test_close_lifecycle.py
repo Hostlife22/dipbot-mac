@@ -19,6 +19,7 @@ def window_fixture(tmp_path, monkeypatch, *, busy=False, running=False, stopped=
     field=lambda value:NS(text=lambda:str(value))
     window=NS(busy=busy,running=running,store=store,signal_policy=lambda: {},record_market=NS(isChecked=lambda:False),
         usd=NS(set_token=lambda token:calls.append('usd_stop')),
+        gas_usd=NS(set_token=lambda token:None),
         worker=NS(quit_event=threading.Event(),wait=wait),
         invalidate_discovery=lambda:calls.append('invalidate'),
         remember_amount=lambda:calls.append('remember'),
