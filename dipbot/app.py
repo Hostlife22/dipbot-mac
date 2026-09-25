@@ -285,6 +285,7 @@ class Window(QMainWindow):
     def field(self, value="", placeholder=""):
         field = QLineEdit(value)
         field.setPlaceholderText(placeholder)
+        field.setMinimumWidth(110)
         field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.editable.append(field)
         return field
@@ -303,6 +304,7 @@ class Window(QMainWindow):
     def form(self, parent):
         layout = QFormLayout(parent)
         layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(10)
         layout.setLabelAlignment(Qt.AlignLeft | Qt.AlignVCenter)
