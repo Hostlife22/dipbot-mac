@@ -210,3 +210,19 @@ def test_failed_stop_guides_user_to_close_saved_position(window):
     assert 'позиция сохранена' in w.strategy_status.text()
     assert 'SELL POSITION или STOP' in w.strategy_status.text()
     assert w.sell.isEnabled()
+
+
+def test_route_compare_uses_amount_and_discards_late_ui_result(window):
+    w=window
+    w.on_event('pools',[POOL])
+    submitted=[]
+    w.worker.submit=lambda name,**data:submitted.append((name,data))
+    w.params['amount'].setText('0.004')
+    w.compare_routes()
+    name,data=submitted[-1]
+    assert name=='compare_routes' and data['amount']=='0.004'
+    assert data['reference']==POOL and data['generation']==w.auto_generation
+    generation=w.auto_generation
+    w.invalidate_discovery()
+    w.on_event('discovery_event',(generation,'route_comparison_error','OLD RESULT'))
+    assert 'OLD RESULT' not in w.route_comparison.text()

@@ -131,14 +131,16 @@ class Worker(QThread):
                 try:
                     self.command(name, data)
                 except Exception as exc:
-                    if name in ("discover", "verify", "select") and not self.discovery_current(data.get("generation")):
+                    if name in ("discover", "verify", "select", "compare_routes") and not self.discovery_current(data.get("generation")):
                         continue
                     if name in ("reconcile", "compare_positions"):
                         self.event.emit("position_comparison_error" if name == "compare_positions" else "receipt_review", safe_error(exc))
                     self.running = False
                     self.halt_reason = safe_error(exc)
                     self.log.emit("ОШИБКА: " + safe_error(exc))
-                    if name in ("discover", "verify", "select"):
+                    if name == "compare_routes":
+                        self.discovery_emit(data.get("generation"), "route_comparison_error", safe_error(exc))
+                    elif name in ("discover", "verify", "select"):
                         self.pool = None
                         self.pool_generation = None
                         self.discovery_emit(data.get("generation"), "pools", [])
@@ -438,6 +440,18 @@ class Worker(QThread):
             if result.state == "RESOLVED":
                 self.select_pool(result.selected.pool, generation=generation)
             self.discovery_emit(generation, "autopair", result.state)
+        elif name == 'compare_routes':
+            self.require_chain()
+            generation = data.get('generation')
+            if not self.discovery_current(generation):
+                return
+            from .route_comparison import compare
+            reference = data['reference']
+            amount = SizingPolicy.parse(data['sizing']).amount_quote(D(data['amount']), reference.quote, self.rates)
+            report = compare(self.chain, data['pools'], reference, amount,
+                D(data['maximum']), CostPolicy.parse(data['cost_policy']), D(data['gas']), self.rates,
+                cancelled=lambda: not self.discovery_current(generation))
+            self.discovery_emit(generation, 'route_comparison', report)
         elif name == "verify":
             self.require_chain()
             pool = self.chain.verify_pool(data["pool"], data["token"])

@@ -1,0 +1,129 @@
+{
+  "token": "0xeCCBb861c0dda7eFd964010085488B69317e4444",
+  "utc": "2026-09-25T13:00:54.335521+00:00",
+  "mode": "PAPER",
+  "frozen": true,
+  "transactions_sent": 0,
+  "checks": 6934,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000155292928670552520689376622994253319558639241740138945775602305297574122661229",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000155403653462792097314070970156923978054099383784206498677677686807095000061444",
+      "phase": "manual_paper_sell"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000158000672359947587166753315079051452691178625262132450805432334069996504242598",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000159671524143446504550862505709584267986043827216177193111987980963324938989512",
+      "phase": "automatic_live_prices"
+    }
+  ],
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 7,
+    "WAIT DIP": 63,
+    "RUNNING": 3393,
+    "WAIT RPC": 8,
+    "STOPPING": 3
+  },
+  "price_sources": {
+    "BSC": 3460
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C"
+  ],
+  "pool": "0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+  "router": "V2",
+  "token_decimals": 18,
+  "settings": {
+    "amount": "0.00003",
+    "dip": "0.5",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150",
+    "min_swaps": "1",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "window",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.1",
+    "max_block_age": 5.0
+  },
+  "exit_policy": {
+    "tp_sl_basis": "quote",
+    "trailing_pct": "0.0",
+    "max_hold_seconds": "60.0",
+    "cooldown_seconds": "3.0"
+  },
+  "adaptive_rpc": true,
+  "manual_realized": "-1.28530003815E-7",
+  "controlled_rpc_outage": "20 seconds; primary and backup market reads only",
+  "stop_restart_passed": true,
+  "test_restarts": 1,
+  "observed_seconds": 600.01,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "synthetic_minout_resumed_without_start": true,
+  "passed": true,
+  "router_fills": [
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 192700336206002609,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 192700336206002609,
+      "received_raw": 29871469996185,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 189158642265116602,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 189158642265116602,
+      "received_raw": 30127740159008,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    }
+  ],
+  "rpc_methods": {
+    "eth_chainId": 6574,
+    "eth_getBlockByNumber": 5033,
+    "eth_getCode": 24,
+    "eth_call": 1472,
+    "eth_getLogs": 6
+  },
+  "distinct_prices": 210,
+  "price_range": [
+    "0.000155095903215113763776028842970604378194563911525851490544042913423590600036831",
+    "0.000161692964151311775431834252831682759551726514772234852935989811076434285900149"
+  ],
+  "build_source_commit": "04925c9",
+  "limitations": "Does not include stages 23-25. PAPER only; gas/token tax excluded; not LIVE or profitability evidence."
+}

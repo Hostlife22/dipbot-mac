@@ -435,6 +435,14 @@ class Window(QMainWindow):
         choose.addWidget(self.button("Выбрать", self.select_pool))
         choose.addWidget(self.button("ADD BASE", lambda: self.send("add_profile")))
         form.addRow(choose)
+        compare_button = self.button('Сравнить на AMOUNT', self.compare_routes)
+        compare_button.setToolTip('Котировки BUY и обратного SELL для найденных пулов той же пары на одном блоке. '
+            'Результат не меняет выбранный маршрут и не гарантирует продажу.')
+        form.addRow(compare_button)
+        self.route_comparison = QLabel('Сравнение маршрутов ещё не выполнено')
+        self.route_comparison.setWordWrap(True)
+        self.route_comparison.setObjectName('muted')
+        form.addRow(self.route_comparison)
         self.pool_label = QLabel("DEMO использует локальную модель цены")
         self.pool_label.setWordWrap(True)
         self.pool_label.setObjectName("muted")
@@ -792,6 +800,7 @@ class Window(QMainWindow):
     def invalidate_discovery(self, *_, clear_pool=True):
         self.auto_generation += 1
         self.worker.discovery_generation = self.auto_generation
+        self.route_comparison.setText("Сравнение маршрутов ещё не выполнено")
         self.autopair_timer.stop()
         self.selection_ready = False
         self.reset_price_display()
@@ -821,7 +830,7 @@ class Window(QMainWindow):
             return
         if name in ("discover", "select", "verify", "connect"):
             self.invalidate_discovery()
-        if name in ("discover", "verify", "select", "add_profile"):
+        if name in ("discover", "verify", "select", "add_profile", "compare_routes"):
             data["generation"] = self.auto_generation
         if name in ("discover", "verify", "select"):
             self.pool_label.setText("Поиск и проверка маршрута…")
@@ -829,6 +838,18 @@ class Window(QMainWindow):
         self.busy = True
         self.update_controls()
         self.worker.submit(name, **data)
+
+    def compare_routes(self):
+        reference = self.candidates.currentData()
+        if reference is None:
+            self.route_comparison.setText('Сначала найдите пулы через AutoPair')
+            return
+        self.route_comparison.setText('Сравнение на заданную сумму…')
+        self.send('compare_routes', reference=reference,
+            pools=[self.candidates.itemData(i) for i in range(self.candidates.count())],
+            amount=self.params['amount'].text().strip(), sizing=self.sizing_policy(),
+            maximum=self.params['max_roundtrip_loss'].text().strip(),
+            cost_policy=self.entry_cost_policy(), gas=self.gas.text().strip())
 
     def paper_policy(self):
         return {'latency_seconds':self.paper_delay.value(),'fee_quote':self.paper_fee.text().strip()}
@@ -1302,7 +1323,23 @@ class Window(QMainWindow):
                                      "CATALOG_TOKEN": "Введён адрес базового профиля; выберите PAIR вручную",
                                      "UNSUPPORTED_POOL": "Неподдерживаемый пул или базовая пара",
                                      "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
+        elif name == 'route_comparison_error':
+            self.route_comparison.setText('Сравнение не выполнено: ' + str(payload))
+        elif name == 'route_comparison':
+            lines = [f"AMOUNT {payload['amount']} в базе · блок {payload['block']}"]
+            for row in payload['rows']:
+                pool = row['pool']
+                prefix = f'{pool.router}/{pool.fee} {pool.address[:8]}…'
+                if row['error']:
+                    lines.append(f"{prefix}: {row['error']}")
+                else:
+                    cost = row['modeled_cost_pct']
+                    suffix = f'; с моделью газа {cost:.3f}%' if cost is not None else '; без газа'
+                    lines.append(f"{prefix}: BUY {row['target_out']:.8g} target; потери цикла {row['loss_pct']:.3f}%{suffix}")
+            lines.append('Порядок: меньше потерь цикла. Другие базы исключены. Это котировки, не симуляция token tax.')
+            self.route_comparison.setText('\n'.join(lines))
         elif name == "pools":
+            self.route_comparison.setText('Сравнение маршрутов ещё не выполнено')
             self.selection_ready = False
             self.pool_input.clear()
             self.candidates.clear()
