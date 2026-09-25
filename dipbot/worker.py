@@ -59,6 +59,7 @@ class Worker(QThread):
         self.backup_chain = None
         self.broadcast_chain = None
         self.head_feed = None
+        self.gap_recovery = None
         self.execution_monitor = None
         self.rates = RateBook()
         self.sizing = SizingPolicy()
@@ -112,6 +113,9 @@ class Worker(QThread):
         try:
             self.run_loop()
         finally:
+            if self.gap_recovery is not None:
+                self.gap_recovery.stop()
+                self.gap_recovery = None
             if self.head_feed is not None:
                 self.head_feed.stop()
             if self.recorder is not None:
@@ -173,14 +177,37 @@ class Worker(QThread):
                     self.event.emit("error", safe_error(exc))
                     self.log.emit("STOP: " + safe_error(exc))
                 self.status()
+            if self.gap_recovery is not None and self.gap_recovery.result is not None:
+                recovery = self.gap_recovery
+                self.gap_recovery = None
+                if self.pool == recovery.pool:
+                    self.record_market('backfill', **recovery.result)
+                    result = recovery.result
+                    detail = (result['error_type'] if result['error_type'] else
+                              f"{result['count']} Swap; ограниченный диапазон" if result['truncated'] else f"{result['count']} Swap")
+                    self.log.emit(f"Дозагрузка событий {result['from_block']}–{result['to_block']}: {detail}. Исторические события не торгуются")
             head = self.head_feed.snapshot() if self.head_feed is not None and self.mode != 'DEMO' and not self.quote_unavailable else None
             due = (self.head_schedule.due(head, time.monotonic(), next_tick)
                    if self.head_feed is not None and self.mode != 'DEMO' else time.monotonic() >= next_tick)
             if self.running and due:
                 poll_started = time.monotonic()
-                if self.head_schedule.consume(head, poll_started) and self.strategy.entry is None:
-                    self.strategy.reset_anchor()
-                    self.log.emit('Пропуск или смена ветви WebSocket: база DIP сброшена; читается актуальное состояние HTTP')
+                previous_head = self.head_schedule.last_head
+                if self.head_schedule.consume(head, poll_started):
+                    if self.strategy.entry is None:
+                        self.strategy.reset_anchor()
+                    self.log.emit('Пропуск или смена ветви WebSocket: читается актуальное состояние HTTP')
+                    self.record_market('stream_gap', previous_block=previous_head.number if previous_head else None,
+                        new_block=head.number, discontinuity=head.discontinuity)
+                    if self.gap_recovery is None and isinstance(self.chain, Chain) and self.pool is not None:
+                        from .gap_recovery import GapRecovery
+                        start = previous_head.number+1 if previous_head and previous_head.number < head.number else max(0,head.number-31)
+                        source = self.backup_chain or self.chain
+                        self.gap_recovery = GapRecovery(str(source.w3.provider.endpoint_uri), self.pool, start, head.number).start()
+                    elif self.gap_recovery is not None:
+                        self.log.emit('Дозагрузка предыдущего разрыва ещё выполняется; новый диапазон отмечен как неполный')
+                        self.record_market('backfill', pool=self.pool.address if self.pool else None,
+                            from_block=previous_head.number+1 if previous_head else None, to_block=head.number,
+                            truncated=True, count=None, events=[], error_type='Busy')
                 try:
                     self.observe()
                 except Exception as exc:
@@ -389,6 +416,9 @@ class Worker(QThread):
                 broadcaster = Chain(data['send_rpc'].strip())
                 broadcaster.check()
             feed = HeadFeed(data['ws_rpc'].strip()) if data.get('ws_rpc', '').strip() else None
+            if self.gap_recovery is not None:
+                self.gap_recovery.stop()
+                self.gap_recovery = None
             if self.head_feed is not None:
                 self.head_feed.stop()
             self.head_feed = feed.start() if feed is not None else None

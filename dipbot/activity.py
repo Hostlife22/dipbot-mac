@@ -14,12 +14,17 @@ def swap_count(chain, pool, blocks=100):
     end = chain.check(force_network=False)
     header = dict(chain.checked_header)
     start = max(0, end-blocks+1)
+    events = read_swaps(chain, pool, start, end, header)
+    return {'count':len(events), 'from_block':start, 'to_block':end}
+
+
+def read_swaps(chain, pool, start, end, header, limit=10000):
     topic = Web3.keccak(text=SIGNATURES[pool.router])
     logs = chain.w3.eth.get_logs({'address':pool.address, 'fromBlock':start,
                                  'toBlock':end, 'topics':[Web3.to_hex(topic)]})
-    if len(logs) > 10000:
+    if len(logs) > limit:
         raise ValueError('Ответ активности превышает лимит; вход запрещён')
-    identities = set()
+    identities = {}
     for row in logs:
         if (row.get('removed', False) or address(row['address']) != pool.address
                 or not start <= row['blockNumber'] <= end
@@ -28,6 +33,8 @@ def swap_count(chain, pool, blocks=100):
                 or len(row['blockHash']) != 32 or len(row['transactionHash']) != 32
                 or type(row['logIndex']) is not int or row['logIndex'] < 0):
             raise ValueError('Некорректное событие активности; вход запрещён')
-        identities.add((bytes(row['blockHash']), bytes(row['transactionHash']), row['logIndex']))
+        key = (bytes(row['blockHash']), bytes(row['transactionHash']), row['logIndex'])
+        identities[key] = {'block': row['blockNumber'], 'block_hash': key[0].hex(),
+                           'transaction_hash': key[1].hex(), 'log_index': key[2], 'data': bytes(row['data']).hex()}
     chain.canonical_receipt({'blockNumber':end, 'blockHash':header['hash']})
-    return {'count':len(identities), 'from_block':start, 'to_block':end}
+    return sorted(identities.values(), key=lambda row: (row['block'],row['log_index']))

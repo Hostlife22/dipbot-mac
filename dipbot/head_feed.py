@@ -130,6 +130,7 @@ class HeadSchedule:
         self.revision = 0
         self.discontinuity = 0
         self.last_read = float('-inf')
+        self.last_head = None
 
     def due(self, head, now, next_poll):
         healthy = head is not None and 0 <= now - head.received_at < 1
@@ -141,6 +142,7 @@ class HeadSchedule:
         reset = False
         if head is not None:
             reset = head.discontinuity != self.discontinuity
+            self.last_head = head
             self.revision = head.revision
             self.discontinuity = head.discontinuity
         self.last_read = now
