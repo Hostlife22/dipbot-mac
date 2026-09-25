@@ -27,6 +27,37 @@ def forbidden(*args, **kwargs):
     raise RuntimeError('PAPER soak forbids wallet access and LIVE execution')
 
 
+def stop_workers(app, workers, timeout=120):
+    """STOP virtual positions before joining, including operator interruption."""
+    if any(w.mode not in ('PAPER','DEMO') for w in workers):
+        raise ValueError('Soak cleanup is restricted to virtual modes')
+    for worker in workers:
+        if worker.isRunning():
+            worker.stop_event.set()
+        else:
+            worker.running=False
+    deadline=time.monotonic()+timeout
+    while any(w.isRunning() and (w.running or w.stop_event.is_set()) for w in workers) and time.monotonic()<deadline:
+        app.processEvents();time.sleep(.02)
+    for worker in workers:worker.quit_event.set()
+    joined=all([w.wait() for w in workers])
+    app.processEvents()
+    return {'workers_joined':joined,
+            'clean_stop':all(not w.paper.position and not w.running for w in workers)}
+
+
+def recording_health(workers):
+    rows=[]
+    for worker in workers:
+        recorder=worker.recorder
+        if recorder is not None:
+            rows.append({'file':recorder.path.name,'written':recorder.written,
+                         'dropped':recorder.dropped,'error_type':recorder.error_type,
+                         'writer_joined':not recorder.thread.is_alive()})
+    return {'recordings':rows,'recordings_complete':len(rows)==len(workers) and bool(rows)
+            and all(not r['dropped'] and not r['error_type'] and r['writer_joined'] for r in rows)}
+
+
 def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_usd="0", trailing="0.75", take_profit="1", stop_loss="1"):
     directory.mkdir(parents=True,exist_ok=False)
     app=QCoreApplication.instance() or QCoreApplication([])
@@ -103,21 +134,20 @@ def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_u
                 if now-checkpoint>=30:
                     save();checkpoint=now
                     print(json.dumps({'elapsed_seconds':round(now-started),'markets':[{'prices':r['prices'],'fills':r['fills'],'running':r['running']} for r in rows]}),flush=True)
-            for worker in workers:worker.stop_event.set()
-            deadline=time.monotonic()+120
-            while any(w.running or w.stop_event.is_set() for w in workers) and time.monotonic()<deadline:
-                app.processEvents();time.sleep(.02)
-            report['clean_stop']=all(not w.paper.position and not w.running and not w.stop_event.is_set() for w in workers)
-            report['passed']=report['clean_stop'] and all(r['prices']>0 and not r['errors'] for r in rows)
+            report['duration_completed']=True
+    except KeyboardInterrupt:
+        report['cancelled_by_operator']=True
     except Exception as exc:
-        report['failure_type']=type(exc).__name__;report['passed']=False
+        report['failure_type']=type(exc).__name__
     finally:
-        for worker in workers:worker.quit_event.set()
-        report['workers_joined']=all([w.wait() for w in workers])
-        # Join is the completion barrier; stop_event is cleared before closing.
-        report['clean_stop']=all(not w.paper.position and not w.running for w in workers)
-        report['passed']=bool(report.get('passed') and report['workers_joined'] and report['clean_stop'])
-        app.processEvents();save(final=True);diagnostics.close(clean=report.get('passed',False))
+        report.update(stop_workers(app,workers))
+        report.update(recording_health(workers))
+        report['trading_checks_passed']=bool(rows) and report['clean_stop'] and report['workers_joined'] and all(r['prices']>0 and not r['errors'] for r in rows)
+        report['passed']=bool(report.get('duration_completed') and not report.get('failure_type')
+                              and not report.get('cancelled_by_operator') and report['trading_checks_passed']
+                              and report['recordings_complete'])
+        save(final=True)
+        diagnostics.close(clean=report['clean_stop'] and report['workers_joined'] and not report.get('failure_type'))
     print(json.dumps({'passed':report.get('passed'), 'output':str(directory/'report.json')}),flush=True)
     return 0 if report.get('passed') else 1
 
