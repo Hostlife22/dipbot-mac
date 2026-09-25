@@ -20,6 +20,10 @@ def normalize(value):
         raise ValueError('Недопустимый интервал')
     result = {'version': 1, 'settings': {k: str(getattr(settings, k)) for k in FIELDS},
               'gas': str(gas), 'interval': str(interval)}
+    if 'record_market' in value:
+        if type(value['record_market']) is not bool:
+            raise ValueError('Некорректная настройка записи рынка')
+        result['record_market'] = value['record_market']
     if 'signal_policy' in value:
         result['signal_policy'] = SignalPolicy.parse(value['signal_policy']).export()
     if 'selection' in value or 'pair_amounts' in value:

@@ -21,6 +21,7 @@ from .entry_guard import EntryRejected
 from .signal_policy import SignalPolicy
 from .head_feed import HeadFeed, HeadSchedule
 from .market_monitor import monitor_execution
+from .market_tape import MarketTape
 
 
 def safe_error(exc):
@@ -50,6 +51,8 @@ class Worker(QThread):
         self.backup_chain = None
         self.head_feed = None
         self.execution_monitor = None
+        self.recorder = None
+        self.recorder_notice = False
         self.head_schedule = HeadSchedule()
         self.backup_until = 0.0
         self.backup_verified_pool = None
@@ -92,6 +95,8 @@ class Worker(QThread):
         finally:
             if self.head_feed is not None:
                 self.head_feed.stop()
+            if self.recorder is not None:
+                self.recorder.close()
 
     def run_loop(self):
         next_tick = time.monotonic()
@@ -168,6 +173,13 @@ class Worker(QThread):
                 delay = min(5, 0.5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
                 next_tick = max(poll_started + delay, time.monotonic())
                 self.status()
+
+    def record_market(self, kind, **data):
+        if self.recorder is not None:
+            self.recorder.record(kind, **data)
+            if not self.recorder_notice and (self.recorder.dropped or self.recorder.error_type):
+                self.recorder_notice = True
+                self.log.emit('Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут')
 
     def status(self):
         settings = self.strategy.settings
@@ -276,6 +288,18 @@ class Worker(QThread):
         self.halt_reason = ""
         self.quote_unavailable = False
         self.quote_failures = 0
+        previous_closed = self.recorder is None or self.recorder.close()
+        self.recorder = None
+        self.recorder_notice = False
+        if data.get('record_market', False) and previous_closed:
+            try:
+                self.recorder = MarketTape(self.store.path.parent / 'market-recordings', {
+                    'mode': self.mode, 'pool': asdict(self.pool) if self.pool else None,
+                    'settings': asdict(settings), 'signal_policy': policy.export(),
+                    'starts_with_position': self.strategy.entry is not None})
+                self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
+            except OSError:
+                self.log.emit('Запись рынка недоступна: проверьте свободное место и лимит архива')
 
     def command(self, name, data):
         if self.stop_event.is_set() and name in ("start", "buy", "convert", "sweep"):
@@ -537,6 +561,10 @@ class Worker(QThread):
                                         'block': header['number'] if header else None,
                                         'block_timestamp': header.get('timestamp') if header else None,
                                         'quote': '' if demo else self.pool.quote})
+        self.record_market('price', price=str(price), block=header['number'] if header else None,
+                           block_hash=bytes(header['hash']).hex() if header else None,
+                           block_timestamp=header.get('timestamp') if header else None,
+                           source='DEMO' if demo else 'BSC')
         self.event.emit("price", str(price))
         return price
 
@@ -585,6 +613,7 @@ class Worker(QThread):
         except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
             if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
                 raise
+            self.record_market('read_error', type=type(exc).__name__)
             self.quote_failures += 1
             if not self.quote_unavailable:
                 self.log.emit("Котировки недоступны: входы запрещены, повтор чтения с паузой до 5 с. Открытая позиция сохраняется")
@@ -607,9 +636,14 @@ class Worker(QThread):
         source = self.backup_chain if self.market_source != 'BSC' else self.chain
         header = getattr(source, 'price_block', None) if self.mode != 'DEMO' else None
         observation_id = (header['number'], bytes(header['hash']), price) if header else None
+        self.record_market('observation', price=str(price), block=header['number'] if header else None,
+                           block_hash=bytes(header['hash']).hex() if header else None)
         action = self.strategy.observe(price, now, observation_id=observation_id)
         if self.stop_event.is_set():
             return
+        if action:
+            self.record_market('signal', action=action, price=str(price), base=str(self.strategy.base),
+                               entry=str(self.strategy.entry))
         if action == "BUY":
             try:
                 self.open_position()
@@ -674,6 +708,7 @@ class Worker(QThread):
                 execution = self.paper.buy(settings.amount, self.current_price)
             entry = self.current_price
         self.strategy.bought(entry)
+        self.record_market("execution", side="BUY", price=str(entry))
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
@@ -712,6 +747,7 @@ class Worker(QThread):
                 pnl = self.paper.sell(price)
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
         self.strategy.sold(price, reason)
+        self.record_market("execution", side="SELL", price=str(price), reason=reason)
         self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})
         if self.mode == "LIVE":
             # SELL is already accounted for if this independent read fails.

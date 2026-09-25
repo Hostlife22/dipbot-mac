@@ -210,6 +210,7 @@ class Window(QMainWindow):
                 saved_preferences = preferences.normalize(saved_preferences)
                 for key, value in saved_preferences["settings"].items():
                     self.params[key].setText(value)
+                self.record_market.setChecked(saved_preferences.get('record_market', True))
                 policy = saved_preferences.get('signal_policy', {})
                 self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
                 self.signal_window.setValue(float(policy.get('window_seconds', 60)))
@@ -438,6 +439,12 @@ class Window(QMainWindow):
         grid.addRow('Окно максимума', self.signal_window)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.record_market = QCheckBox('Записывать рынок для повторной проверки')
+        self.record_market.setChecked(True)
+        self.record_market.setToolTip('Локальные цены/блоки/сигналы без ключей и RPC URL. До 10 MiB на запуск, '
+            '200 MiB на архив; переполнение отмечается как неполные данные.')
+        self.editable.append(self.record_market)
+        grid.addRow(self.record_market)
         self.editable += [self.signal_mode, self.signal_window, self.signal_rebound, self.block_age_limit]
         self.interval = QDoubleSpinBox()
         self.interval.setRange(0.1, 0.5)
@@ -693,7 +700,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1215,6 +1222,7 @@ class Window(QMainWindow):
                 "selection": {"router": self.router.currentText(), "pair": self.quote.currentText()},
                 "pair_amounts": self.pair_amounts,
                 "signal_policy": self.signal_policy(),
+                "record_market": self.record_market.isChecked(),
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
                 "gas": self.gas.text().strip(), "interval": str(self.interval.value())})
         except (ValueError, OSError):

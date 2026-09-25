@@ -1,0 +1,74 @@
+{
+  "source": "recorded_market",
+  "results": [
+    {
+      "model": "causal_fixed_cost_stress_v1",
+      "samples": 5337,
+      "policy": {
+        "mode": "legacy",
+        "window_seconds": 60,
+        "rebound_pct": "0",
+        "max_block_age": 5.0
+      },
+      "assumptions": {
+        "fee_bps": "25",
+        "impact_bps": "0",
+        "tax_bps": "0",
+        "gas_quote": "0",
+        "latency_seconds": 0.25,
+        "limitations": "No pool depth, gas estimation, MEV, nonce, receipt or sellability simulation"
+      },
+      "realized_quote": "0",
+      "max_drawdown_quote": "0",
+      "open_quantity": "0",
+      "pending": false,
+      "stopped": false,
+      "trades": [],
+      "rejected": []
+    },
+    {
+      "model": "causal_fixed_cost_stress_v1",
+      "samples": 5337,
+      "policy": {
+        "mode": "window",
+        "window_seconds": 60,
+        "rebound_pct": "0",
+        "max_block_age": 5.0
+      },
+      "assumptions": {
+        "fee_bps": "25",
+        "impact_bps": "0",
+        "tax_bps": "0",
+        "gas_quote": "0",
+        "latency_seconds": 0.25,
+        "limitations": "No pool depth, gas estimation, MEV, nonce, receipt or sellability simulation"
+      },
+      "realized_quote": "-7.5269310515904998043887593E-7",
+      "max_drawdown_quote": "9.0315772353407155152479403E-7",
+      "open_quantity": "0",
+      "pending": false,
+      "stopped": true,
+      "trades": [
+        {
+          "t": 463.75056693499937,
+          "side": "BUY",
+          "signal_t": 463.4476363499998,
+          "price": "0.000147235252048596900887803222572550132691211446032763443416082345594951695514990",
+          "quantity": "0.2032461627472398143696325063",
+          "cost": "0.00003"
+        },
+        {
+          "t": 524.136878071,
+          "side": "SELL",
+          "reason": "STOP_LOSS",
+          "signal_t": 523.7699362919993,
+          "price": "0.000144261559576621528774425169261691044453917975093541449862783788122977165515732",
+          "pnl": "-7.5269310515904998043887593E-7"
+        }
+      ],
+      "rejected": []
+    }
+  ],
+  "profitability_proven": false,
+  "transactions_sent": 0
+}
