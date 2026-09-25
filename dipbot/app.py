@@ -1102,7 +1102,7 @@ class Window(QMainWindow):
                       if self.display_position > 0 else ' · проверьте причину перед START')
             text = 'Остановлен из-за ошибки · ' + self.halt_reason + action
         elif getattr(self, 'entry_notice', '') and self.running:
-            text = 'Вход пропущен · ' + self.entry_notice
+            text = self.entry_notice if self.entry_notice.startswith('Пауза после выхода:') else 'Вход пропущен · ' + self.entry_notice
         elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
             text = 'Котировка устарела · нет обновлений более 0,55 с'
         elif self.display_position > 0:
@@ -1154,6 +1154,8 @@ class Window(QMainWindow):
                 source += f' (возраст {max(0, time.time()-self.market_block_timestamp):.1f} с)'
         if getattr(self, 'market_rpc_source', 'BSC') != 'BSC':
             source += ' · резервный RPC'
+        if getattr(self, 'same_block_cache', False):
+            source += ' · тот же блок'
         self.quote_age.setText(f'1 TARGET в {conversion} · {source} · последняя котировка {age:.1f} с назад{state}')
 
     def refresh_timings(self):
@@ -1205,6 +1207,7 @@ class Window(QMainWindow):
             self.footer.setText("ОШИБКА: " + payload)
             QMessageBox.warning(self, "Операция прервана", payload)
         elif name == 'price_context':
+            self.same_block_cache = payload.get('same_block_cache', False)
             if self.price_source != payload['source']:
                 self.reset_price_display()
             self.market_block = payload.get('block')

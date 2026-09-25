@@ -613,6 +613,7 @@ class Worker(QThread):
         header = getattr(source_chain, 'price_block', None) if not demo else None
         self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', 'BSC'),
                                         'rpc_source': self.market_source,
+                                        'same_block_cache': bool(getattr(source_chain, 'price_cache_hit', False)) if not demo else False,
                                         'block': header['number'] if header else None,
                                         'block_timestamp': header.get('timestamp') if header else None,
                                         'quote': '' if demo else self.pool.quote})

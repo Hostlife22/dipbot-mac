@@ -1,0 +1,23 @@
+{
+  "sources": "read-only PublicNode V2 USDT/WBNB",
+  "concurrent_paper": true,
+  "transactions_sent": 0,
+  "samples": [
+    {
+      "cache": false,
+      "reads": 36,
+      "median_ms": 266.9607964999159,
+      "p95_ms": 534.0415539976675,
+      "cache_hits": 0,
+      "blocks": 24
+    },
+    {
+      "cache": true,
+      "reads": 36,
+      "median_ms": 80.2448699996603,
+      "p95_ms": 237.71373099953053,
+      "cache_hits": 26,
+      "blocks": 10
+    }
+  ]
+}

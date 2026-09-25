@@ -1,4 +1,4 @@
-from .telemetry import timed
+from .telemetry import timed, TIMINGS
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 import json
@@ -286,6 +286,14 @@ class Chain:
     def price(self, pool: Pool) -> D:
         block = self.check(force_network=False)
         header = getattr(self, 'checked_header', None)
+        key = (pool, block, bytes(header['hash'])) if header is not None and header.get('hash') else None
+        cached = getattr(self, '_price_cache', None)
+        self.price_cache_hit = False
+        if key is not None and cached is not None and cached[0] == key and getattr(self, 'price_cache_enabled', True):
+            self.price_block = dict(header)
+            self.price_cache_hit = True
+            TIMINGS.record('chain.price_cache_hit', 0)
+            return cached[1]
         with localcontext() as context:
             context.prec = 78
             if pool.router == "V2":
@@ -308,9 +316,13 @@ class Chain:
                 ratio = D(sqrt) ** 2 / D(2) ** 192
                 if not pool.token_is_0:
                     ratio = 1 / ratio
+            price = ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
+            if key is not None:
+                self.canonical_receipt({'blockNumber':block, 'blockHash':header['hash']})
+                self._price_cache = (key, price)
             if header is not None:
-                self.price_block = header
-            return ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
+                self.price_block = dict(header)
+            return price
 
     def resolve_address(self, raw, catalogs):
         from .discovery import resolve
