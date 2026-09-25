@@ -363,6 +363,31 @@ def reconcile_receipts(chain, store, owner):
         try:
             receipt = chain.w3.eth.get_transaction_receipt(record["hash"])
         except TransactionNotFound:
+            if record.get('block_hash') or record.get('status') in ('confirmed','reverted'):
+                raise UncertainTransaction('Ранее подтверждённый receipt исчез; нужна ручная сверка reorg') from None
+            alternative = None
+            for other in operation['transactions']:
+                linked = other.get('replaces') == record['hash'] or record.get('replaces') == other['hash']
+                if not linked or type(record.get('nonce')) is not int or other.get('nonce') != record['nonce']:
+                    continue
+                try:
+                    proof = chain.w3.eth.get_transaction_receipt(other['hash'])
+                except TransactionNotFound:
+                    continue
+                LiveTrader.validate_receipt(proof, other['hash'])
+                if not hasattr(chain,'canonical_receipt'):
+                    raise UncertainTransaction('Нельзя проверить канонический receipt замены')
+                LiveTrader.retry_read(lambda: chain.canonical_receipt(proof))
+                if other.get('block_hash') and other['block_hash'] != Web3.to_hex(proof['blockHash']):
+                    raise UncertainTransaction('Блок замены изменился; нужна ручная сверка')
+                alternative = other['hash']
+                break
+            if alternative is not None:
+                record.update(status='superseded',stage='same_nonce_resolved',superseded_by=alternative,
+                              gas_fee_wei=0,gas_usd='0')
+                record.pop('receipt_review',None)
+                store.save()
+                continue
             from .pending import inspect_missing, LABELS
             record['receipt_review'] = inspect_missing(chain, owner, record)
             store.save()
@@ -384,6 +409,10 @@ def reconcile_receipts(chain, store, owner):
             record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
             record_gas(store, owner, record)
         store.save()
+    settled_nonces = [r['nonce'] for r in operation['transactions']
+                      if type(r.get('nonce')) is int and r.get('status') in ('confirmed','reverted')]
+    if len(settled_nonces) != len(set(settled_nonces)):
+        raise UncertainTransaction('Узел вернул несколько включённых транзакций с одним nonce; нужна сверка')
     # Do not clear the latch automatically: balances/position also need review.
     store.save()
     return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"

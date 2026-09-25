@@ -1,0 +1,13 @@
+{
+  "environment": "isolated local Anvil",
+  "mainnet_transactions_sent": 0,
+  "passed": true,
+  "statuses": [
+    "superseded",
+    "confirmed"
+  ],
+  "recipient_balance": 0,
+  "wallet_nonce": 1,
+  "gas_wei": 26250000000000,
+  "latch_preserved": true
+}

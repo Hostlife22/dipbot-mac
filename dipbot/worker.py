@@ -611,6 +611,21 @@ class Worker(QThread):
             self.configure(data)
             self.require_live()
             self.sweep()
+        elif name == 'cancel_pending':
+            self.require_chain()
+            if data.get('mode') != 'LIVE':
+                raise ValueError('Отмена транзакции доступна только в LIVE')
+            key = Vault().get('wallet')
+            if not key:
+                raise ValueError('Нет кошелька в Keychain')
+            helper = LiveTrader(self.chain, key, self.store, D(data['gas']), self.log.emit)
+            helper.broadcast_chain = self.broadcast_chain
+            helper.rates = self.rates
+            from .cancellation import cancel_pending
+            result = cancel_pending(helper, expected_hash=data['expected_hash'],
+                                    expected_gas_price=data['expected_gas_price'])
+            self.log.emit(result)
+            self.event.emit('receipt_review', result)
         elif name == "compare_positions":
             self.require_chain()
             from .recovery import compare_positions

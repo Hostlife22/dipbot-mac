@@ -226,3 +226,19 @@ def test_route_compare_uses_amount_and_discards_late_ui_result(window):
     w.invalidate_discovery()
     w.on_event('discovery_event',(generation,'route_comparison_error','OLD RESULT'))
     assert 'OLD RESULT' not in w.route_comparison.text()
+
+
+def test_pending_cancel_confirmation_contains_fee_and_requires_yes(window,monkeypatch):
+    from test_cancellation import original
+    w=window
+    w.mode.setCurrentText('LIVE')
+    w.store.data['operation']={'wallet':'0x'+'34'*20,'transactions':[original()]}
+    sent=[];prompts=[]
+    w.send=lambda name,**data:sent.append((name,data))
+    def no(*args):prompts.append(args[2]);return QMessageBox.No
+    monkeypatch.setattr(QMessageBox,'question',no)
+    w.cancel_pending()
+    assert not sent and '0.125 gwei' in prompts[0] and 'Nonce 0' in prompts[0]
+    monkeypatch.setattr(QMessageBox,'question',lambda *args:QMessageBox.Yes)
+    w.cancel_pending()
+    assert sent[0][0]=='cancel_pending' and sent[0][1]['expected_gas_price']==125000000
