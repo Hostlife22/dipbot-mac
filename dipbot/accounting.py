@@ -99,3 +99,26 @@ def accounting_report(store, owner):
         value = row.get('net_usd')
         lines.append(row['token']+' · '+(value+' USD' if value is not None else 'неполный учёт'))
     return '\n'.join(lines)
+
+
+def record_sweep_exit(store, owner, token, sold, residual, proceeds, quote, quote_decimals,
+                      operation, exit_rate, *, pool_address=''):
+    """Aggregate tracked lots once per Sweep receipt; mismatches remain incomplete."""
+    from types import SimpleNamespace
+    positions = [p for key,p in store.data.get('positions',{}).items()
+                 if key.startswith(owner.lower()+':') and p['pool']['token'].lower()==token.lower()]
+    if not positions or type(proceeds) is not int or proceeds <= 0:
+        return
+    total = sum(p['amount'] for p in positions)
+    complete = residual == 0 and total == sold and all(p.get('entry_cost_usd') is not None for p in positions)
+    entry_usd = sum((D(p['entry_cost_usd']) for p in positions),D(0)) if complete else None
+    same_quote = all(p['pool']['quote'].lower()==quote.lower() and 'cost_quote' in p for p in positions)
+    combined = {'entry_cost_usd':str(entry_usd) if entry_usd is not None else None,
+                'cost_quote':str(sum((D(p['cost_quote']) for p in positions),D(0))) if same_quote else None}
+    pool = SimpleNamespace(address=pool_address,token=token,quote=quote,quote_decimals=quote_decimals)
+    record_close(store,owner,pool,combined,proceeds,operation,exit_rate,inventory_matches=total==sold and residual==0)
+    rows=operation.get('transactions',[]) if operation else []
+    if rows:
+        close=store.data['closed_trades'][rows[-1]['hash']]
+        close.update(source='SWEEP',tracked_raw=total,sold_raw=sold,residual_raw=residual,
+                     source_pools=[p['pool']['address'] for p in positions])

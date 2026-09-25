@@ -1035,20 +1035,31 @@ class Worker(QThread):
                           f"не проверено {len(report['unknown'])}")
 
     def _account_sweep_token(self, token, residual):
-        """Update this wallet's tracked positions after a verified balance read."""
+        """Bound aggregate tracked quantity; an unexplained remainder has no trusted basis."""
+        if type(residual) is not int or not 0 <= residual < 2**256:
+            raise ValueError('Некорректный остаток Sweep')
         changed = False
-        positions = self.store.data.get("positions", {})
-        for key in list(positions):
-            if (key.startswith(self.live.owner.lower() + ":")
-                    and positions[key]["pool"]["token"].lower() == token.lower()):
-                if residual:
-                    amount = min(positions[key]["amount"], residual)
-                    changed |= amount != positions[key]["amount"]
-                    positions[key]["amount"] = amount
-                else:
+        remaining = residual
+        positions = self.store.data.get('positions', {})
+        for key in sorted(list(positions)):
+            position = positions[key]
+            if key.startswith(self.live.owner.lower()+':') and position['pool']['token'].lower()==token.lower():
+                amount = min(position['amount'],remaining)
+                remaining -= amount
+                if not amount:
                     del positions[key]
-                    changed = True
+                else:
+                    position['amount'] = amount
+                    position['entry_cost_usd'] = None
+                    position.pop('cost_quote',None)
+                    position['basis_incomplete'] = 'SWEEP residual / external flow requires reconciliation'
+                changed = True
         return changed
+
+    def _record_sweep_exit(self, token, amount, residual, received, quote, decimals, pool_address=''):
+        from .accounting import record_sweep_exit
+        record_sweep_exit(self.store,self.live.owner,token,amount,residual,received,quote,decimals,
+            getattr(self.live,'operation',None),self.rates.snapshot(quote),pool_address=pool_address)
 
     def _sweep(self, report, tokens, checked):
         self.log.emit("SWEEP: зарегистрированные target, затем базовые активы → BNB")
@@ -1104,7 +1115,7 @@ class Worker(QThread):
             if self.stop_event.is_set():
                 return
             self.live.begin("SWEEP TARGET " + pool.token)
-            self.live.swap(pool,amount,False,self.strategy.settings.slippage,
+            received = self.live.swap(pool,amount,False,self.strategy.settings.slippage,
                            simulate=True, deadline_seconds=60)
             try:
                 residual = self.chain.balance(pool.token, self.live.owner)
@@ -1112,13 +1123,8 @@ class Worker(QThread):
                 # A receipt confirms execution, not that the token balance is zero.
                 # Keep the operation and position for reconciliation after restart.
                 raise UncertainTransaction("SWEEP подтверждён, но остаток TARGET не прочитан; нужна сверка") from None
-            positions = self.store.data.get("positions", {})
-            for key in list(positions):
-                if key.startswith(self.live.owner.lower()+":") and positions[key]["pool"]["token"].lower() == pool.token.lower():
-                    if residual:
-                        positions[key]["amount"] = min(positions[key]["amount"], residual)
-                    else:
-                        del positions[key]
+            self._record_sweep_exit(pool.token,amount,residual,received,pool.quote,pool.quote_decimals,pool.address)
+            self._account_sweep_token(pool.token,residual)
             self.live.finish()
             sold.append(pool.token)
         seen = set()
@@ -1162,10 +1168,11 @@ class Worker(QThread):
                     self.log.emit("SWEEP остановлен после проверки маршрута")
                     return
                 self.live.begin("SWEEP BASE " + symbol)
-                self.live.convert(token, amount, False, self.strategy.settings.slippage)
+                received = self.live.convert(token, amount, False, self.strategy.settings.slippage)
                 # A target can also be a catalog base (e.g. USDT). Its sale via
                 # Converter must account for positions just like a target swap.
                 residual = self.chain.balance(token, self.live.owner)
+                self._record_sweep_exit(token,amount,residual,received,WBNB,18)
                 self._account_sweep_token(token, residual)
                 self.live.finish()
                 sold.append(token)
