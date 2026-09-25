@@ -1,0 +1,22 @@
+{
+  "frozen": false,
+  "synthetic": true,
+  "resume": true,
+  "transactions_sent": 0,
+  "scenarios": [
+    "pair_amounts_restored_without_autostart",
+    "fresh_process_restores_position_and_pending_lock",
+    "balance_mismatch_visible_without_mutation",
+    "keyless_receipt_review_pending_then_confirmed_stays_locked"
+  ],
+  "passed": true,
+  "errors": [
+    "Не найден receipt 0x5656565656565656565656565656565656565656565656565656565656565656; В старой записи нет nonce для дополнительной проверки; блокировка сохранена"
+  ],
+  "logs": [
+    "Выбран V2 / WBNB / 2500 · 0x1212121212121212121212121212121212121212",
+    "ОШИБКА: Не найден receipt 0x5656565656565656565656565656565656565656565656565656565656565656; В старой записи нет nonce для дополнительной проверки; блокировка сохранена",
+    "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"
+  ],
+  "trades": []
+}
