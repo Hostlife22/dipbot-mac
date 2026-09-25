@@ -985,6 +985,10 @@ class Worker(QThread):
                 self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
         self.strategy.bought(entry, now=time.monotonic())
         self.record_market("execution", side="BUY", price=str(entry))
+        self.exit_return = None
+        # Publish settled holdings before the chart marker. Monitor shutdown and
+        # later RPC reads must not leave a filled trade paired with old UI state.
+        self.status()
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
@@ -1041,6 +1045,8 @@ class Worker(QThread):
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (стоимость операции по модели; token tax не учтён)")
         self.strategy.sold(price, reason, now=time.monotonic())
         self.record_market("execution", side="SELL", price=str(price), reason=reason)
+        self.exit_return = None
+        self.status()
         self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})
         if self.mode == "LIVE":
             # SELL is already accounted for if this independent read fails.

@@ -17,14 +17,19 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01'):
+    if automatic_only and exercise_recovery:
+        raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
+    if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
+        raise ValueError('Invalid PAPER fee model')
     directory.mkdir(parents=True, exist_ok=False)
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(STYLE)
     app.setQuitOnLastWindowClosed(False)
     report = {'token': token, 'utc': datetime.now(timezone.utc).isoformat(), 'mode': 'PAPER',
               'frozen': bool(getattr(sys, 'frozen', False)), 'transactions_sent': 0, 'checks': 0, 'mismatches': [], 'errors': [],
-              'samples': [], 'trades': [], 'source': 'live BSC RPC, no replay'}
+              'samples': [], 'trades': [], 'test_restarts': 0,
+              'automatic_only': automatic_only, 'source': 'live BSC RPC, no replay'}
     logs, rpc, fills = [], [], []
     original_quote = Chain.paper_quote
     def paper_quote(chain, pool, amount, buy):
@@ -88,6 +93,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     report['mismatches'].append('strategy levels')
             elif kind == 'trade_marker':
                 report['trades'].append(dict(payload, phase=phase[0]))
+                if (w.display_position > 0) != (payload['side'] == 'BUY'):
+                    report['mismatches'].append('trade marker precedes settled position display')
                 if payload['side'] == 'BUY':
                     assert fills and fills[-1]['buy']
                     expected = D(fills[-1]['received_raw'])/D(10)**fills[-1]['token_decimals']
@@ -141,12 +148,20 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 w.exit_basis.setCurrentIndex(w.exit_basis.findData('quote'))
                 w.exit_fields['max_hold_seconds'].setValue(60)
                 w.exit_fields['cooldown_seconds'].setValue(3)
+                if automatic_only:
+                    w.continue_after_exit.setChecked(True)
+                    w.exit_fields['trailing_pct'].setValue(.75)
             report['settings'] = {k:v.text() for k,v in w.params.items()}
             report['signal_policy'] = w.signal_policy()
             report['exit_policy'] = w.exit_policy()
             report['adaptive_rpc'] = modern
-            if amount_usd is not None:
+            if amount_usd is not None or D(fee_usd):
                 wait(lambda: w.worker.rates.snapshot(pool.quote) is not None, 60)
+            if D(fee_usd):
+                rate = D(w.worker.rates.snapshot(pool.quote)['usd'])
+                w.paper_fee.setText(str(D(fee_usd) / rate))
+            report['paper_policy'] = w.paper_policy()
+            report['fee_usd_at_start'] = fee_usd
             # Manual PAPER actions are explicitly separate from natural strategy signals.
             if not automatic_only:
                 phase[0] = 'manual_paper_buy'
@@ -192,7 +207,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     capture('midrun_stop')
                     stop_restart_done = True
                     phase[0] = 'automatic_live_prices'
-                if not w.running and not w.busy and not w.worker.paper.position and time.monotonic() >= restart_after:
+                if not automatic_only and not w.running and not w.busy and not w.worker.paper.position and time.monotonic() >= restart_after:
                     assert not report['errors'], 'Unexpected stop must not be hidden by a test restart'
                     w.start.click();wait(lambda:not w.busy)
                     report['test_restarts'] = report.get('test_restarts',0)+1
@@ -290,6 +305,9 @@ if __name__ == '__main__':
     parser.add_argument('--close-after', action='store_true')
     parser.add_argument('--amount-usd', help='Virtual USD amount, at most 1; no real trades')
     parser.add_argument('--automatic-only', action='store_true', help='Observe natural entries without forcing manual BUY')
+    parser.add_argument('--fee-usd', default='0.01', help='Fixed PAPER operation cost converted at setup; an assumption, not actual gas')
     args=parser.parse_args()
+    if args.automatic_only and args.exercise_recovery:
+        parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd))

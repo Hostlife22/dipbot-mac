@@ -21,9 +21,10 @@ from dipbot.trader import LiveTrader
 from dipbot.usd import select_rate
 
 
-def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False):
-    sweep_mode = sweep_only or sweep_multi
-    sweep_state = "state-sweep-multi.json" if sweep_multi else "state-sweep.json"
+def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, sweep_stop=False):
+    sweep_mode = sweep_only or sweep_multi or sweep_stop
+    multi = sweep_multi or sweep_stop
+    sweep_state = "state-sweep-stop.json" if sweep_stop else "state-sweep-multi.json" if sweep_multi else "state-sweep.json"
     directory.mkdir(parents=True, exist_ok=resume or sweep_mode)
     key = key_path.read_text().strip()
     account = Account.from_key(key)
@@ -96,7 +97,7 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False):
          patch.object(QMessageBox,'question',lambda *a:QMessageBox.Yes), \
          patch.object(QMessageBox,'warning',lambda *a:report['errors'].append(a[2])), \
          (patch('dipbot.worker.profiles', lambda: {'WBNB': WBNB}) if sweep_mode else nullcontext()), \
-         (patch('dipbot.dynamic.catalog', lambda store, router: {'WBNB':WBNB}) if sweep_multi else nullcontext()):
+         (patch('dipbot.dynamic.catalog', lambda store, router: {'WBNB':WBNB}) if multi else nullcontext()):
         w=Window(Store(directory/(sweep_state if sweep_mode else 'state.json')))
         if sweep_mode:
             assert not w.store.data.get('operation') and not w.store.data.get('positions'), 'Unfinished Sweep audit'
@@ -130,6 +131,11 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False):
             if kind=='status' and payload['mode']=='LIVE':
                 if w.metrics['position'].text()!=f"{float(payload['position']):.8g}":report['ui_mismatches'].append('position')
                 if payload['locked'] and w.buy.isEnabled():report['ui_mismatches'].append('locked BUY')
+            elif kind=='sweep_report':
+                report.setdefault('sweep_reports',[]).append(payload)
+            elif kind=='trade_marker':
+                if (w.display_position>0)!=(payload['side']=='BUY'):
+                    report['ui_mismatches'].append('trade marker precedes position display')
         w.worker.event.connect(inspect)
         try:
             w.rpc.setText('https://bsc-dataseed.binance.org');w.save_rpc.setChecked(False)
@@ -149,18 +155,36 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False):
                 report['scenarios'].append('LIVE recovery: RPC change -> receipt -> balance verification -> unlock; no resend')
             select(v2)
             if sweep_mode:
-                w.convert_amount.setText('0.00005' if sweep_multi else '0.00002');click('BUY BASE')
-                assert chain.balance(WBNB,account.address)==(50000000000000 if sweep_multi else 20000000000000)
-                if sweep_multi:
+                w.convert_amount.setText('0.00005' if multi else '0.00002');click('BUY BASE')
+                assert chain.balance(WBNB,account.address)==(50000000000000 if multi else 20000000000000)
+                if multi:
                     w.params['amount'].setText('0.00002');click('BUY NOW')
                     assert chain.balance(USDT,account.address)>0 and chain.balance(WBNB,account.address)>0
                 # Restrict the audit catalog, never sell other wallet holdings.
                 # Actual Worker Sweep and LiveTrader conversion remain unchanged.
+                if sweep_stop:
+                    original_swap = LiveTrader.swap
+                    stopped = []
+                    def stop_after_swap(trader, pool, amount, buy, *args, **kwargs):
+                        received = original_swap(trader, pool, amount, buy, *args, **kwargs)
+                        if not buy and pool.token.lower()==USDT.lower():
+                            # Controlled STOP at a real receipt boundary, not an RPC fault.
+                            stopped.append(pool.token)
+                            w.worker.stop_event.set()
+                        return received
+                    with patch.object(LiveTrader,'swap',stop_after_swap):
+                        click('SELL WALLET → BNB')
+                    assert stopped == [USDT]
+                    assert chain.balance(USDT,account.address)==0 and chain.balance(WBNB,account.address)>0
+                    assert not w.store.data.get('operation') and not w.worker.position()
+                    assert report['sweep_reports'][-1]['status']=='stopped'
+                    report['scenarios'].append('LIVE controlled STOP after confirmed USDT Sweep; WBNB retained, journal clear')
+                    capture('sweep_stopped')
                 click('SELL WALLET → BNB')
                 assert chain.balance(WBNB,account.address)==0
                 assert chain.balance(USDT,account.address)==0
                 assert not w.store.data.get('operation')
-                report['scenarios'].append('LIVE scoped Sweep: tracked USDT target then remaining WBNB base; restricted catalog' if sweep_multi else 'LIVE scoped Sweep: WBNB unwrap; catalog restricted to WBNB, zero USDT target')
+                report['scenarios'].append('LIVE resume stopped Sweep: only remaining WBNB unwrapped' if sweep_stop else 'LIVE scoped Sweep: tracked USDT target then remaining WBNB base; restricted catalog' if multi else 'LIVE scoped Sweep: WBNB unwrap; catalog restricted to WBNB, zero USDT target')
                 report['passed']=not report['ui_mismatches']
                 capture('sweep_completed')
                 return
@@ -215,7 +239,8 @@ if __name__=='__main__':
     p.add_argument('--resume',action='store_true',help='Only recover the single initial wrap, preserving the same budget')
     p.add_argument('--sweep-only',action='store_true',help='Continue existing budget with a WBNB-only Sweep audit')
     p.add_argument('--sweep-multi',action='store_true',help='Continue existing budget: USDT target and WBNB base Sweep only')
+    p.add_argument('--sweep-stop',action='store_true',help='Continue existing budget: controlled STOP after target receipt, then resume remaining base')
     a=p.parse_args()
-    if sum([a.resume,a.sweep_only,a.sweep_multi])>1:p.error('Choose one continuation mode')
+    if sum([a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop])>1:p.error('Choose one continuation mode')
     if not a.execute:p.error('Explicit --execute and user authorization required')
-    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi)
+    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop)

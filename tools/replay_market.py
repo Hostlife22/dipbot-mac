@@ -11,7 +11,7 @@ from dipbot.exit_policy import ExitPolicy
 from dipbot.strategy import Settings
 
 
-def load(path):
+def load(path, *, all_events=False):
     path = Path(path)
     first = None
     body = []
@@ -59,6 +59,8 @@ def load(path):
         if next_path.resolve().parent!=path.parent.resolve():
             raise ValueError('Следующая часть вне каталога архива')
         previous=path.name;path=next_path;index+=1
+    if all_events:
+        return first, body
     rows=[first]
     if D(str(rows[0].get('entry_cost_policy',{}).get('maximum_pct',0))):
         raise ValueError('Replay цен не воспроизводит включённый фильтр расходов RPC/газа')
