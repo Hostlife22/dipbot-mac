@@ -5,6 +5,7 @@ import sys
 import tempfile
 
 from .telemetry import timed
+from .ledger_cache import Ledger
 
 
 def data_dir():
@@ -24,16 +25,39 @@ class Store:
         if not isinstance(self.data, dict):
             raise ValueError("Повреждён state.json; торговля заблокирована")
 
+    def ledger(self, name):
+        value = self.data.setdefault(name, {})
+        if not isinstance(value, dict):
+            raise ValueError('Повреждён финансовый журнал; торговля заблокирована')
+        if not isinstance(value, Ledger):
+            value = Ledger(value)
+            self.data[name] = value
+        return value
+
     @timed("storage.save")
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         # Serialize once before touching disk; preserve the durable replace protocol.
-        payload = json.dumps(self.data, ensure_ascii=False, separators=(",", ":"))
+        for name in ('closed_trades', 'gas_ledger'):
+            if name in self.data:
+                self.ledger(name)
+        if any(not isinstance(key, str) for key in self.data):
+            raise ValueError('Имена полей состояния должны быть строками')
+        encode = lambda value: json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+        # Serialize all fields before creating the temporary file. Reuse cached
+        # ledger strings without joining/copying the entire large state in RAM.
+        payload = ['{']
+        for index,(key,value) in enumerate(self.data.items()):
+            if index:
+                payload.append(',')
+            payload.extend((encode(key), ':',
+                value.encoded() if isinstance(value, Ledger) else encode(value)))
+        payload.append('}')
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".state-")
         replaced = False
         try:
             with os.fdopen(fd, "w") as stream:
-                stream.write(payload)
+                stream.writelines(payload)
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(tmp, self.path)

@@ -2,6 +2,7 @@
 import faulthandler
 import json
 import resource
+import subprocess
 import os
 from pathlib import Path
 import sys
@@ -13,11 +14,30 @@ from .storage import Store
 from .telemetry import TIMINGS
 
 
+def native_thread_count():
+    """Include QThread/native libraries; never retain process command text."""
+    try:
+        if sys.platform == 'darwin':
+            pid = str(os.getpid())
+            result = subprocess.run(['ps','-M','-p',pid],capture_output=True,text=True,timeout=1)
+            if result.returncode:
+                return None
+            count = sum(bool(parts) and (parts[0]==pid or (len(parts)>1 and parts[1]==pid))
+                        for parts in (line.split() for line in result.stdout.splitlines()))
+            return count or None
+        if sys.platform.startswith('linux'):
+            return sum(1 for _ in Path('/proc/self/task').iterdir())
+    except (OSError,subprocess.SubprocessError):
+        pass
+    return None
+
+
 def resource_snapshot():
     """No process arguments, paths, locals or thread names in the checkpoint."""
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return {'peak_rss_bytes': int(usage.ru_maxrss * (1 if sys.platform == 'darwin' else 1024)),
             'python_threads': threading.active_count(),
+            'native_threads': native_thread_count(),
             'cpu_user_seconds': usage.ru_utime, 'cpu_system_seconds': usage.ru_stime,
             'monotonic_seconds': time.monotonic()}
 
@@ -38,6 +58,7 @@ class Diagnostics:
         self.stream = os.fdopen(fd, 'a', buffering=1)
         self.lock = threading.Lock()
         self.had_exception = False
+        self.last_checkpoint = None
         self.old_hook = sys.excepthook
         self.old_thread_hook = threading.excepthook
         faulthandler.enable(self.stream, all_threads=True)
@@ -69,9 +90,19 @@ class Diagnostics:
 
     def checkpoint(self):
         try:
+            now = (time.time(), time.monotonic())
+            gaps = {}
+            if self.last_checkpoint is not None:
+                wall, monotonic = (now[i]-self.last_checkpoint[i] for i in (0,1))
+                gaps = {'checkpoint_wall_gap_seconds':wall,
+                        'checkpoint_monotonic_gap_seconds':monotonic,
+                        'possible_suspend_or_scheduler_pause':max(wall,monotonic)>90}
+                if gaps['possible_suspend_or_scheduler_pause']:
+                    self.write({'event':'checkpoint_gap', **gaps})
+            self.last_checkpoint = now
             report = Store(self.directory / 'timings.json')
             report.data = {'units': 'milliseconds', 'recorded_at': int(time.time()),
-                           'series': TIMINGS.snapshot(), 'resources': resource_snapshot()}
+                           'series': TIMINGS.snapshot(), 'resources': resource_snapshot(), **gaps}
             report.save()
         except (OSError, ValueError):
             pass  # A diagnostic failure must not halt trading.

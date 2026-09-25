@@ -9,18 +9,18 @@
     {
       "token": "0xe545FAaa94Da6fb3Cc0AAB88c3E188B13B637777",
       "pool": "0x869B02c5425C89D88048f5e8Ce0c723E119FCdd5",
-      "prices": 2166,
+      "prices": 5333,
       "signals": {},
       "exits": {
         "STOP_LOSS": 1,
-        "TRAILING_STOP": 4
+        "TRAILING_STOP": 5
       },
       "fills": {
-        "BUY": 5,
-        "SELL": 5
+        "BUY": 6,
+        "SELL": 6
       },
       "errors": [],
-      "active_seconds": 810.3547462409988,
+      "active_seconds": 1800.8352725389996,
       "running": true,
       "initial_quote_usd": "2.77",
       "paper_fee_quote": "0.003610108303249097472924187726",
@@ -49,10 +49,10 @@
         "cooldown_seconds": 5
       },
       "rpc_methods": {
-        "eth_chainId": 7961,
-        "eth_getBlockByNumber": 5443,
+        "eth_chainId": 15687,
+        "eth_getBlockByNumber": 10925,
         "eth_getCode": 4,
-        "eth_call": 2503
+        "eth_call": 4746
       },
       "position": "0",
       "quote_unavailable": false
@@ -60,17 +60,17 @@
     {
       "token": "0x3A91c7d22D8D306EB109c9E9fA78aC162CcA7777",
       "pool": "0x2FD5EDe569c2223870E291D951839E18E3e1D071",
-      "prices": 2465,
+      "prices": 5653,
       "signals": {},
       "exits": {
-        "TRAILING_STOP": 2
+        "TRAILING_STOP": 3
       },
       "fills": {
-        "BUY": 2,
-        "SELL": 2
+        "BUY": 3,
+        "SELL": 3
       },
       "errors": [],
-      "active_seconds": 810.3547462409988,
+      "active_seconds": 1800.8352725389996,
       "running": true,
       "initial_quote_usd": "34.10",
       "paper_fee_quote": "0.0002932551319648093841642228739",
@@ -99,10 +99,10 @@
         "cooldown_seconds": 5
       },
       "rpc_methods": {
-        "eth_chainId": 6969,
-        "eth_getBlockByNumber": 4867,
+        "eth_chainId": 14635,
+        "eth_getBlockByNumber": 10313,
         "eth_getCode": 4,
-        "eth_call": 2090
+        "eth_call": 4309
       },
       "position": "0",
       "quote_unavailable": false
@@ -110,7 +110,7 @@
   ],
   "started_at": 1790352331,
   "setup_seconds": 5.502880756001105,
-  "elapsed_seconds": 810.3670694489992,
+  "elapsed_seconds": 1800.8450094500004,
   "resources": [
     {
       "peak_rss_bytes": 104914944,
@@ -122,13 +122,13 @@
       "elapsed_seconds": 0.010436172000481747
     },
     {
-      "peak_rss_bytes": 113676288,
+      "peak_rss_bytes": 114421760,
       "python_threads": 6,
-      "cpu_user_seconds": 66.07774,
-      "cpu_system_seconds": 7.302106,
-      "monotonic_seconds": 30301.919703137,
-      "current_rss_bytes": 113639424,
-      "elapsed_seconds": 810.3670605750012
+      "cpu_user_seconds": 135.540061,
+      "cpu_system_seconds": 15.732166,
+      "monotonic_seconds": 31292.400197121,
+      "current_rss_bytes": 114384896,
+      "elapsed_seconds": 1800.8449966590015
     }
   ],
   "final": false

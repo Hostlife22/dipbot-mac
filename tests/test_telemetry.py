@@ -100,7 +100,7 @@ def test_resource_checkpoint_has_explicit_peak_units_without_sensitive_data(tmp_
         resources=json.loads((tmp_path/'timings.json').read_text())['resources']
         assert resources['peak_rss_bytes']>0 and resources['python_threads']>=1
         assert resources['cpu_user_seconds']>=0
-        assert set(resources)=={'peak_rss_bytes','python_threads','cpu_user_seconds','cpu_system_seconds','monotonic_seconds'}
+        assert set(resources)=={'peak_rss_bytes','python_threads','native_threads','cpu_user_seconds','cpu_system_seconds','monotonic_seconds'}
     finally:
         d.close()
 

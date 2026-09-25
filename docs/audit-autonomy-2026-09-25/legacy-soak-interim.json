@@ -56,7 +56,7 @@
     {
       "token": "0x6d5AD1592ed9D6D1dF9b93c793AB759573Ed6714",
       "pool": "0x9Eb0BC7a207f77811eE365729d00152622a745B7",
-      "prices": 18234,
+      "prices": 21363,
       "signals": {},
       "exits": {
         "TIME_EXIT": 1
@@ -66,7 +66,7 @@
         "SELL": 1
       },
       "errors": [],
-      "active_seconds": 5612.129924195,
+      "active_seconds": 6572.498367060001,
       "running": true,
       "settings": {
         "amount": "0.00003",
@@ -91,17 +91,17 @@
         "cooldown_seconds": 5
       },
       "rpc_methods": {
-        "eth_chainId": 44094,
-        "eth_getBlockByNumber": 31342,
+        "eth_chainId": 51474,
+        "eth_getBlockByNumber": 36597,
         "eth_getCode": 4,
-        "eth_call": 12739
+        "eth_call": 14864
       },
       "position": "0",
       "quote_unavailable": false
     }
   ],
   "started_at": 1790347548,
-  "elapsed_seconds": 5616.826905553,
+  "elapsed_seconds": 6577.1995067200005,
   "resources": [
     {
       "peak_rss_bytes": 99184640,
@@ -113,13 +113,13 @@
       "elapsed_seconds": 4.7030438570000115
     },
     {
-      "peak_rss_bytes": 106414080,
+      "peak_rss_bytes": 106430464,
       "python_threads": 6,
-      "cpu_user_seconds": 350.35814,
-      "cpu_system_seconds": 42.87956,
-      "monotonic_seconds": 30325.900526203,
-      "current_rss_bytes": 106409984,
-      "elapsed_seconds": 5616.826895128001
+      "cpu_user_seconds": 386.966027,
+      "cpu_system_seconds": 47.896364,
+      "monotonic_seconds": 31286.268955843,
+      "current_rss_bytes": 106426368,
+      "elapsed_seconds": 6577.199497860001
     }
   ],
   "final": false

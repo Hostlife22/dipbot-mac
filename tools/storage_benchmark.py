@@ -37,14 +37,16 @@ def benchmark(sizes=(100,1000,10000,100000), repeats=5):
         store=Store(Path(directory)/'state.json')
         for count in sizes:
             owner=realistic_ledger(store,count)
-            durations=[];summaries=[]
+            durations=[];summaries=[];closed_summaries=[]
             for index in range(repeats):
                 # A durable outstanding operation must survive a growing history.
                 store.data['operation']={'kind':'SELL','wallet':owner,'transactions':[
                     {'hash':'0x'+'aa'*32,'nonce':index,'status':'prepared'}]}
                 start=time.perf_counter();store.save();durations.append((time.perf_counter()-start)*1000)
                 start=time.perf_counter()
-                summary=closed_summary(store,owner);expenses=expense_summary(store,owner)
+                summary=closed_summary(store,owner)
+                closed_summaries.append((time.perf_counter()-start)*1000)
+                expenses=expense_summary(store,owner)
                 summaries.append((time.perf_counter()-start)*1000)
                 assert D(summary['value']) == D('.098')*count
                 assert expenses['allocation_complete']
@@ -56,7 +58,9 @@ def benchmark(sizes=(100,1000,10000,100000), repeats=5):
             rows.append({'closed_trades':count,'gas_receipts':2*count,
                          'bytes':store.path.stat().st_size,'samples_ms':durations,
                          'median_ms':statistics.median(durations),'max_ms':max(durations),
-                         'load_ms':load_ms,'summary_median_ms':statistics.median(summaries)})
+                         'load_ms':load_ms,'summary_median_ms':statistics.median(summaries),
+                         'closed_summary_median_ms':statistics.median(closed_summaries),
+                         'cold_save_ms':durations[0], 'warm_save_median_ms':statistics.median(durations[1:])})
     return {'synthetic':True,'schema':'production accounting writers',
             'includes_fsync':True,'sizes':rows,'repeats':repeats,
             'limitations':'Single process, temporary filesystem, no long-run or concurrent GUI guarantee'}

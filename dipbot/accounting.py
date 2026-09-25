@@ -49,18 +49,21 @@ def operation_fees(operation):
 def record_gas(store, owner, record):
     if 'gas_fee_wei' not in record:
         return
-    store.data.setdefault('gas_ledger', {})[record['hash']] = {
+    store.ledger('gas_ledger')[record['hash']] = {
         'wallet':owner.lower(), 'label':record.get('label', 'unknown'), 'wei':str(record['gas_fee_wei']),
         'usd':record.get('gas_usd'), 'rate':record.get('gas_usd_rate'),
         'block':record.get('block'), 'status':record['status']}
 
 
 def closed_summary(store, owner):
-    rows = [r for r in store.data.get('closed_trades', {}).values() if r['wallet']==owner.lower()]
-    missing = sum(row.get('net_usd') is None for row in rows)
-    total = sum((D(row['net_usd']) for row in rows if row.get('net_usd') is not None),D(0))
-    return {'value':str(total) if rows and not missing else None, 'closed':len(rows),
-            'missing':missing, 'includes_gas':True, 'scope':'tracked_positions_since_usd_accounting'}
+    ledger = store.ledger('closed_trades')
+    def calculate():
+        rows = [r for r in ledger.values() if r['wallet']==owner.lower()]
+        missing = sum(row.get('net_usd') is None for row in rows)
+        total = sum((D(row['net_usd']) for row in rows if row.get('net_usd') is not None),D(0))
+        return {'value':str(total) if rows and not missing else None, 'closed':len(rows),
+                'missing':missing, 'includes_gas':True, 'scope':'tracked_positions_since_usd_accounting'}
+    return ledger.summary(owner.lower(), calculate)
 
 
 def record_close(store, owner, pool, position, received, operation, exit_rate, *, inventory_matches=True):
@@ -74,7 +77,7 @@ def record_close(store, owner, pool, position, received, operation, exit_rate, *
     entry_usd = position.get('entry_cost_usd')
     net = (D(proceeds_usd)-D(entry_usd)-D(fees['usd'])
            if inventory_matches and proceeds_usd is not None and entry_usd is not None and fees['usd'] is not None else None)
-    store.data.setdefault('closed_trades', {}).setdefault(identifier, {
+    store.ledger('closed_trades').setdefault(identifier, {
         'wallet':owner.lower(), 'pool':pool.address, 'token':pool.token, 'quote':pool.quote,
         'closed_at':int(time.time()), 'inventory_matches':inventory_matches, 'cost_quote':position.get('cost_quote'),
         'proceeds_quote':str(proceeds), 'entry_cost_usd':entry_usd,
