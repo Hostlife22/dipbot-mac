@@ -4,6 +4,7 @@ from decimal import Decimal
 import math
 from collections import deque
 from .signal_policy import SignalPolicy
+from .exit_policy import ExitPolicy
 
 D = Decimal
 
@@ -76,7 +77,11 @@ def snapshot_minimum(amount: int, price: D, quote_decimals: int,
 
 
 class Strategy:
-    def __init__(self, settings: Settings, policy=None):
+    def __init__(self, settings: Settings, policy=None, exit_policy=None):
+        self.exit_policy = exit_policy or ExitPolicy()
+        self.entry_time = None
+        self.peak_price = None
+        self.cooldown_until = None
         self.policy = policy or SignalPolicy()
         self.highs = deque()
         self.trough = None
@@ -98,19 +103,32 @@ class Strategy:
             return None
         if self.last_time is not None and now <= self.last_time:
             return None
+        if self.entry is None and self.cooldown_until is not None:
+            if now < self.cooldown_until:
+                self.last_time, self.last_price = now, price
+                return None
+            self.reset_anchor()
+            self.cooldown_until = None
         gap = self.last_time is not None and now - self.last_time > self.settings.max_gap
         previous = self.last_price
         duplicate = observation_id is not None and observation_id == self.last_observation_id
         self.last_observation_id = observation_id
         self.last_time, self.last_price = now, price
-        if self.policy.mode == 'window' and duplicate and not gap:
+        if self.entry is None and self.policy.mode == 'window' and duplicate and not gap:
             return None
         if self.entry is not None:
+            if self.entry_time is None:
+                self.entry_time = now
+            self.peak_price = max(self.peak_price or self.entry, price)
             change = (price / self.entry - 1) * 100
             if change >= self.settings.take_profit:
                 return "TAKE_PROFIT"
             if change <= -self.settings.stop_loss:
                 return "STOP_LOSS"
+            if self.exit_policy.trailing_pct and (1-price/self.peak_price)*100 >= self.exit_policy.trailing_pct:
+                return 'TRAILING_STOP'
+            if self.exit_policy.max_hold_seconds and now-self.entry_time >= self.exit_policy.max_hold_seconds:
+                return 'TIME_EXIT'
             return None
         if self.policy.mode == 'window':
             return self.observe_window(price, now, gap)
@@ -172,13 +190,18 @@ class Strategy:
             return 'BUY'
         return None
 
-    def bought(self, execution_price: D):
+    def bought(self, execution_price: D, now=None):
         if self.entry is not None:
             raise ValueError("Позиция уже открыта")
         self.entry = execution_price
+        self.peak_price = execution_price
+        self.entry_time = self.last_time if now is None else now
 
-    def sold(self, price: D, reason: str):
+    def sold(self, price: D, reason: str, now=None):
         self.entry = None
+        self.entry_time = self.peak_price = None
+        now = (self.last_time or 0) if now is None else now
+        self.cooldown_until = now+self.exit_policy.cooldown_seconds if self.exit_policy.cooldown_seconds else None
         self.highs.clear()
         self.trough = None
         self.base_time = self.last_time
@@ -186,5 +209,5 @@ class Strategy:
         self.base = price
         self.last_price = price
         self.down_streak = 0
-        if reason in ("STOP_LOSS", "STOP"):
+        if reason in ("STOP_LOSS", "STOP", "TRAILING_STOP"):
             self.stopped = True

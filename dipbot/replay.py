@@ -28,14 +28,14 @@ class ReplayCosts:
         return 1-(self.fee_bps+self.impact_bps+self.tax_bps)/10000
 
 
-def replay(samples, settings, policy, costs=None, *, size_unit='quote', requested_amount=None):
+def replay(samples, settings, policy, costs=None, *, size_unit='quote', requested_amount=None, exit_policy=None):
     if size_unit not in ('quote','usd'):
         raise ValueError('Неизвестная единица replay AMOUNT')
     requested_amount = settings.amount if requested_amount is None else D(str(requested_amount))
     if not requested_amount.is_finite() or requested_amount <= 0:
         raise ValueError('Некорректная сумма replay')
     costs = costs or ReplayCosts()
-    strategy = Strategy(settings, policy)
+    strategy = Strategy(settings, policy, exit_policy)
     pending = None
     quantity = cost = realized = D(0)
     high_equity = drawdown = D(0)
@@ -70,7 +70,7 @@ def replay(samples, settings, policy, costs=None, *, size_unit='quote', requeste
                 else:
                     quantity = output
                     cost = amount+costs.gas_quote
-                    strategy.bought(reference)  # Matches PAPER's signal-price TP/SL reference.
+                    strategy.bought(reference, now=now)  # Matches PAPER's signal-price TP/SL reference.
                     trades.append({'t':now, 'side':'BUY', 'signal_t':pending['signal_t'],
                                    'price':str(price), 'quantity':str(quantity), 'cost':str(cost)})
                 pending = None
@@ -80,7 +80,7 @@ def replay(samples, settings, policy, costs=None, *, size_unit='quote', requeste
                 realized += pnl
                 trades.append({'t':now, 'side':'SELL', 'reason':side, 'signal_t':pending['signal_t'],
                                'price':str(price), 'pnl':str(pnl)})
-                strategy.sold(price, side)
+                strategy.sold(price, side, now=now)
                 quantity = cost = D(0)
                 pending = None
         if pending is None and not strategy.stopped and now >= cooldown:

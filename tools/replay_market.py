@@ -7,6 +7,7 @@ from pathlib import Path
 
 from dipbot.replay import replay, ReplayCosts
 from dipbot.signal_policy import SignalPolicy
+from dipbot.exit_policy import ExitPolicy
 from dipbot.strategy import Settings
 
 
@@ -46,7 +47,8 @@ def main():
     costs=ReplayCosts(D(args.fee_bps),D(args.impact_bps),D(args.tax_bps),D(args.gas_quote),args.latency)
     results=[replay(samples,settings,SignalPolicy(mode,args.window,D(args.rebound)),costs,
                     size_unit=header.get('sizing',{}).get('unit','quote'),
-                    requested_amount=header.get('requested_amount'))
+                    requested_amount=header.get('requested_amount'),
+                    exit_policy=ExitPolicy.parse(header.get('exit_policy',{})))
              for mode in ('legacy','window')]
     args.output.write_text(json.dumps({'source':'recorded_market','results':results,
         'profitability_proven':False,'transactions_sent':0},indent=2)+'\n')

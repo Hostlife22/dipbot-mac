@@ -2,6 +2,7 @@
 from .strategy import D, Settings
 from .signal_policy import SignalPolicy
 from .sizing import SizingPolicy
+from .exit_policy import ExitPolicy
 from .storage import SaveAfterReplaceError
 
 FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic', 'max_roundtrip_loss')
@@ -27,6 +28,8 @@ def normalize(value):
                                           for key,amount in value['usd_pair_amounts'].items()}
         except (AttributeError,TypeError) as exc:
             raise ValueError('Повреждены USD суммы пар') from exc
+    if 'exit_policy' in value:
+        result['exit_policy'] = ExitPolicy.parse(value['exit_policy']).export()
     if 'sizing' in value:
         result['sizing'] = SizingPolicy.parse(value['sizing']).export()
     if 'record_market' in value:

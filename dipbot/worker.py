@@ -23,6 +23,7 @@ from .head_feed import HeadFeed, HeadSchedule
 from .market_monitor import monitor_execution
 from .market_tape import MarketTape
 from .sizing import SizingPolicy
+from .exit_policy import ExitPolicy
 from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
 
@@ -197,6 +198,8 @@ class Worker(QThread):
         levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
                    'SL': str(entry*(1-settings.stop_loss/100))} if entry else
                   {'DIP': str(base*(1-settings.dip/100))})
+        if entry and self.strategy.exit_policy.trailing_pct and self.strategy.peak_price:
+            levels['TRAIL'] = str(self.strategy.peak_price*(1-self.strategy.exit_policy.trailing_pct/100))
         self.event.emit("status", {"running": self.running, "mode": self.mode,
                          "levels": levels,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
@@ -212,7 +215,9 @@ class Worker(QThread):
                          "pnl_quote": (self.paper_context[2] if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
                                        else self.pool.quote if self.mode != "DEMO" and self.pool else ""),
                          "quote_unavailable": self.quote_unavailable,
-                         "entry_notice": self.entry_notice,
+                         "entry_notice": self.entry_notice or (
+                             f'Пауза после выхода: {max(0,self.strategy.cooldown_until-time.monotonic()):.1f} с'
+                             if self.strategy.cooldown_until and time.monotonic() < self.strategy.cooldown_until else ''),
                          "halt_reason": self.halt_reason,
                          "locked": bool(self.store.data.get("operation"))})
 
@@ -226,7 +231,9 @@ class Worker(QThread):
         positions = self.store.data.setdefault("positions", {})
         if amount:
             positions[self.position_key()] = {**positions.get(self.position_key(), {}),
-                "amount": amount, "entry": str(entry), "pool": asdict(self.pool)}
+                "amount": amount, "entry": str(entry), "pool": asdict(self.pool),
+                "opened_at": positions.get(self.position_key(), {}).get("opened_at", time.time()),
+                "peak_price": positions.get(self.position_key(), {}).get("peak_price", str(entry))}
         else:
             positions.pop(self.position_key(), None)
         self.store.save()
@@ -243,6 +250,7 @@ class Worker(QThread):
         mode = data["mode"]
         policy = SignalPolicy.parse(data.get("signal_policy", {}))
         sizing = SizingPolicy.parse(data.get("sizing", {}))
+        exit_policy = ExitPolicy.parse(data.get("exit_policy", {}))
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
         requested_amount = settings.amount
         if sizing.unit == 'usd':
@@ -293,14 +301,23 @@ class Worker(QThread):
                     self.paper = PaperTrader(settings.slippage)
                     self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
                 self.paper_context = context
+        old_cooldown = self.strategy.cooldown_until if mode == self.mode else None
         self.mode, self.interval, self.live = mode, interval, live
         self.sizing, self.requested_amount = sizing, requested_amount
         old_entry = self.strategy.entry
-        self.strategy = Strategy(settings, policy)
+        old_entry_time, old_peak = self.strategy.entry_time, self.strategy.peak_price
+        self.strategy = Strategy(settings, policy, exit_policy)
+        self.strategy.cooldown_until = old_cooldown
         if mode == "LIVE" and self.position():
             self.strategy.entry = D(self.position()["entry"])
+            self.strategy.peak_price = D(self.position().get('peak_price', self.position()['entry']))
+            started = self.position().get('opened_at')
+            if exit_policy.max_hold_seconds and started is None:
+                raise ValueError('В старой позиции нет времени входа; отключите выход по времени или выполните ручной SELL')
+            self.strategy.entry_time = time.monotonic()-max(0,time.time()-started) if started is not None else None
         elif mode != "LIVE" and self.paper.position:
             self.strategy.entry = old_entry
+            self.strategy.entry_time, self.strategy.peak_price = old_entry_time, old_peak
         self.paper.slippage = settings.slippage
         self.entry_retry_at = 0.0
         self.entry_notice = ""
@@ -315,7 +332,7 @@ class Worker(QThread):
                 self.recorder = MarketTape(self.store.path.parent / 'market-recordings', {
                     'mode': self.mode, 'pool': asdict(self.pool) if self.pool else None,
                     'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
-                    'requested_amount':str(requested_amount),
+                    'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(),
                     'starts_with_position': self.strategy.entry is not None})
                 self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
             except OSError:
@@ -665,6 +682,11 @@ class Worker(QThread):
                            quote_usd=usd_mark['usd'] if usd_mark else None,
                            quote_usd_observed_at=usd_mark['observed_at'] if usd_mark else None)
         action = self.strategy.observe(price, now, observation_id=observation_id)
+        if self.mode == 'LIVE' and self.strategy.entry is not None and self.strategy.peak_price is not None:
+            position = self.position()
+            if position and self.strategy.peak_price > D(position.get('peak_price', position['entry'])):
+                position['peak_price'] = str(self.strategy.peak_price)
+                self.store.save()
         if self.stop_event.is_set():
             return
         if action:
@@ -725,6 +747,7 @@ class Worker(QThread):
                 if cost_usd is not None and fees['usd'] is not None else None)
             self.store.save()
             entry = self.read_price()
+            self.position()['peak_price'] = str(entry)
             self.set_position(received, entry)
             self.live.finish()
         else:
@@ -744,7 +767,7 @@ class Worker(QThread):
             entry = self.current_price
             self.paper_usd['entry'] = marked_value(self.paper.cost,
                 self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
-        self.strategy.bought(entry)
+        self.strategy.bought(entry, now=time.monotonic())
         self.record_market("execution", side="BUY", price=str(entry))
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
@@ -796,7 +819,7 @@ class Worker(QThread):
                 self.paper_usd['value'] += D(proceeds_usd)-D(self.paper_usd['entry'])
             self.paper_usd['entry'] = None
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
-        self.strategy.sold(price, reason)
+        self.strategy.sold(price, reason, now=time.monotonic())
         self.record_market("execution", side="SELL", price=str(price), reason=reason)
         self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})
         if self.mode == "LIVE":

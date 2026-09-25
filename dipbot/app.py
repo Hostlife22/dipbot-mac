@@ -219,6 +219,9 @@ class Window(QMainWindow):
                 self.signal_window.setValue(float(policy.get('window_seconds', 60)))
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
+                exits = saved_preferences.get('exit_policy', {})
+                for key, field in self.exit_fields.items():
+                    field.setValue(float(exits.get(key, 0)))
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))
             except ValueError:
@@ -458,6 +461,23 @@ class Window(QMainWindow):
         grid.addRow('Окно максимума', self.signal_window)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.exit_fields = {}
+        for key, label, maximum, suffix in (
+                ('trailing_pct', 'Trailing stop · 0 выкл.', 99.99, ' %'),
+                ('max_hold_seconds', 'Макс. время позиции · 0 выкл.', 86400, ' s'),
+                ('cooldown_seconds', 'Пауза после выхода', 3600, ' s')):
+            field = QDoubleSpinBox()
+            field.setRange(0, maximum)
+            field.setDecimals(2)
+            field.setSuffix(suffix)
+            self.exit_fields[key] = field
+            self.editable.append(field)
+            grid.addRow(label, field)
+        self.exit_fields['trailing_pct'].setToolTip(
+            'Падение от максимальной наблюдавшейся цены после входа. TP/SL имеют приоритет. '
+            'После trailing stop автоматическая торговля останавливается.')
+        self.exit_fields['max_hold_seconds'].setToolTip(
+            'Выход на первой свежей котировке после срока. При отсутствии сети точное время не гарантируется.')
         self.record_market = QCheckBox('Записывать рынок для повторной проверки')
         self.record_market.setChecked(True)
         self.record_market.setToolTip('Локальные цены/блоки/сигналы без ключей и RPC URL. До 10 MiB на запуск, '
@@ -725,6 +745,9 @@ class Window(QMainWindow):
         self.update_controls()
         self.worker.submit(name, **data)
 
+    def exit_policy(self):
+        return {key: str(field.value()) for key, field in self.exit_fields.items()}
+
     def sizing_policy(self):
         return {'unit':self.amount_unit.currentData(), 'reserve_bnb':self.gas_reserve.text().strip()}
 
@@ -748,7 +771,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  exit_policy=self.exit_policy(), sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1298,6 +1321,7 @@ class Window(QMainWindow):
                 "pair_amounts": self.pair_amounts,
                 "usd_pair_amounts": self.usd_pair_amounts,
                 "signal_policy": self.signal_policy(),
+                "exit_policy": self.exit_policy(),
                 "sizing": self.sizing_policy(),
                 "record_market": self.record_market.isChecked(),
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
