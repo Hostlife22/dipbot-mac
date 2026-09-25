@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 import math
+from collections import deque
+from .signal_policy import SignalPolicy
 
 D = Decimal
 
@@ -74,7 +76,13 @@ def snapshot_minimum(amount: int, price: D, quote_decimals: int,
 
 
 class Strategy:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, policy=None):
+        self.policy = policy or SignalPolicy()
+        self.highs = deque()
+        self.trough = None
+        self.last_observation_id = None
+        self.base_time = None
+        self.base_reason = "Ожидание первого наблюдения"
         self.settings = settings
         self.base: D | None = None
         self.entry: D | None = None
@@ -83,7 +91,7 @@ class Strategy:
         self.down_streak = 0
         self.stopped = False
 
-    def observe(self, price: D, now: float) -> str | None:
+    def observe(self, price: D, now: float, observation_id=None) -> str | None:
         if not price.is_finite() or price <= 0 or not math.isfinite(now):
             raise ValueError("Некорректная цена")
         if self.stopped:
@@ -92,7 +100,11 @@ class Strategy:
             return None
         gap = self.last_time is not None and now - self.last_time > self.settings.max_gap
         previous = self.last_price
+        duplicate = observation_id is not None and observation_id == self.last_observation_id
+        self.last_observation_id = observation_id
         self.last_time, self.last_price = now, price
+        if self.policy.mode == 'window' and duplicate and not gap:
+            return None
         if self.entry is not None:
             change = (price / self.entry - 1) * 100
             if change >= self.settings.take_profit:
@@ -100,7 +112,11 @@ class Strategy:
             if change <= -self.settings.stop_loss:
                 return "STOP_LOSS"
             return None
+        if self.policy.mode == 'window':
+            return self.observe_window(price, now, gap)
         if self.base is None or gap:
+            self.base_time = now
+            self.base_reason = 'Разрыв наблюдений' if gap else 'Первое наблюдение'
             self.base = price
             self.down_streak = 0
             return None
@@ -110,12 +126,50 @@ class Strategy:
         # Flat observations preserve the streak (branch at VA 0x14089b167).
         if previous is not None and price > previous:
             self.base = price
+            self.base_time = now
+            self.base_reason = "Рост цены (legacy)"
             self.down_streak = 0
         elif previous is not None and price < previous:
             self.down_streak += 1
             if self.down_streak >= 2:
                 self.base = price
+                self.base_time = now
+                self.base_reason = "Два снижения (legacy)"
                 self.down_streak = 0
+        return None
+
+    def reset_anchor(self):
+        self.base = self.last_time = self.last_price = self.base_time = None
+        self.down_streak = 0
+        self.highs.clear()
+        self.trough = None
+        self.last_observation_id = None
+        self.base_reason = 'Ожидание нового сигнала'
+
+    def observe_window(self, price, now, gap):
+        if gap or self.base is None:
+            self.highs.clear()
+            self.trough = None
+        cutoff = now - self.policy.window_seconds
+        while self.highs and self.highs[0][0] < cutoff:
+            self.highs.popleft()
+        while self.highs and self.highs[-1][1] <= price:
+            self.highs.pop()
+        if len(self.highs) >= 10000:
+            raise ValueError('Слишком много событий в окне DIP; вход остановлен')
+        self.highs.append((now, price))
+        self.base_time, self.base = self.highs[0]
+        self.base_reason = 'Разрыв наблюдений' if gap else 'Максимум временного окна'
+        if gap:
+            return None
+        dip = (1 - price / self.base) * 100
+        if dip < self.settings.dip:
+            self.trough = None
+            return None
+        self.trough = min(self.trough, price) if self.trough is not None else price
+        rebound = (price / self.trough - 1) * 100
+        if rebound >= self.policy.rebound_pct:
+            return 'BUY'
         return None
 
     def bought(self, execution_price: D):
@@ -125,6 +179,10 @@ class Strategy:
 
     def sold(self, price: D, reason: str):
         self.entry = None
+        self.highs.clear()
+        self.trough = None
+        self.base_time = self.last_time
+        self.base_reason = "Закрытие позиции"
         self.base = price
         self.last_price = price
         self.down_streak = 0

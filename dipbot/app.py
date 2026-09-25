@@ -210,6 +210,10 @@ class Window(QMainWindow):
                 saved_preferences = preferences.normalize(saved_preferences)
                 for key, value in saved_preferences["settings"].items():
                     self.params[key].setText(value)
+                policy = saved_preferences.get('signal_policy', {})
+                self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
+                self.signal_window.setValue(float(policy.get('window_seconds', 60)))
+                self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))
             except ValueError:
@@ -408,6 +412,25 @@ class Window(QMainWindow):
             'Проверка котировок входа и обратного выхода на одном блоке до покупки. '
             'Включает комиссии пула и влияние суммы. Не учитывает газ, token tax и изменение пула после BUY; '
             'не гарантирует возможность будущей продажи. Применяется в PAPER и LIVE.')
+        self.signal_mode = QComboBox()
+        self.signal_mode.setMinimumContentsLength(12)
+        self.signal_mode.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.signal_mode.addItem('Совместимость · два снижения', 'legacy')
+        self.signal_mode.addItem('DIP от максимума за окно', 'window')
+        self.signal_window = QDoubleSpinBox()
+        self.signal_window.setRange(1, 300)
+        self.signal_window.setValue(60)
+        self.signal_window.setSuffix(' s')
+        self.signal_rebound = QDoubleSpinBox()
+        self.signal_rebound.setRange(0, 20)
+        self.signal_rebound.setDecimals(2)
+        self.signal_rebound.setSuffix(' %')
+        self.signal_mode.setToolTip('Оконный режим экспериментальный: максимум наблюдавшихся цен за окно, '
+            'затем DIP и необязательный отскок. Параметры не оптимизированы по доходности.')
+        grid.addRow('Расчёт DIP', self.signal_mode)
+        grid.addRow('Окно максимума', self.signal_window)
+        grid.addRow('Подтверждение отскока', self.signal_rebound)
+        self.editable += [self.signal_mode, self.signal_window, self.signal_rebound]
         self.interval = QDoubleSpinBox()
         self.interval.setRange(0.1, 0.5)
         self.interval.setDecimals(3)
@@ -640,6 +663,10 @@ class Window(QMainWindow):
         self.update_controls()
         self.worker.submit(name, **data)
 
+    def signal_policy(self):
+        return {'mode': self.signal_mode.currentData(), 'window_seconds': self.signal_window.value(),
+                'rebound_pct': str(self.signal_rebound.value())}
+
     def trade(self, command, **extra):
         mode = self.mode.currentText()
         if command in ("convert", "sweep") and mode != "LIVE":
@@ -655,7 +682,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1110,6 +1137,9 @@ class Window(QMainWindow):
                       (self.mode.currentText() == 'DEMO' or self.selection_ready))
             self.base_price = Decimal(payload['base']) if active and Decimal(payload['base']) > 0 else None
             self.metrics['base'].setText(self.display_price(self.base_price))
+            age = payload.get('base_age')
+            self.metrics['base'].setToolTip(payload.get('base_reason', '') +
+                (f' · возраст {age:.1f} с' if age is not None else ''))
             self.metrics["position"].setText(f"{float(payload['position']):.8g}")
             self.metrics['position'].setToolTip(payload['position'])
             levels = payload.get('levels', {}) if active else {}
@@ -1141,6 +1171,7 @@ class Window(QMainWindow):
             preferences.save(self.store, {"version": 1,
                 "selection": {"router": self.router.currentText(), "pair": self.quote.currentText()},
                 "pair_amounts": self.pair_amounts,
+                "signal_policy": self.signal_policy(),
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
                 "gas": self.gas.text().strip(), "interval": str(self.interval.value())})
         except (ValueError, OSError):

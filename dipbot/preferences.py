@@ -1,5 +1,6 @@
 """Versioned Mac UI preferences. No credentials or automatic LIVE resume."""
 from .strategy import D, Settings
+from .signal_policy import SignalPolicy
 from .storage import SaveAfterReplaceError
 
 FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic', 'max_roundtrip_loss')
@@ -19,6 +20,8 @@ def normalize(value):
         raise ValueError('Недопустимый интервал')
     result = {'version': 1, 'settings': {k: str(getattr(settings, k)) for k in FIELDS},
               'gas': str(gas), 'interval': str(interval)}
+    if 'signal_policy' in value:
+        result['signal_policy'] = SignalPolicy.parse(value['signal_policy']).export()
     if 'selection' in value or 'pair_amounts' in value:
         try:
             selection = value['selection']

@@ -18,6 +18,7 @@ from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_rec
 
 
 from .entry_guard import EntryRejected
+from .signal_policy import SignalPolicy
 
 
 def safe_error(exc):
@@ -163,6 +164,9 @@ class Worker(QThread):
                          "levels": levels,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
+                         "signal_mode": self.strategy.policy.mode,
+                         "base_reason": self.strategy.base_reason,
+                         "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
                          "entry": str(self.strategy.entry or 0),
                          "realized": realized,
                          "pnl_quote": (self.paper_context[2] if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
@@ -197,6 +201,7 @@ class Worker(QThread):
 
     def configure(self, data):
         mode = data["mode"]
+        policy = SignalPolicy.parse(data.get("signal_policy", {}))
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
         interval = float(data["interval"])
         if not 0.1 <= interval <= 0.5:
@@ -238,7 +243,7 @@ class Worker(QThread):
                 self.paper_context = context
         self.mode, self.interval, self.live = mode, interval, live
         old_entry = self.strategy.entry
-        self.strategy = Strategy(settings)
+        self.strategy = Strategy(settings, policy)
         if mode == "LIVE" and self.position():
             self.strategy.entry = D(self.position()["entry"])
         elif mode != "LIVE" and self.paper.position:
@@ -561,15 +566,15 @@ class Worker(QThread):
             if now < self.entry_retry_at:
                 return
             # Require a new signal from a fresh baseline, not the rejected signal.
-            self.strategy.base = None
-            self.strategy.last_time = None
-            self.strategy.last_price = None
-            self.strategy.down_streak = 0
+            self.strategy.reset_anchor()
             self.entry_notice = ""
         if (self.strategy.entry is None and self.strategy.last_time is not None
                 and now - self.strategy.last_time > self.strategy.settings.max_gap):
             self.log.emit("Разрыв котировок > 0.55 с: база DIP сброшена")
-        action = self.strategy.observe(price, now)
+        source = self.backup_chain if self.market_source != 'BSC' else self.chain
+        header = getattr(source, 'price_block', None) if self.mode != 'DEMO' else None
+        observation_id = (header['number'], bytes(header['hash']), price) if header else None
+        action = self.strategy.observe(price, now, observation_id=observation_id)
         if self.stop_event.is_set():
             return
         if action == "BUY":
