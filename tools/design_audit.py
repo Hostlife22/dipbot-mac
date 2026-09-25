@@ -75,7 +75,16 @@ def run(output):
             w.resize(width,height);seed();events();w.tabs.widget(0).verticalScrollBar().setValue(0);events()
             geometry();snap(f'paper-{width}x{height}')
             report['checks'].append(f'chart/status/footer visible; no horizontal scroll {width}x{height}')
-        w.resize(940,700);seed('DEMO');status(running=False,base='0',levels={});snap('demo-stopped')
+        w.resize(940,700)
+        for reason, notice in (
+                ('rebound', 'DIP достигнут · ждёт отскок 0.1% от минимума; сейчас 0.00%'),
+                ('cooldown', 'Пауза после выхода: 3.0 с · затем новый DIP')):
+            seed();status(wait_reason=reason, signal_notice=notice,
+                          base='0.00000044', levels={'DIP':'0.0000004268'})
+            geometry();snap('wait-'+reason)
+        seed();status(entry_notice='Недостаточная активность: 0 Swap, нужно минимум 1; пауза 5 с, затем новый сигнал DIP')
+        geometry();snap('wait-activity')
+        seed('DEMO');status(running=False,base='0',levels={});snap('demo-stopped')
         seed();status(position='123456789.123456789',levels={'ENTRY':'.000000416','TP':'.00000042432','SL':'.00000040768','TRAIL':'.000000415'})
         snap('position')
         w.last_quote_at=time.monotonic()-3;w.update_quote_age();snap('stale');assert w.metrics['state'].text()=='STALE'

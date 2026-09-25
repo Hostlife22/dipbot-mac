@@ -1319,7 +1319,9 @@ class Window(QMainWindow):
         elif self.display_position > 0:
             text, tone = 'POSITION', 'positive'
         elif self.running:
-            text, tone = 'WAIT DIP', 'positive'
+            text = {'rebound': 'REBOUND', 'cooldown': 'COOLDOWN',
+                    'warmup': 'WARMUP', 'baseline': 'BASELINE'}.get(getattr(self, 'wait_reason', ''), 'WAIT DIP')
+            tone = 'positive'
         elif 'PENDING' in self.pool_label.text() and self.mode.currentText() != 'DEMO':
             text, tone = 'PENDING', 'warning'
         else:
@@ -1358,12 +1360,12 @@ class Window(QMainWindow):
             action = (' · позиция сохранена; после устранения причины повторите SELL POSITION или STOP'
                       if self.display_position > 0 else ' · проверьте причину перед START')
             text = 'Остановлен из-за ошибки · ' + self.halt_reason + action
-        elif getattr(self, 'signal_notice', '') and self.running and not self.display_position:
-            text = self.signal_notice
-        elif getattr(self, 'entry_notice', '') and self.running:
-            text = self.entry_notice if self.entry_notice.startswith('Пауза после выхода:') else 'Вход пропущен · ' + self.entry_notice
         elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
             text = 'Котировка устарела · нет обновлений более 0,55 с'
+        elif getattr(self, 'entry_notice', '') and self.running:
+            text = self.entry_notice if self.entry_notice.startswith('Пауза после выхода:') else 'Вход пропущен · ' + self.entry_notice
+        elif getattr(self, 'signal_notice', '') and self.running and not self.display_position:
+            text = self.signal_notice
         elif self.display_position > 0:
             text = 'Позиция открыта' + (' · автоматическая стратегия остановлена' if not self.running else '')
         elif self.running:
@@ -1373,6 +1375,8 @@ class Window(QMainWindow):
         fresh = self.last_quote_at is not None and time.monotonic()-self.last_quote_at <= .55
         if fresh and self.last_price is not None and self.last_price > 0:
             for key in (('TP', 'SL') if self.display_position > 0 else ('DIP',) if self.running else ()):
+                if key == 'DIP' and (getattr(self, 'wait_reason', '') in ('rebound', 'cooldown', 'warmup') or getattr(self, 'entry_notice', '')):
+                    continue
                 if key not in self.chart.levels:
                     continue
                 level = Decimal(str(self.chart.levels[key]))
@@ -1620,6 +1624,7 @@ class Window(QMainWindow):
                 f", ошибок подряд {row['consecutive_errors']}" + (' (предпочтительный)' if row['preferred'] else '')
                 for row in health))
             self.signal_notice = payload.get('signal_notice', '')
+            self.wait_reason = payload.get('wait_reason', '')
             self.entry_notice = payload.get('entry_notice', '')
             quote_exit = payload.get('exit_basis') == 'quote' and Decimal(payload.get('position', '0')) > 0
             self.exit_status.setVisible(quote_exit)

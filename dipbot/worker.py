@@ -248,6 +248,7 @@ class Worker(QThread):
 
     def status(self):
         settings = self.strategy.settings
+        wait_reason, signal_notice = self.strategy.entry_wait(time.monotonic())
         realized = str(self.paper.realized) if self.mode != 'LIVE' else '—'
         if self.mode == 'LIVE' and self.live and self.pool:
             key = self.live.owner.lower() + ':' + self.pool.quote.lower()
@@ -269,8 +270,8 @@ class Worker(QThread):
                          "exit_basis": self.strategy.exit_policy.tp_sl_basis,
                          "exit_return": getattr(self, "exit_return", None),
                          "signal_mode": self.strategy.policy.mode,
-                         "signal_notice": (f'Прогрев волатильности: {len(self.strategy.volatility.rows)}/10 изменений'
-                             if self.strategy.policy.mode == 'volatility' and len(self.strategy.volatility.rows)<10 else ''),
+                         "signal_notice": signal_notice,
+                         "wait_reason": wait_reason,
                          "effective_dip": str(self.strategy.effective_dip),
                          "base_reason": self.strategy.base_reason,
                          "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
@@ -905,7 +906,7 @@ class Worker(QThread):
             self.record_market('activity', count=activity['count'], from_block=activity['from_block'], to_block=activity['to_block'], pool=self.pool.address)
             self.log.emit(f"Активность пула: {activity['count']} Swap за блоки {activity['from_block']}–{activity['to_block']}")
             if activity['count'] < settings.min_swaps:
-                raise EntryRejected('Вход пропущен: недостаточно Swap в выбранном пуле')
+                raise EntryRejected(f"Недостаточная активность: {activity['count']} Swap, нужно минимум {settings.min_swaps:g}")
         if self.mode in ('LIVE', 'PAPER') and callable(getattr(self.chain, 'entry_quote', None)):
             if self.mode == 'LIVE':
                 self.require_live()

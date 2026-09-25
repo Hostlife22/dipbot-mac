@@ -169,6 +169,22 @@ class Strategy:
                 self.down_streak = 0
         return None
 
+    def entry_wait(self, now):
+        """Read-only explanation of signal state; never advances the strategy."""
+        if self.entry is not None or self.stopped:
+            return '', ''
+        if self.cooldown_until is not None and now < self.cooldown_until:
+            return 'cooldown', f'Пауза после выхода: {self.cooldown_until-now:.1f} с · затем новый DIP'
+        if self.base is None:
+            return 'baseline', 'Получает котировки · формирует базу DIP'
+        if self.policy.mode == 'volatility' and len(self.volatility.rows) < 10:
+            return 'warmup', f'Прогрев волатильности: {len(self.volatility.rows)}/10 изменений'
+        if self.trough is not None and self.policy.rebound_pct and self.last_price is not None:
+            rebound = (self.last_price/self.trough-1)*100
+            if rebound < self.policy.rebound_pct:
+                return 'rebound', f'DIP достигнут · ждёт отскок {self.policy.rebound_pct:g}% от минимума; сейчас {rebound:.2f}%'
+        return 'dip', 'Ждёт падения до DIP'
+
     def reset_anchor(self):
         self.base = self.last_time = self.last_price = self.base_time = None
         self.down_streak = 0
