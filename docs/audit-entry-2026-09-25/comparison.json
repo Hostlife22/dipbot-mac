@@ -1,0 +1,208 @@
+[
+  {
+    "run": "dipbot-cycle-current",
+    "token": "0x3A91c7d22D8D306EB109c9E9fA78aC162CcA7777",
+    "settings": {
+      "amount": "0.02929115407147041593438781488",
+      "dip": "0.5",
+      "take_profit": "2",
+      "stop_loss": "2",
+      "slippage": "3",
+      "dynamic": "150",
+      "max_gap": 0.55,
+      "max_roundtrip_loss": "3",
+      "min_swaps": "0"
+    },
+    "signal_policy": {
+      "mode": "window",
+      "window_seconds": 60.0,
+      "rebound_pct": "0.1",
+      "max_block_age": 5.0,
+      "volatility_multiplier": "2"
+    },
+    "paper_policy": {
+      "gas_units": 0,
+      "latency_seconds": 0.25,
+      "fee_quote": "0.0002929115407147041593438781488"
+    },
+    "observations": 1731,
+    "gaps_over_055": 93,
+    "gap_median_seconds": 0.34298541450334596,
+    "gap_p95_seconds": 0.5540057409962174,
+    "findings": {
+      "recorded": [],
+      "diagnostic_without_gap_reset": []
+    },
+    "recorded_signals": [],
+    "cycle_latency": []
+  },
+  {
+    "run": "dipbot-cycle-current",
+    "token": "0xe545FAaa94Da6fb3Cc0AAB88c3E188B13B637777",
+    "settings": {
+      "amount": "0.3623188405797101449275362319",
+      "dip": "0.5",
+      "take_profit": "2",
+      "stop_loss": "2",
+      "slippage": "3",
+      "dynamic": "150",
+      "max_gap": 0.55,
+      "max_roundtrip_loss": "3",
+      "min_swaps": "0"
+    },
+    "signal_policy": {
+      "mode": "window",
+      "window_seconds": 60.0,
+      "rebound_pct": "0.1",
+      "max_block_age": 5.0,
+      "volatility_multiplier": "2"
+    },
+    "paper_policy": {
+      "gas_units": 0,
+      "latency_seconds": 0.25,
+      "fee_quote": "0.003623188405797101449275362319"
+    },
+    "observations": 1853,
+    "gaps_over_055": 63,
+    "gap_median_seconds": 0.31664036250367644,
+    "gap_p95_seconds": 0.5347443439968629,
+    "findings": {
+      "recorded": [],
+      "diagnostic_without_gap_reset": [
+        {
+          "t": 115.17694044699601,
+          "block": 123987842,
+          "base": "0.00000531284689660599646489394282127249025457214441374477765819594111737506154062377",
+          "price": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223"
+        }
+      ]
+    },
+    "recorded_signals": [],
+    "cycle_latency": []
+  },
+  {
+    "run": "dipbot-ui-cycle-current",
+    "token": "0xe545FAaa94Da6fb3Cc0AAB88c3E188B13B637777",
+    "settings": {
+      "amount": "0.3623188405797101449275362319",
+      "dip": "0.5",
+      "take_profit": "2",
+      "stop_loss": "2",
+      "slippage": "3",
+      "dynamic": "150",
+      "max_gap": 0.55,
+      "max_roundtrip_loss": "3",
+      "min_swaps": "1"
+    },
+    "signal_policy": {
+      "mode": "window",
+      "window_seconds": 60.0,
+      "rebound_pct": "0.1",
+      "max_block_age": 5.0,
+      "volatility_multiplier": "2.0"
+    },
+    "paper_policy": {
+      "gas_units": 0,
+      "latency_seconds": 0.25,
+      "fee_quote": "0"
+    },
+    "observations": 3329,
+    "gaps_over_055": 45,
+    "gap_median_seconds": 0.10979699299787171,
+    "gap_p95_seconds": 0.394613999997091,
+    "findings": {
+      "recorded": [
+        {
+          "t": 100.94185050699889,
+          "block": 123987842,
+          "base": "0.00000531284689660599646489394282127249025457214441374477765819594111737506154062377",
+          "price": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223"
+        }
+      ],
+      "diagnostic_without_gap_reset": [
+        {
+          "t": 100.94185050699889,
+          "block": 123987842,
+          "base": "0.00000531284689660599646489394282127249025457214441374477765819594111737506154062377",
+          "price": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223"
+        }
+      ]
+    },
+    "recorded_signals": [
+      {
+        "event": "signal",
+        "sequence": 957,
+        "t": 100.94189083899983,
+        "action": "BUY",
+        "price": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223",
+        "base": "0.00000531284689660599646489394282127249025457214441374477765819594111737506154062377",
+        "entry": "None"
+      },
+      {
+        "event": "signal",
+        "sequence": 1033,
+        "t": 119.11086827800318,
+        "action": "STOP_LOSS",
+        "price": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223",
+        "base": "0.00000531284689660599646489394282127249025457214441374477765819594111737506154062377",
+        "entry": "0.00000523629868889585497667288858496539095171714048837415239046288655570894040402223"
+      }
+    ],
+    "cycle_latency": [
+      {
+        "event": "cycle_latency",
+        "sequence": 963,
+        "t": 103.5063599510031,
+        "action": "BUY",
+        "mode": "PAPER",
+        "signal_block": 123987842,
+        "block_to_signal_ms": 1426.3601303100586,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.008708004315849394
+          },
+          {
+            "stage": "quote",
+            "ms": 1673.8473980003619
+          },
+          {
+            "stage": "quote",
+            "ms": 2540.69701100525
+          },
+          {
+            "stage": "completed",
+            "ms": 2564.4294770027045
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      },
+      {
+        "event": "cycle_latency",
+        "sequence": 1037,
+        "t": 120.18454376400041,
+        "action": "STOP_LOSS",
+        "mode": "PAPER",
+        "signal_block": 123987881,
+        "block_to_signal_ms": 1595.6709384918213,
+        "stages": [
+          {
+            "stage": "signal",
+            "ms": 0.010589996236376464
+          },
+          {
+            "stage": "quote",
+            "ms": 852.6710349979112
+          },
+          {
+            "stage": "completed",
+            "ms": 1073.6443799978588
+          }
+        ],
+        "error_type": null,
+        "truncated": false
+      }
+    ]
+  }
+]
