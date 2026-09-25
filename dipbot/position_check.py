@@ -134,6 +134,13 @@ def run(app, directory, resume=False):
                 w.check_receipts(); wait(lambda:not w.busy and 'Все записанные' in w.receipt_result.text())
                 assert w.locked and not w.start.isEnabled()
                 assert w.store.data['operation']['transactions'][0]['status'] == 'confirmed'
+                w.worker.chain.check = lambda **kw:7
+                w.worker.chain.w3.eth.get_block = lambda n:{'hash':b'synthetic'}
+                w.worker.chain.balance_at = lambda *a:10**16-1
+                w.compare_saved_positions()
+                wait(lambda:not w.busy and 'РАСХОЖДЕНИЕ' in w.position_comparison.text())
+                assert w.locked and w.store.data['positions'] == positions
+                report['scenarios'].append('balance_mismatch_visible_without_mutation')
                 snap('receipt_review_locked')
                 report['scenarios'].append('keyless_receipt_review_pending_then_confirmed_stays_locked')
             else:

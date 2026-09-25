@@ -497,6 +497,11 @@ class Window(QMainWindow):
         self.receipt_result = QLabel('Подключите RPC, затем проверьте receipts. Для чтения ключ не требуется.')
         self.receipt_result.setWordWrap(True)
         rec.addWidget(self.receipt_result)
+        self.position_comparison = QLabel('Балансы сохранённых позиций ещё не сверены с сетью.')
+        self.position_comparison.setTextFormat(Qt.PlainText)
+        self.position_comparison.setWordWrap(True)
+        rec.addWidget(self.position_comparison)
+        rec.addWidget(self.button("Сверить сохранённые позиции с сетью", self.compare_saved_positions))
         text = QLabel("После таймаута или аварийного закрытия LIVE блокируется. Сначала проверьте receipt и балансы. "
                       "Снятие блокировки сбрасывает кэш позиций; реальные остатки остаются в кошельке.")
         text.setWordWrap(True)
@@ -706,6 +711,10 @@ class Window(QMainWindow):
         if index >= 0:
             self.saved_positions.setCurrentIndex(index)
         self.recovery_details.setText('\n'.join(details))
+
+    def compare_saved_positions(self):
+        self.position_comparison.setText("Чтение балансов сохранённых позиций…")
+        self.send("compare_positions")
 
     def check_receipts(self):
         self.receipt_result.setText("Проверка receipts через RPC…")
@@ -1036,6 +1045,18 @@ class Window(QMainWindow):
                 except ValueError:
                     pass
                 self.table.setItem(row, 2, item)
+        elif name == "position_comparison_error":
+            self.position_comparison.setText("Сверка не выполнена: " + payload)
+        elif name == "position_comparison":
+            lines = [f"Снимок балансов: блок {payload['block']}. Локальные записи не изменены."]
+            for row in payload['rows']:
+                scale = Decimal(10)**row['decimals']
+                lines.append(f"{row['owner']} · {row['token']} · пул {row['pool']}\n" +
+                    f"Записано: {Decimal(row['saved_raw'])/scale}; в кошельке: {Decimal(row['actual_raw'])/scale} · " +
+                    ('совпадает' if row['matches'] else 'РАСХОЖДЕНИЕ'))
+            if not payload['rows']:
+                lines.append('Сохранённых позиций нет.')
+            self.position_comparison.setText('\n'.join(lines))
         elif name == "receipt_review":
             self.receipt_result.setText(payload)
             self.refresh_recovery()

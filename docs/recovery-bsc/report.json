@@ -1,0 +1,36 @@
+{
+  "utc": "2026-09-25T10:16:36.102816+00:00",
+  "transactions_sent": 0,
+  "receipt_hash": "0xfa9f628143babf3905adbd472ce654726047ae0ffa52df4b19a48c0627a98580",
+  "receipt_block": 123931348,
+  "receipt_block_hash": "0x744215419db4f2e09ea4145437278634936fa5512883a0a6349b7f22053468b3",
+  "balance_owner": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+  "balance_token": "0x55d398326f99059fF775485246999027B3197955",
+  "balance_at_receipt_raw": 39941889877137207404763167,
+  "fixture": "Synthetic saved position at a public pool address; not user holdings",
+  "confirmed_receipt_keeps_lock": true,
+  "comparison": {
+    "block": 123931355,
+    "rows": [
+      {
+        "owner": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "token": "0x55d398326f99059fF775485246999027B3197955",
+        "pool": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "decimals": 18,
+        "saved_raw": 57896044618658097711785492504343953926634992332820282019728792003956564819968,
+        "actual_raw": 39941890688252264907732535,
+        "matches": false
+      }
+    ]
+  },
+  "unknown_hash_keeps_lock": true,
+  "injected_rpc_failure_keeps_lock": true,
+  "rpc_methods": {
+    "eth_chainId": 24,
+    "eth_getBlockByNumber": 12,
+    "eth_getTransactionReceipt": 3,
+    "eth_getCode": 3,
+    "eth_call": 9
+  },
+  "passed": true
+}

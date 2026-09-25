@@ -95,8 +95,8 @@ class Worker(QThread):
                 except Exception as exc:
                     if name in ("discover", "verify", "select") and not self.discovery_current(data.get("generation")):
                         continue
-                    if name == "reconcile":
-                        self.event.emit("receipt_review", safe_error(exc))
+                    if name in ("reconcile", "compare_positions"):
+                        self.event.emit("position_comparison_error" if name == "compare_positions" else "receipt_review", safe_error(exc))
                     self.running = False
                     self.halt_reason = safe_error(exc)
                     self.log.emit("ОШИБКА: " + safe_error(exc))
@@ -428,6 +428,10 @@ class Worker(QThread):
             self.configure(data)
             self.require_live()
             self.sweep()
+        elif name == "compare_positions":
+            self.require_chain()
+            from .recovery import compare_positions
+            self.event.emit("position_comparison", compare_positions(self.chain, self.store))
         elif name in ("reconcile", "unlock"):
             self.require_chain()
             if name == "reconcile":
