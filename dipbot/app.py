@@ -1528,13 +1528,14 @@ class Window(QMainWindow):
             self.quote.setCurrentText(pair)
             self.router.blockSignals(False)
             self.quote.blockSignals(False)
-            self.amount_key = preferences.pair_key(payload.router, pair)
+            self.amount_key = preferences.pair_key(payload.router, pair if pair != 'ALL' else payload.quote.lower())
             self.restore_amount()
             self.pool_input.setText(payload.address)
             self.token.setText(payload.token)
             self.pool_label.setText(payload.label + "\nБазовый актив исполнения: " + self.display_unit)
-            self.market_summary.setText(f"TARGET {payload.token[:8]}…{payload.token[-6:]} / {pair} · {payload.router} · пул {payload.address[:8]}…{payload.address[-6:]}")
-            self.market_summary.setToolTip(f"TARGET: {payload.token}\nБаза: {pair} ({payload.quote})\nПул: {payload.address}")
+            pair_label = pair if pair != 'ALL' else f'{payload.quote[:8]}…{payload.quote[-6:]}'
+            self.market_summary.setText(f"TARGET {payload.token[:8]}…{payload.token[-6:]} / {pair_label} · {payload.router} · пул {payload.address[:8]}…{payload.address[-6:]}")
+            self.market_summary.setToolTip(f"TARGET: {payload.token}\nБаза: {pair_label} ({payload.quote})\nПул: {payload.address}")
         elif name == "sweep_report":
             status = {"completed": "завершён", "stopped": "остановлен — частичный результат",
                       "interrupted": "прерван — частичный результат"}.get(payload.get("status"), "результат")

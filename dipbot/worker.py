@@ -8,7 +8,7 @@ from requests.exceptions import ConnectionError as RPCConnectionError, Timeout a
 
 from PySide6.QtCore import QThread, Signal
 from eth_account import Account
-from web3.exceptions import Web3RPCError
+from web3.exceptions import Web3RPCError, BlockNotFound
 
 from .chain import Chain, Pool, WBNB, address, profiles
 from .storage import Store, Vault, SaveAfterReplaceError
@@ -733,7 +733,7 @@ class Worker(QThread):
                 if header and previous and (header['number'] < previous['number'] or (
                         header['number'] == previous['number'] and header['hash'] != previous['hash'])):
                     raise TimeoutError('RPC вернул более старый блок или другую ветвь')
-            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
                 if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
                     raise
                 self.rpc_health.failure(source_id, time.monotonic())
@@ -755,7 +755,7 @@ class Worker(QThread):
             return self.backup_price()
         try:
             price = self.chain.price(self.pool)
-        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
             if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
                 raise
             if self.backup_chain is None:
@@ -814,7 +814,7 @@ class Worker(QThread):
                     proceeds -= self.paper_policy.fee_quote
                 exit_return = (proceeds/cost-1)*100
             self.exit_return = str(exit_return) if exit_return is not None else None
-        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
             if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
                 raise
             self.record_market('read_error', type=type(exc).__name__)

@@ -242,3 +242,19 @@ def test_pending_cancel_confirmation_contains_fee_and_requires_yes(window,monkey
     monkeypatch.setattr(QMessageBox,'question',lambda *args:QMessageBox.Yes)
     w.cancel_pending()
     assert sent[0][0]=='cancel_pending' and sent[0][1]['expected_gas_price']==125000000
+
+
+def test_uncatalogued_base_has_address_and_separate_amount(window):
+    from dataclasses import replace
+    w = window
+    a = replace(POOL, quote='0x'+'a'*40)
+    b = replace(POOL, quote='0x'+'b'*40)
+    w.on_event('selected', a)
+    assert '/ ALL ' not in w.market_summary.text()
+    assert a.quote in w.market_summary.toolTip()
+    w.params['amount'].setText('0.123')
+    w.on_event('selected', b)
+    w.params['amount'].setText('0.456')
+    w.on_event('selected', a)
+    assert w.params['amount'].text() == '0.123'
+    assert w.pair_amounts[b.router+':'+b.quote] == '0.456'

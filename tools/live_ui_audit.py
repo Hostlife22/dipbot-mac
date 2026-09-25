@@ -5,6 +5,7 @@ Fees plus ALL native principal introduced are bounded conservatively by $0.90
 at 110% of the latest fetched BNB/USD, inside the user's $1 loss/fee budget.
 """
 import argparse
+from contextlib import nullcontext
 import json
 import time
 from pathlib import Path
@@ -20,8 +21,8 @@ from dipbot.trader import LiveTrader
 from dipbot.usd import select_rate
 
 
-def run(key_path, directory, resume=False):
-    directory.mkdir(parents=True, exist_ok=resume)
+def run(key_path, directory, resume=False, sweep_only=False):
+    directory.mkdir(parents=True, exist_ok=resume or sweep_only)
     key = key_path.read_text().strip()
     account = Account.from_key(key)
     chain = Chain('https://bsc-dataseed.binance.org')
@@ -38,8 +39,12 @@ def run(key_path, directory, resume=False):
     report = {'mode':'LIVE','scenarios':[],'receipts':[],'errors':[],
               'max_position_usd':'1','max_total_cost_usd':'1','gross_native_value':0,
               'reserved_gas_wei':0,'ui_mismatches':[]}
-    if resume:
+    if resume or sweep_only:
         report=json.loads((directory/'report.json').read_text())
+        if sweep_only:
+            assert report.get('passed') and not report.get('journal_locked')
+            assert not Store(directory/'state.json').data.get('operation')
+            assert not (directory/'state-sweep.json').exists(), 'Sweep audit already attempted; review it first'
         report['earlier_errors']=report.get('earlier_errors',[])+report['errors']
         report['errors']=[]
         report.pop('failure_type', None)
@@ -47,7 +52,9 @@ def run(key_path, directory, resume=False):
     report['initial_native_balance_wei']=before
     logs=[]
     def save():
-        (directory/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+        saved = Store(directory/'report.json')
+        saved.data = report
+        saved.save()
     original_send=LiveTrader.send
     def budgeted_send(trader, function, label, value=0):
         class BudgetFunction:
@@ -85,8 +92,11 @@ def run(key_path, directory, resume=False):
     with patch.object(Vault,'get',vault_get), patch.object(Vault,'save',side_effect=RuntimeError('No Keychain writes in audit')), \
          patch.object(LiveTrader,'send',budgeted_send), \
          patch.object(QMessageBox,'question',lambda *a:QMessageBox.Yes), \
-         patch.object(QMessageBox,'warning',lambda *a:report['errors'].append(a[2])):
-        w=Window(Store(directory/'state.json'))
+         patch.object(QMessageBox,'warning',lambda *a:report['errors'].append(a[2])), \
+         (patch('dipbot.worker.profiles', lambda: {'WBNB': WBNB}) if sweep_only else nullcontext()):
+        w=Window(Store(directory/('state-sweep.json' if sweep_only else 'state.json')))
+        if sweep_only:
+            assert not w.store.data.get('operation') and not w.store.data.get('positions'), 'Unfinished Sweep audit'
         w.setWindowTitle('DipBot · LIVE audit · $1 position / $1 total cost cap')
         w.mode.setCurrentText('LIVE');w.show();w.raise_();w.activateWindow()
         w.worker.log.connect(logs.append)
@@ -135,6 +145,19 @@ def run(key_path, directory, resume=False):
                 assert not w.store.data.get('operation') and not w.locked
                 report['scenarios'].append('LIVE recovery: RPC change -> receipt -> balance verification -> unlock; no resend')
             select(v2)
+            if sweep_only:
+                w.convert_amount.setText('0.00002');click('BUY BASE')
+                assert chain.balance(WBNB,account.address)==20000000000000
+                # Restrict the audit catalog, never sell other wallet holdings.
+                # Actual Worker Sweep and LiveTrader conversion remain unchanged.
+                click('SELL WALLET → BNB')
+                assert chain.balance(WBNB,account.address)==0
+                assert chain.balance(USDT,account.address)==0
+                assert not w.store.data.get('operation')
+                report['scenarios'].append('LIVE scoped Sweep: WBNB unwrap; catalog restricted to WBNB, zero USDT target')
+                report['passed']=not report['ui_mismatches']
+                capture('sweep_completed')
+                return
             if not resume:
                 w.convert_amount.setText('0.0001');click('BUY BASE')
             assert chain.balance(WBNB,account.address)==10**14
@@ -168,7 +191,7 @@ def run(key_path, directory, resume=False):
             report['failure_type']=type(exc).__name__
             report['passed']=False
         finally:
-            w.worker.quit_event.set();w.worker.wait(15000)
+            w.worker.quit_event.set();w.worker.wait()
             report['journal_locked']=bool(w.store.data.get('operation'))
             report['remaining_wbnb_raw']=chain.balance(WBNB,account.address)
             report['remaining_usdt_raw']=chain.balance(USDT,account.address)
@@ -184,6 +207,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--key-file',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--execute',action='store_true')
     p.add_argument('--resume',action='store_true',help='Only recover the single initial wrap, preserving the same budget')
+    p.add_argument('--sweep-only',action='store_true',help='Continue existing budget with a WBNB-only Sweep audit')
     a=p.parse_args()
+    if a.resume and a.sweep_only:p.error('Choose one continuation mode')
     if not a.execute:p.error('Explicit --execute and user authorization required')
-    run(a.key_file,a.output,a.resume)
+    run(a.key_file,a.output,a.resume,a.sweep_only)

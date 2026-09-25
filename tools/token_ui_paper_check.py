@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False):
     directory.mkdir(parents=True, exist_ok=False)
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(STYLE)
@@ -67,7 +67,10 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 report['checks'] += 1
                 report['samples'].append({'time': time.monotonic(), 'price': payload, 'phase': phase[0]})
                 if w.metrics['price'].text() != w.display_price(payload) or w.chart.values[-1] != float(payload):
-                    report['mismatches'].append('price / chart')
+                    report['mismatches'].append({'kind':'price / chart','phase':phase[0],
+                        'expected':w.display_price(payload),'actual':w.metrics['price'].text(),
+                        'chart':w.chart.values[-1] if w.chart.values else None,'raw':payload,
+                        'source':w.price_source,'selected':w.selection_ready})
             elif kind == 'status':
                 report.setdefault('ui_states', {})[w.metrics['state'].text()] = report.setdefault('ui_states', {}).get(w.metrics['state'].text(), 0) + 1
                 report['checks'] += 1
@@ -139,18 +142,19 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             if amount_usd is not None:
                 wait(lambda: w.worker.rates.snapshot(pool.quote) is not None, 60)
             # Manual PAPER actions are explicitly separate from natural strategy signals.
-            phase[0] = 'manual_paper_buy'
-            w.banner.setText('PAPER · ПРОВЕРКА BUY NOW · реальная цена BSC, виртуальная покупка')
-            w.buy.click();wait(lambda:not w.busy)
-            assert w.worker.paper.position > 0, report['errors']
-            capture('manual_buy')
-            until = time.monotonic()+12
-            while time.monotonic()<until:pump()
-            phase[0] = 'manual_paper_sell'
-            w.sell.click();wait(lambda:not w.busy)
-            assert not w.worker.paper.position, report['errors']
-            report['manual_realized'] = str(w.worker.paper.realized)
-            capture('manual_sell')
+            if not automatic_only:
+                phase[0] = 'manual_paper_buy'
+                w.banner.setText('PAPER · ПРОВЕРКА BUY NOW · реальная цена BSC, виртуальная покупка')
+                w.buy.click();wait(lambda:not w.busy)
+                assert w.worker.paper.position > 0, report['errors']
+                capture('manual_buy')
+                until = time.monotonic()+12
+                while time.monotonic()<until:pump()
+                phase[0] = 'manual_paper_sell'
+                w.sell.click();wait(lambda:not w.busy)
+                assert not w.worker.paper.position, report['errors']
+                report['manual_realized'] = str(w.worker.paper.realized)
+                capture('manual_sell')
             phase[0] = 'automatic_live_prices'
             w.banner.setText('PAPER · НАБЛЮДЕНИЕ РЕАЛЬНОГО РЫНКА · DIP '+w.params['dip'].text()+'% / TP 2% / SL 2%')
             w.start.click();wait(lambda:not w.busy)
@@ -279,6 +283,7 @@ if __name__ == '__main__':
     parser.add_argument('--modern', action='store_true')
     parser.add_argument('--close-after', action='store_true')
     parser.add_argument('--amount-usd', help='Virtual USD amount, at most 1; no real trades')
+    parser.add_argument('--automatic-only', action='store_true', help='Observe natural entries without forcing manual BUY')
     args=parser.parse_args()
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only))

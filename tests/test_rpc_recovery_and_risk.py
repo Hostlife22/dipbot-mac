@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import pytest
+from web3.exceptions import BlockNotFound
 from dipbot.worker import Worker
 from dipbot.storage import Store
 from dipbot.strategy import D
@@ -8,12 +9,13 @@ from test_execution import trader, Function
 from test_autopair_dynamic import POOL
 
 
-def test_read_timeout_preserves_position_then_checks_exit(tmp_path):
+@pytest.mark.parametrize('read_error', [TimeoutError, BlockNotFound])
+def test_read_timeout_preserves_position_then_checks_exit(tmp_path, read_error):
     worker = Worker(Store(tmp_path/'state.json'))
     worker.running = True
     worker.paper.buy(D(1), D(1))
     worker.strategy.bought(D(1))
-    observations = iter([TimeoutError(), D('1.03')])
+    observations = iter([read_error("synthetic read failure"), D('1.03')])
     def read():
         value = next(observations)
         if isinstance(value, Exception):
@@ -29,14 +31,15 @@ def test_read_timeout_preserves_position_then_checks_exit(tmp_path):
     assert exits == ['TAKE_PROFIT'] and not worker.quote_unavailable
 
 
-def test_execution_timeout_is_not_retried_as_a_quote(tmp_path):
+@pytest.mark.parametrize('execution_error', [TimeoutError, BlockNotFound])
+def test_execution_timeout_is_not_retried_as_a_quote(tmp_path, execution_error):
     worker = Worker(Store(tmp_path/'state.json'))
     worker.strategy.base = D(100)
     worker.read_price = lambda: D(90)
     def buy():
-        raise TimeoutError()
+        raise execution_error("synthetic execution failure")
     worker.open_position = buy
-    with pytest.raises(TimeoutError):
+    with pytest.raises(execution_error):
         worker.observe()
     assert not worker.quote_unavailable
     worker.store.data['operation'] = {'description': 'pending BUY'}
