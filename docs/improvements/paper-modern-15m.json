@@ -1,0 +1,208 @@
+{
+  "token": "0xeCCBb861c0dda7eFd964010085488B69317e4444",
+  "utc": "2026-09-25T12:42:01.426741+00:00",
+  "mode": "PAPER",
+  "frozen": false,
+  "transactions_sent": 0,
+  "checks": 9307,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000153023169492489644914326626616829439611308644117011402738556539205565209893120",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000153149098165597233921747052479122980384477784294154767328659090793186100393212",
+      "phase": "manual_paper_sell"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000154165299993538929873591325467407458459242939085644009154099123771887114242339",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000156391778840684453205090635378002394314880785587614860421382490165955207657696",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000154629652719826135491657186966581437296663966223233585039945149372513021363787",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000154431406214915241053442707685090776186314404455235730222758161698559558769025",
+      "phase": "controlled_stop_restart"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000153409710514610902791028206619554268325354093612130826283368986915973052510309",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000156921666220114501331611396668283952065910627662658074602510267497689427854453",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000156359713456992672284489938566757759700551022472430477445675975027002700195743",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000156588436941012941733013915156493380377089500851095512027179236279182018930252",
+      "phase": "automatic_live_prices"
+    }
+  ],
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 7,
+    "WAIT DIP": 119,
+    "RUNNING": 4518,
+    "WAIT RPC": 16,
+    "STOPPING": 3
+  },
+  "price_sources": {
+    "BSC": 4644
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C"
+  ],
+  "pool": "0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+  "router": "V2",
+  "token_decimals": 18,
+  "settings": {
+    "amount": "0.00003",
+    "dip": "0.5",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150",
+    "min_swaps": "1",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "window",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.1",
+    "max_block_age": 5.0
+  },
+  "exit_policy": {
+    "tp_sl_basis": "quote",
+    "trailing_pct": "0.0",
+    "max_hold_seconds": "60.0",
+    "cooldown_seconds": "3.0"
+  },
+  "adaptive_rpc": true,
+  "manual_realized": "-1.34989187383E-7",
+  "controlled_rpc_outage": "20 seconds; primary and backup market reads only",
+  "stop_restart_passed": true,
+  "test_restarts": 1,
+  "observed_seconds": 900.0,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "synthetic_minout_resumed_without_start": true,
+  "passed": true,
+  "router_fills": [
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 195494856055997560,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 195494856055997560,
+      "received_raw": 29865010812617,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 194039467940684199,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 194039467940684199,
+      "received_raw": 30290187594504,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 193817940600200770,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 193817940600200770,
+      "received_raw": 29856747739737,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 194472304346756351,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 194472304346756351,
+      "received_raw": 30440625289105,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 30000000000000,
+      "received_raw": 190586125477076244,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 190586125477076244,
+      "received_raw": 29768974103892,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    }
+  ],
+  "rpc_methods": {
+    "eth_chainId": 15618,
+    "eth_getBlockByNumber": 5611,
+    "eth_getCode": 35,
+    "eth_call": 5225,
+    "eth_getLogs": 12
+  },
+  "distinct_prices": 357,
+  "price_range": [
+    "0.000152701726989248525242506634783395851662334306171080875645183845645962900386392",
+    "0.000158318148001852264893845479233721242519204655296840220645795535623585981492753"
+  ],
+  "sample_count": 4644,
+  "runtime_scope": "through stage 16; before price-cache and cost-policy changes",
+  "rpc_count_note": "provider invocations; chainId cache hits included, not wire request count"
+}
