@@ -578,6 +578,12 @@ class Window(QMainWindow):
         self.ws_rpc = self.field(placeholder='Необязательный wss://… · новые блоки + HTTP fallback')
         self.ws_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
         form.addRow('WebSocket RPC', self.ws_rpc)
+        self.send_rpc = self.field(placeholder='Необязательный HTTPS RPC отправки')
+        self.send_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        self.send_rpc.setToolTip('Например, private RPC выбранного провайдера. Приватность определяется провайдером; '
+            'этот клиент её не доказывает. Отправка только через выбранный endpoint, без публичного fallback. '
+            'При неопределённом ответе журнал остаётся заблокирован. Пусто — основной RPC.')
+        form.addRow('Отправка транзакций', self.send_rpc)
         self.adaptive_rpc = QCheckBox('Выбирать RPC котировок по задержке и ошибкам')
         self.adaptive_rpc.setToolTip('Основной и резервный узел: проба альтернативы раз в 30 с, '
             'переключение после трёх замеров при преимуществе 25%. Отправка остаётся на основном RPC.')
@@ -602,7 +608,7 @@ class Window(QMainWindow):
         form.addRow(self.save_rpc)
         row = QHBoxLayout()
         row.addWidget(self.button("Подключить", lambda: self.send("connect", rpc=self.rpc.text().strip(),
-            adaptive_rpc=self.adaptive_rpc.isChecked(), backup_rpc=self.backup_rpc.text().strip(), ws_rpc=self.ws_rpc.text().strip(), save=self.save_rpc.isChecked())))
+            send_rpc=self.send_rpc.text().strip(), adaptive_rpc=self.adaptive_rpc.isChecked(), backup_rpc=self.backup_rpc.text().strip(), ws_rpc=self.ws_rpc.text().strip(), save=self.save_rpc.isChecked())))
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
@@ -880,6 +886,8 @@ class Window(QMainWindow):
                     {'prepared': 'записана до отправки; отправка могла произойти',
                      'submitted': 'RPC принял отправку; ожидается receipt',
                      'receipt_validated': 'receipt проверен'}.get(tx.get('stage'), 'этап не записан'))
+                if tx.get('broadcast_route') == 'custom':
+                    details.append('Маршрут отправки: отдельный RPC (endpoint хранится только в Keychain)')
                 review = tx.get('receipt_review')
                 if review:
                     details.append(PENDING_LABELS.get(review.get('state'), 'Неизвестный результат сверки') +
@@ -932,6 +940,9 @@ class Window(QMainWindow):
             primary = Vault().get("rpc")
             backup = Vault().get('backup_rpc')
             websocket = Vault().get('ws_rpc')
+            broadcaster = Vault().get('send_rpc')
+            if broadcaster is not None:
+                self.send_rpc.setText(broadcaster)
             if websocket is not None:
                 self.ws_rpc.setText(websocket)
             if primary is not None:

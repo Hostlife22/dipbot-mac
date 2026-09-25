@@ -1,0 +1,23 @@
+{
+  "checked": "read-only",
+  "protection_proven": false,
+  "transactions_sent": 0,
+  "results": [
+    {
+      "public_endpoint": "https://rpc.48.club",
+      "chain": 56,
+      "block": 123953238,
+      "read_ms": 438.8474439983838,
+      "gas_price_wei": 1000000000,
+      "send_tested": false
+    },
+    {
+      "public_endpoint": "https://bscrpc.pancakeswap.finance",
+      "chain": 56,
+      "block": 123953241,
+      "read_ms": 1453.9919109993207,
+      "gas_price_wei": 50000000,
+      "send_tested": false
+    }
+  ]
+}

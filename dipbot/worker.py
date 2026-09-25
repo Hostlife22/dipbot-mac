@@ -56,6 +56,7 @@ class Worker(QThread):
         self.stop_event = threading.Event()
         self.chain = None
         self.backup_chain = None
+        self.broadcast_chain = None
         self.head_feed = None
         self.execution_monitor = None
         self.rates = RateBook()
@@ -298,6 +299,9 @@ class Worker(QThread):
             if not key:
                 raise ValueError("Сначала сохраните отдельный кошелёк в Keychain")
             live = LiveTrader(self.chain, key, self.store, D(data["gas"]), self.log.emit)
+            live.broadcast_chain = self.broadcast_chain
+            if self.broadcast_chain is not None:
+                self.broadcast_chain.max_block_age = policy.max_block_age
             live.trade_router = self.pool.router
             live.rates = self.rates
             live.reserve_wei = raw_amount(sizing.reserve_bnb, 18) if sizing.reserve_bnb else 0
@@ -370,6 +374,10 @@ class Worker(QThread):
                 backup = Chain(data['backup_rpc'].strip())
                 backup.restrict_to_reads()
                 backup.check()
+            broadcaster = None
+            if data.get('send_rpc','').strip():
+                broadcaster = Chain(data['send_rpc'].strip())
+                broadcaster.check()
             feed = HeadFeed(data['ws_rpc'].strip()) if data.get('ws_rpc', '').strip() else None
             if self.head_feed is not None:
                 self.head_feed.stop()
@@ -377,6 +385,9 @@ class Worker(QThread):
             self.head_schedule = HeadSchedule()
             self.chain = chain
             self.backup_chain = backup
+            self.broadcast_chain = broadcaster
+            if broadcaster is not None:
+                self.log.emit("Отправка через отдельный RPC; чтение receipts через основной")
             self.backup_until = 0.0
             self.rpc_health = RpcHealth()
             self.adaptive_rpc = bool(data.get('adaptive_rpc', False))
@@ -389,6 +400,7 @@ class Worker(QThread):
                 Vault().save("rpc", data["rpc"])
                 Vault().save('backup_rpc', data.get('backup_rpc', '').strip())
                 Vault().save('ws_rpc', data.get('ws_rpc', '').strip())
+                Vault().save('send_rpc', data.get('send_rpc', '').strip())
         elif name == "wallet":
             account = Account.from_key(data["key"])
             Vault().save("wallet", data["key"])
