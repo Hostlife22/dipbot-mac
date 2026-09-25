@@ -15,7 +15,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--minimum-closed',type=int,default=3)
     p.add_argument('--folds',type=int,default=3)
-    p.add_argument('--gas-quote',default='0')
+    p.add_argument('--gas-quote')
     p.add_argument('--tax-bps',default='0')
     p.add_argument('--impact-bps',default='0')
     args=p.parse_args()
@@ -24,7 +24,8 @@ def main():
         raise ValueError('Holdout пока поддерживает только фиксированную сумму в базе')
     settings=Settings(**{k:float(v) if k=='max_gap' else D(str(v)) for k,v in header['settings'].items()})
     report=walk_forward(samples,settings,costs=ReplayCosts(impact_bps=D(args.impact_bps),
-        tax_bps=D(args.tax_bps),gas_quote=D(args.gas_quote)),folds=args.folds,minimum_closed=args.minimum_closed)
+        tax_bps=D(args.tax_bps),gas_quote=D(args.gas_quote if args.gas_quote is not None else str(header.get('paper_policy',{}).get('fee_quote',0))),
+        latency_seconds=float(header.get('paper_policy',{}).get('latency_seconds',.25))),folds=args.folds,minimum_closed=args.minimum_closed)
     args.output.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps([{'fold':r['fold'],'chosen':r['chosen'],'status':r['status']} for r in report['folds']]))
 

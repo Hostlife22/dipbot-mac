@@ -4,6 +4,7 @@ from .signal_policy import SignalPolicy
 from .sizing import SizingPolicy
 from .exit_policy import ExitPolicy
 from .cost_policy import CostPolicy
+from .paper_policy import PaperPolicy
 from .storage import SaveAfterReplaceError
 
 FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic', 'max_roundtrip_loss', 'min_swaps')
@@ -29,6 +30,8 @@ def normalize(value):
                                           for key,amount in value['usd_pair_amounts'].items()}
         except (AttributeError,TypeError) as exc:
             raise ValueError('Повреждены USD суммы пар') from exc
+    if 'paper_policy' in value:
+        result['paper_policy'] = PaperPolicy.parse(value['paper_policy']).export()
     if 'entry_cost_policy' in value:
         result['entry_cost_policy'] = CostPolicy.parse(value['entry_cost_policy']).export()
     if 'exit_policy' in value:

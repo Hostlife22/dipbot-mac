@@ -228,6 +228,9 @@ class Window(QMainWindow):
                 self.signal_volatility.setValue(float(policy.get('volatility_multiplier',2)))
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
+                paper_model = saved_preferences.get('paper_policy',{})
+                self.paper_delay.setValue(float(paper_model.get('latency_seconds',.25)))
+                self.paper_fee.setText(paper_model.get('fee_quote','0'))
                 costs = saved_preferences.get('entry_cost_policy', {})
                 self.cost_limit.setValue(float(costs.get('maximum_pct',0)))
                 self.cost_gas.setValue(float(costs.get('roundtrip_gas',400000)))
@@ -484,6 +487,17 @@ class Window(QMainWindow):
         grid.addRow('Множитель волатильности', self.signal_volatility)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.paper_delay = QDoubleSpinBox()
+        self.paper_delay.setRange(0,10)
+        self.paper_delay.setValue(.25)
+        self.paper_delay.setSuffix(' s')
+        self.paper_fee = self.field('0')
+        self.paper_fee.setToolTip('Фиксированная стоимость BUY и SELL в базовом активе выбранной пары. '
+            '0 исключает газ; это допущение, не on-chain оценка. Комиссии пула уже включены в router quote. '
+            'При смене базового актива проверьте сумму.')
+        self.editable.append(self.paper_delay)
+        grid.addRow('Задержка исполнения PAPER', self.paper_delay)
+        grid.addRow('Стоимость операции PAPER · база', self.paper_fee)
         self.cost_limit = QDoubleSpinBox()
         self.cost_limit.setRange(0,100)
         self.cost_limit.setSuffix(' %')
@@ -816,6 +830,9 @@ class Window(QMainWindow):
         self.update_controls()
         self.worker.submit(name, **data)
 
+    def paper_policy(self):
+        return {'latency_seconds':self.paper_delay.value(),'fee_quote':self.paper_fee.text().strip()}
+
     def entry_cost_policy(self):
         return {'maximum_pct':str(self.cost_limit.value()),'roundtrip_gas':int(self.cost_gas.value())}
 
@@ -847,7 +864,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  entry_cost_policy=self.entry_cost_policy(), exit_policy=self.exit_policy(), sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  paper_policy=self.paper_policy(), entry_cost_policy=self.entry_cost_policy(), exit_policy=self.exit_policy(), sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1102,12 +1119,13 @@ class Window(QMainWindow):
                 usd = Decimal(value)
                 amount = format(abs(usd), '.2f') if abs(usd) >= Decimal('.01') or not usd else price_text(abs(usd), digits=4)
                 result = '≈ ' + ('−' if usd < 0 else '+' if usd > 0 else '') + '$' + amount
-            suffix = ' · газ BUY/SELL учтён' if historical['includes_gas'] else ' · без газа'
+            suffix = (' · по модели PAPER' if mode == 'PAPER' else
+                      ' · газ BUY/SELL учтён' if historical['includes_gas'] else ' · без газа')
             self.footer.setText(text + ' · Закрытый P&L: ' + result + suffix + (' · LIVE LOCKED' if self.locked else ''))
             self.footer.setToolTip('USD по сохранённым ориентировочным курсам на моменты исполнения (DEX Screener, возраст до 90 с). '
                 'Смена текущего курса не пересчитывает закрытый результат. LIVE: отслеживаемые позиции этого кошелька '
                 'с начала нового USD-учёта, с газом BUY/SELL и approve; Converter/Sweep и старые сделки не включены. '
-                f"Закрыто: {historical.get('closed', 0)}, неполных: {historical.get('missing', 0)}. PAPER исключает газ и token tax.")
+                f"Закрыто: {historical.get('closed', 0)}, неполных: {historical.get('missing', 0)}. PAPER учитывает заданную стоимость операций по модели; token tax не учтён.")
             return
         if payload['mode'] != mode or payload['realized'] == '—':
             result = '—'
@@ -1379,7 +1397,7 @@ class Window(QMainWindow):
             result = payload.get('exit_return')
             self.exit_status.setText('TP/SL по продаже позиции: ' +
                 (f'{Decimal(result):+.2f}%' if result is not None and not payload.get('quote_unavailable') else 'ожидание свежей котировки') +
-                ' · без газа и token tax')
+                (' · стоимость по модели PAPER, без token tax' if payload.get('mode') == 'PAPER' else ' · без газа и token tax'))
             self.halt_reason = payload.get('halt_reason', '')
             self.running, self.active_mode, self.locked = payload["running"], payload["mode"], payload["locked"]
             if not self.running and not self.busy and not self.worker.stop_event.is_set():
@@ -1434,6 +1452,7 @@ class Window(QMainWindow):
                 "signal_policy": self.signal_policy(),
                 "exit_policy": self.exit_policy(),
                 "entry_cost_policy":self.entry_cost_policy(),
+                "paper_policy":self.paper_policy(),
                 "sizing": self.sizing_policy(),
                 "record_market": self.record_market.isChecked(),
                 "adaptive_rpc": self.adaptive_rpc.isChecked(),

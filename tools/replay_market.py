@@ -35,11 +35,11 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input',type=Path)
     parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--latency',type=float,default=.25)
+    parser.add_argument('--latency',type=float)
     parser.add_argument('--fee-bps',default='25')
     parser.add_argument('--impact-bps',default='0')
     parser.add_argument('--tax-bps',default='0')
-    parser.add_argument('--gas-quote',default='0')
+    parser.add_argument('--gas-quote')
     parser.add_argument('--modes', nargs='+', choices=['legacy','window','volatility'], default=['legacy','window','volatility'])
     parser.add_argument('--window',type=float,default=60)
     parser.add_argument('--rebound',default='0')
@@ -47,7 +47,10 @@ def main():
     header,samples=load(args.input)
     raw=header['settings']
     settings=Settings(**{k:(float(v) if k=='max_gap' else D(str(v))) for k,v in raw.items()})
-    costs=ReplayCosts(D(args.fee_bps),D(args.impact_bps),D(args.tax_bps),D(args.gas_quote),args.latency)
+    paper=header.get('paper_policy',{})
+    costs=ReplayCosts(D(args.fee_bps),D(args.impact_bps),D(args.tax_bps),
+        D(args.gas_quote if args.gas_quote is not None else str(paper.get('fee_quote',0))),
+        args.latency if args.latency is not None else float(paper.get('latency_seconds',.25)))
     results=[replay(samples,settings,SignalPolicy(mode,args.window,D(args.rebound)),costs,
                     size_unit=header.get('sizing',{}).get('unit','quote'),
                     requested_amount=header.get('requested_amount'),

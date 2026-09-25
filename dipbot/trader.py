@@ -398,10 +398,10 @@ class PaperTrader:
         self.cost, self.position = cost, received
         return cost / received
 
-    def sell_quoted(self, proceeds: D):
-        if not self.position or proceeds <= 0:
+    def sell_quoted(self, proceeds: D, fee: D = D(0)):
+        if not self.position or proceeds <= 0 or not fee.is_finite() or fee < 0:
             raise ValueError('Некорректная PAPER-продажа')
-        pnl = proceeds - self.cost
+        pnl = proceeds - self.cost - fee
         self.realized += pnl
         self.position = self.cost = D(0)
         return pnl

@@ -27,6 +27,7 @@ from .sizing import SizingPolicy
 from .exit_policy import ExitPolicy
 from .rpc_health import RpcHealth
 from .cost_policy import CostPolicy
+from .paper_policy import PaperPolicy
 from .chain import StaleBlock
 from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
@@ -62,6 +63,7 @@ class Worker(QThread):
         self.rates = RateBook()
         self.sizing = SizingPolicy()
         self.cost_policy = CostPolicy()
+        self.paper_policy = PaperPolicy(latency_seconds=0)
         self.gas_gwei = D(".1")
         self.requested_amount = None
         self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
@@ -228,6 +230,7 @@ class Worker(QThread):
                          "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
                          "entry": str(self.strategy.entry or 0),
                          "realized": realized,
+                         "paper_cost_model": self.paper_policy.export(),
                          "historical_usd": (closed_summary(self.store, self.live.owner) if self.mode == 'LIVE' and self.live else
                              {'value':str(self.paper_usd['value']) if self.paper_usd['closed'] and not self.paper_usd['missing'] else None,
                               'closed':self.paper_usd['closed'], 'missing':self.paper_usd['missing'], 'includes_gas':False}),
@@ -269,6 +272,7 @@ class Worker(QThread):
         mode = data["mode"]
         policy = SignalPolicy.parse(data.get("signal_policy", {}))
         sizing = SizingPolicy.parse(data.get("sizing", {}))
+        paper_policy = PaperPolicy.parse(data.get("paper_policy", {}))
         cost_policy = CostPolicy.parse(data.get("entry_cost_policy", {}))
         exit_policy = ExitPolicy.parse(data.get("exit_policy", {}))
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
@@ -327,6 +331,7 @@ class Worker(QThread):
         old_cooldown = self.strategy.cooldown_until if mode == self.mode else None
         self.mode, self.interval, self.live = mode, interval, live
         self.sizing, self.requested_amount = sizing, requested_amount
+        self.paper_policy = paper_policy
         self.cost_policy, self.gas_gwei = cost_policy, D(data["gas"])
         old_entry = self.strategy.entry
         old_entry_time, old_peak = self.strategy.entry_time, self.strategy.peak_price
@@ -356,7 +361,7 @@ class Worker(QThread):
                 self.recorder = MarketTape(self.store.path.parent / 'market-recordings', {
                     'mode': self.mode, 'pool': asdict(self.pool) if self.pool else None,
                     'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
-                    'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(), 'entry_cost_policy':cost_policy.export(),
+                    'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(), 'entry_cost_policy':cost_policy.export(), 'paper_policy':paper_policy.export(),
                     'starts_with_position': self.strategy.entry is not None})
                 self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
             except OSError:
@@ -731,6 +736,8 @@ class Worker(QThread):
                     proceeds = D(source.exit_quote(self.pool, amount))/D(10)**self.pool.quote_decimals
                 if time.monotonic()-self.price_time > self.strategy.settings.max_gap:
                     raise TimeoutError("Снимок цены устарел во время котировки выхода")
+                if self.mode == 'PAPER':
+                    proceeds -= self.paper_policy.fee_quote
                 exit_return = (proceeds/cost-1)*100
             self.exit_return = str(exit_return) if exit_return is not None else None
         except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
@@ -793,6 +800,8 @@ class Worker(QThread):
     @monitor_execution
     @timed("worker.open_position")
     def open_position(self):
+        if self.stop_event.is_set():
+            raise EntryRejected('STOP: вход отменён до проверки и исполнения')
         if self.strategy.entry is not None:
             raise ValueError("Позиция уже открыта")
         settings = self.strategy.settings
@@ -856,6 +865,8 @@ class Worker(QThread):
             self.set_position(received, entry)
             self.live.finish()
         else:
+            if self.mode == 'PAPER' and self.stop_event.wait(self.paper_policy.latency_seconds):
+                raise EntryRejected('STOP во время ожидания PAPER; виртуальный вход отменён')
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 raw = raw_amount(settings.amount, self.pool.quote_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
@@ -864,9 +875,10 @@ class Worker(QThread):
                                          self.pool.token_decimals, settings.buy_tolerance)
                 if quoted < bound:
                     raise EntryRejected('PAPER BUY: котировка ниже minOut снимка; покупка не исполнена')
-                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals,
+                execution = self.paper.buy_quoted(D(raw)/D(10)**self.pool.quote_decimals+self.paper_policy.fee_quote,
                     D(quoted)/D(10)**self.pool.token_decimals)
-                self.log.emit('PAPER: router quote на сумму; комиссии/impact включены, газ и token tax не учтены')
+                self.log.emit(f'PAPER: router quote после задержки {self.paper_policy.latency_seconds:g} с; '
+                    f'стоимость операции {self.paper_policy.fee_quote} в базе добавлена по модели; token tax не учтён')
             else:
                 execution = self.paper.buy(settings.amount, self.current_price)
             entry = self.current_price
@@ -906,13 +918,15 @@ class Worker(QThread):
         else:
             if not self.paper.position:
                 return
+            if self.mode == 'PAPER' and reason != 'STOP':
+                self.stop_event.wait(self.paper_policy.latency_seconds)
             price = self.read_price()
             paper_cost = self.paper.cost
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 output = quote(self.pool, amount, False)
-                pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals)
+                pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, self.paper_policy.fee_quote)
             else:
                 pnl = self.paper.sell(price)
             proceeds_usd = marked_value(paper_cost+pnl,
@@ -923,7 +937,7 @@ class Worker(QThread):
             else:
                 self.paper_usd['value'] += D(proceeds_usd)-D(self.paper_usd['entry'])
             self.paper_usd['entry'] = None
-            self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
+            self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (стоимость операции по модели; token tax не учтён)")
         self.strategy.sold(price, reason, now=time.monotonic())
         self.record_market("execution", side="SELL", price=str(price), reason=reason)
         self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})
