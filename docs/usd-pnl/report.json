@@ -1,0 +1,78 @@
+{
+  "token": "0xeCCBb861c0dda7eFd964010085488B69317e4444",
+  "utc": "2026-09-25T10:45:14.976263+00:00",
+  "mode": "PAPER",
+  "frozen": true,
+  "transactions_sent": 0,
+  "checks": 793,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000152681196982540605423368523998794811366799489505442614090418212339614544367343",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000152595750371367602635763492974056677440378138692220679729318364911857726802521",
+      "phase": "manual_paper_sell"
+    }
+  ],
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 6,
+    "RUNNING": 361,
+    "STOPPING": 2,
+    "WAIT DIP": 30
+  },
+  "price_sources": {
+    "BSC": 394
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C"
+  ],
+  "pool": "0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+  "router": "V2",
+  "token_decimals": 18,
+  "settings": {
+    "amount": "0.00003",
+    "dip": "3",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150"
+  },
+  "manual_realized": "-1.66518753295E-7",
+  "observed_seconds": 60.0,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "synthetic_minout_resumed_without_start": true,
+  "passed": true,
+  "logs": [
+    "BSC подключена, chainId 56, блок 123935176",
+    "Выбран V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+    "PAPER: router quote на сумму; комиссии/impact включены, газ и token tax не учтены",
+    "PAPER BUY: исполнение 0.0001530638589; база TP/SL 0.0001526811970",
+    "PAPER P&L: -1.6651875e-7 базового актива (без газа и token tax)",
+    "PAPER SELL: MANUAL",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "BOT остановлен",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "Вход пропущен: PAPER BUY: котировка ниже minOut снимка; покупка не исполнена; пауза 5 с, затем новый сигнал DIP",
+    "BOT остановлен"
+  ],
+  "rpc_methods": {
+    "eth_chainId": 1254,
+    "eth_getBlockByNumber": 408,
+    "eth_getCode": 7,
+    "eth_call": 423
+  },
+  "distinct_prices": 27,
+  "price_range": [
+    "0.000152013270162290960399779201318868581607564680949189220516611742762461119369182",
+    "0.000152681196982540605423368523998794811366799489505442614090418212339614544367343"
+  ]
+}

@@ -165,6 +165,8 @@ class Worker(QThread):
                          "base": str(self.strategy.base or 0),
                          "entry": str(self.strategy.entry or 0),
                          "realized": realized,
+                         "pnl_quote": (self.paper_context[2] if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
+                                       else self.pool.quote if self.mode != "DEMO" and self.pool else ""),
                          "quote_unavailable": self.quote_unavailable,
                          "entry_notice": self.entry_notice,
                          "halt_reason": self.halt_reason,

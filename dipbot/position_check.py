@@ -151,7 +151,7 @@ def run(app, directory, resume=False):
                 wait(lambda:not w.display_position and any('TAKE_PROFIT' in x for x in logs))
                 expected = D(int(quantity*99*D(10)**18))/D(10)**18-D(1)
                 assert w.worker.paper.realized-before == expected
-                assert format(w.worker.paper.realized, '.8g') in w.footer.text()
+                assert 'USD недоступен' in w.footer.text()  # Synthetic REPLAY has no dollar conversion.
                 snap('take_profit'); stop()
                 report['scenarios'].append('automatic_dip_buy_tp_quantity_levels_pnl')
                 start_buy()

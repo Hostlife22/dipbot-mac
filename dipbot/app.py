@@ -863,6 +863,31 @@ class Window(QMainWindow):
         if getattr(self, 'last_price', None) is not None:
             self.metrics['price'].setToolTip(f'{self.last_price} {self.display_unit} / TARGET · USD — ориентировочный пересчёт')
         self.chart.update()
+        self.refresh_pnl()
+
+    def refresh_pnl(self):
+        payload = getattr(self, 'pnl_status', None)
+        if payload is None:
+            return
+        mode = self.mode.currentText()
+        text = f"{mode} · " + ('BOT работает' if self.running else 'BOT остановлен')
+        if payload['mode'] != mode or payload['realized'] == '—':
+            result = '—'
+        else:
+            value = Decimal(payload['realized'])
+            token = payload.get('pnl_quote', '').lower()
+            rate = (self.usd.current() if mode != 'DEMO' and self.price_source != 'REPLAY'
+                    and token and self.usd.token == token else None)
+            if rate is not None:
+                usd = value * rate
+                amount = format(abs(usd), '.2f') if abs(usd) >= Decimal('0.01') or not usd else price_text(abs(usd), digits=4)
+                result = '≈ ' + ('−' if usd < 0 else '+' if usd > 0 else '') + '$' + amount
+            else:
+                result = '— (USD недоступен)' if mode != 'DEMO' else '— (DEMO без USD)'
+        self.footer.setText(text + ' · Закрытый P&L: ' + result +
+                            ' · без газа' + (' · LIVE LOCKED' if self.locked else ''))
+        self.footer.setToolTip('Результат закрытых сделок. USD — пересчёт по текущему курсу базового актива, '
+                              'не исторический долларовый P&L. PAPER не учитывает газ и token tax.')
 
     def update_strategy_status(self):
         if self.stop_pending:
@@ -1090,9 +1115,8 @@ class Window(QMainWindow):
             self.levels_label.setText(' · '.join(f'{title}: {float(levels[key]):.8g}'
                 if key in levels and float(levels[key]) > 0 else f'{title}: —'
                 for key, title in [('DIP', 'Вход DIP'), ('ENTRY', 'ENTRY'), ('TP', 'TP'), ('SL', 'SL')]))
-            shown_mode = self.active_mode if self.running else self.mode.currentText()
-            self.footer.setText(f"{shown_mode} · " + ("BOT работает" if self.running else "BOT остановлен") +
-                                f" · {self.active_mode} realized P&L (база, без газа): {format(Decimal(payload['realized']), '.8g') if payload['realized'] != '—' else '—'}" + (" · LIVE LOCKED" if self.locked else ""))
+            self.pnl_status = dict(payload)
+            self.refresh_pnl()
         self.update_controls()
 
     def closeEvent(self, event):

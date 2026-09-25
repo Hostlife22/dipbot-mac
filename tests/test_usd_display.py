@@ -47,3 +47,23 @@ def test_usd_display_never_changes_strategy_values_and_expires(window):
     w.mode.setCurrentText('DEMO')
     assert w.usd.current() is None and w.chart.usd_rate is None
     assert w.metrics['price'].text() == '—'
+
+
+def test_realized_pnl_usd_sign_small_values_expiry_and_wrong_currency(window):
+    w=window
+    w.mode.setCurrentText('PAPER'); w.on_event('selected',POOL)
+    w.on_event('price_context',{'source':'BSC','quote':POOL.quote})
+    w.usd.token=POOL.quote.lower();w.usd.rate=D(800);w.usd.received_at=time.monotonic()
+    payload={'running':False,'mode':'PAPER','locked':False,'position':'0','base':'0',
+             'realized':'-0.00003','pnl_quote':POOL.quote,'levels':{}}
+    w.on_event('status',payload)
+    assert '−$0.02' in w.footer.text() and 'WBNB' not in w.footer.text()
+    assert '-0.00003' not in w.footer.text()
+    w.on_event('status',payload|{'realized':'0.000001'})
+    assert '+$0.0008' in w.footer.text()
+    w.usd.received_at-=91;w.refresh_currency()
+    assert 'USD недоступен' in w.footer.text() and '$' not in w.footer.text()
+    w.usd.received_at=time.monotonic();w.usd.token='wrong';w.refresh_currency()
+    assert '$' not in w.footer.text()
+    w.on_event('status',payload|{'realized':'—'})
+    assert 'P&L: —' in w.footer.text()
