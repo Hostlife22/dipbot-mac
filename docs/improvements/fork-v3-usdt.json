@@ -1,0 +1,28 @@
+{
+  "environment": "local Anvil fork",
+  "fork_block": 123952559,
+  "pool": "0x36696169C63e42cd08ce11f5deeBbCeBae652050",
+  "token": "0x55d398326f99059fF775485246999027B3197955",
+  "input_wei": 100000000000000,
+  "mainnet_transactions_sent": 0,
+  "passed": true,
+  "limits": "Local EVM test, not a sellability guarantee; time/owner-dependent taxes, MEV and BSC consensus are not reproduced.",
+  "phase": "sell",
+  "quoted_buy": "77729343596799335",
+  "received": "77729343596799335",
+  "quoted_sell": "99900025000060",
+  "returned_wei": "99900025000060",
+  "roundtrip_loss_pct": "0.09997499994",
+  "local_transactions": 6,
+  "bootstrap_local_transactions": 1,
+  "local_gas_wei": "44085500000000",
+  "upstream_methods": {
+    "eth_getBlockByNumber": 2,
+    "eth_gasPrice": 1,
+    "eth_getTransactionCount": 15,
+    "eth_getBalance": 15,
+    "eth_getCode": 15,
+    "eth_getStorageAt": 36
+  },
+  "upstream_errors": {}
+}
