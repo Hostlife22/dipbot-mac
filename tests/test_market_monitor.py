@@ -60,3 +60,23 @@ def test_ui_updates_during_busy_executor_without_changing_signal_snapshot(window
         assert w.last_price==95
     finally:
         w.worker.execution_monitor=None; w.busy=False
+
+
+def test_late_monitor_cannot_roll_display_back_to_older_block(window):
+    w = window
+    w.mode.setCurrentText('PAPER'); w.worker.mode = 'PAPER'
+    w.pool_input.setText(POOL.address); w.selection_ready = True
+    monitor = MarketMonitor('synthetic', POOL)
+    monitor.latest = MarketSnapshot(D(95), time.monotonic(), 1, 12, POOL.address, POOL.quote)
+    w.worker.execution_monitor = monitor
+    try:
+        w.on_event('price_context', {'source':'BSC', 'quote':POOL.quote, 'block':13})
+        w.on_event('price', '101')
+        assert w.last_price == 101 and w.market_block == 13
+        assert w.chart.values[-1] == 101
+        assert w.metrics['price'].text() == w.display_price(101)
+        monitor.latest = MarketSnapshot(D(102), time.monotonic(), 2, 14, POOL.address, POOL.quote)
+        w.update_quote_age()
+        assert w.last_price == 102 and w.market_block == 14
+    finally:
+        w.worker.execution_monitor = None

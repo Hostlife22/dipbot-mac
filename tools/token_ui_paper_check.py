@@ -66,9 +66,15 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             if kind == 'price':
                 report['checks'] += 1
                 report['samples'].append({'time': time.monotonic(), 'price': payload, 'phase': phase[0]})
-                if w.metrics['price'].text() != w.display_price(payload) or w.chart.values[-1] != float(payload):
+                # on_event may consume a newer read-only monitor snapshot while
+                # handling this queued event. Compare the displayed snapshot,
+                # not an event which has legitimately been superseded.
+                displayed = w.last_price
+                if displayed != D(payload):
+                    report['monitor_superseded_price_events'] = report.get('monitor_superseded_price_events', 0)+1
+                if displayed is None or w.metrics['price'].text() != w.display_price(displayed) or not w.chart.values or w.chart.values[-1] != float(displayed):
                     report['mismatches'].append({'kind':'price / chart','phase':phase[0],
-                        'expected':w.display_price(payload),'actual':w.metrics['price'].text(),
+                        'expected':w.display_price(displayed),'actual':w.metrics['price'].text(),
                         'chart':w.chart.values[-1] if w.chart.values else None,'raw':payload,
                         'source':w.price_source,'selected':w.selection_ready})
             elif kind == 'status':

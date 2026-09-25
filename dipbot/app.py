@@ -1372,7 +1372,9 @@ class Window(QMainWindow):
         monitor = self.worker.execution_monitor
         if monitor is not None and self.mode.currentText() == self.worker.mode and self.selection_ready:
             snapshot = monitor.snapshot()
-            if snapshot is not None and snapshot.pool.lower() == self.pool_input.text().lower():
+            current_block = getattr(self, 'market_block', None)
+            if (snapshot is not None and snapshot.pool.lower() == self.pool_input.text().lower()
+                    and (current_block is None or snapshot.block >= current_block)):
                 identity = (id(monitor), snapshot.revision)
                 if identity != getattr(self, '_monitor_revision', None):
                     self._monitor_revision = identity
