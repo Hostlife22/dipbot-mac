@@ -235,6 +235,9 @@ class Worker(QThread):
                 raise ValueError("Router изменился: повторите AutoPair / CHECK POOL")
             if data.get("generation") is not None and data["generation"] != self.pool_generation:
                 raise ValueError("Ввод изменился: заново проверьте пул")
+            self.chain.max_block_age = policy.max_block_age
+            if self.backup_chain is not None:
+                self.backup_chain.max_block_age = policy.max_block_age
             self.chain.verify_pool(self.pool.address, self.pool.token)
         if mode != self.mode and (self.paper.position or self.position()):
             raise ValueError("Закройте текущую позицию перед сменой режима")
@@ -527,7 +530,12 @@ class Worker(QThread):
         self.current_price = price
         self.price_time = time.monotonic()
         demo = self.mode == 'DEMO' and not force_chain
-        self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', self.market_source),
+        source_chain = self.backup_chain if self.market_source != 'BSC' else self.chain
+        header = getattr(source_chain, 'price_block', None) if not demo else None
+        self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', 'BSC'),
+                                        'rpc_source': self.market_source,
+                                        'block': header['number'] if header else None,
+                                        'block_timestamp': header.get('timestamp') if header else None,
                                         'quote': '' if demo else self.pool.quote})
         self.event.emit("price", str(price))
         return price

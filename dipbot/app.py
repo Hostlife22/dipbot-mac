@@ -214,6 +214,7 @@ class Window(QMainWindow):
                 self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
                 self.signal_window.setValue(float(policy.get('window_seconds', 60)))
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
+                self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))
             except ValueError:
@@ -427,10 +428,17 @@ class Window(QMainWindow):
         self.signal_rebound.setSuffix(' %')
         self.signal_mode.setToolTip('Оконный режим экспериментальный: максимум наблюдавшихся цен за окно, '
             'затем DIP и необязательный отскок. Параметры не оптимизированы по доходности.')
+        self.block_age_limit = QDoubleSpinBox()
+        self.block_age_limit.setRange(1, 30)
+        self.block_age_limit.setValue(5)
+        self.block_age_limit.setSuffix(' s')
+        self.block_age_limit.setToolTip('Возраст timestamp блока по часам Mac. Старые блоки не принимаются как свежие котировки. '
+            'Это отдельно от предела разрыва наблюдений 0.55 с; timestamp блока имеет секундную точность.')
         grid.addRow('Расчёт DIP', self.signal_mode)
         grid.addRow('Окно максимума', self.signal_window)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
-        self.editable += [self.signal_mode, self.signal_window, self.signal_rebound]
+        grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.editable += [self.signal_mode, self.signal_window, self.signal_rebound, self.block_age_limit]
         self.interval = QDoubleSpinBox()
         self.interval.setRange(0.1, 0.5)
         self.interval.setDecimals(3)
@@ -668,7 +676,7 @@ class Window(QMainWindow):
 
     def signal_policy(self):
         return {'mode': self.signal_mode.currentData(), 'window_seconds': self.signal_window.value(),
-                'rebound_pct': str(self.signal_rebound.value())}
+                'rebound_pct': str(self.signal_rebound.value()), 'max_block_age': self.block_age_limit.value()}
 
     def trade(self, command, **extra):
         mode = self.mode.currentText()
@@ -870,6 +878,8 @@ class Window(QMainWindow):
             self.market_summary.setText(self.pool_label.text())
 
     def reset_price_display(self):
+        self.market_block = self.market_block_timestamp = None
+        self.market_rpc_source = "BSC"
         self.chart.clear()
         self.usd.set_token('')
         self.base_price = None
@@ -934,6 +944,9 @@ class Window(QMainWindow):
         if self.stop_pending:
             self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
             return
+        if self.worker.execution_monitor is not None and self.mode.currentText() == self.worker.mode:
+            self.strategy_status.setText('Сделка выполняется · цена обновляется отдельно; ожидается результат исполнения')
+            return
         if getattr(self, 'quote_unavailable', False) and self.running:
             self.strategy_status.setText('Нет котировок · повтор чтения; ' +
                 ('позиция открыта, TP/SL временно недоступны' if self.display_position > 0 else 'новые входы запрещены'))
@@ -973,7 +986,8 @@ class Window(QMainWindow):
                 identity = (id(monitor), snapshot.revision)
                 if identity != getattr(self, '_monitor_revision', None):
                     self._monitor_revision = identity
-                    self.on_event('price_context', {'source': 'BSC', 'quote': snapshot.quote})
+                    self.on_event('price_context', {'source': 'BSC', 'quote': snapshot.quote,
+                        'block': snapshot.block, 'block_timestamp': snapshot.block_timestamp})
                     self.on_event('price', str(snapshot.price))
                     self.last_quote_at = snapshot.received_at
         self.update_strategy_status()
@@ -990,6 +1004,12 @@ class Window(QMainWindow):
             conversion = f'{self.display_unit} · USD недоступен / курс загружается'
         else:
             conversion = self.display_unit
+        if getattr(self, 'market_block', None) is not None:
+            source += f' · блок {self.market_block}'
+            if self.market_block_timestamp is not None:
+                source += f' (возраст {max(0, time.time()-self.market_block_timestamp):.1f} с)'
+        if getattr(self, 'market_rpc_source', 'BSC') != 'BSC':
+            source += ' · резервный RPC'
         self.quote_age.setText(f'1 TARGET в {conversion} · {source} · последняя котировка {age:.1f} с назад{state}')
 
     def update_controls(self):
@@ -1034,6 +1054,9 @@ class Window(QMainWindow):
         elif name == 'price_context':
             if self.price_source != payload['source']:
                 self.reset_price_display()
+            self.market_block = payload.get('block')
+            self.market_block_timestamp = payload.get('block_timestamp')
+            self.market_rpc_source = payload.get('rpc_source', 'BSC')
             self.price_source = payload['source']
             self.display_unit = ('условных единиц (DEMO)' if payload['source'] == 'DEMO' else
                 next((name for name, addr in profiles().items()

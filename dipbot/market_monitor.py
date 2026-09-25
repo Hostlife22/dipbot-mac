@@ -16,12 +16,13 @@ class MarketSnapshot:
     block: int
     pool: str
     quote: str
+    block_timestamp: int | None = None
 
 
 class MarketMonitor:
-    def __init__(self, endpoint, pool, factory=None):
+    def __init__(self, endpoint, pool, factory=None, max_block_age=5):
         self.endpoint, self.pool = endpoint, pool
-        self.factory = factory or (lambda url: Chain(url, request_timeout=2))
+        self.factory = factory or (lambda url: Chain(url, request_timeout=2, max_block_age=max_block_age))
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
         self.latest = None
@@ -65,7 +66,8 @@ class MarketMonitor:
                         price = chain.price(pool)
                     revision += 1
                     snapshot = MarketSnapshot(price, time.monotonic(), revision,
-                                              chain.price_block['number'], pool.address, pool.quote)
+                                              chain.price_block['number'], pool.address, pool.quote,
+                                              chain.price_block.get('timestamp'))
                     with self.lock:
                         if not self.stop_event.is_set():
                             self.latest = snapshot
@@ -96,7 +98,8 @@ def monitor_execution(function):
     def wrapped(worker, *args, **kwargs):
         if worker.mode == 'DEMO' or not isinstance(worker.chain, Chain) or worker.pool is None:
             return function(worker, *args, **kwargs)
-        monitor = MarketMonitor(str(worker.chain.w3.provider.endpoint_uri), worker.pool)
+        monitor = MarketMonitor(str(worker.chain.w3.provider.endpoint_uri), worker.pool,
+                                max_block_age=worker.strategy.policy.max_block_age)
         worker.execution_monitor = monitor.start()
         try:
             return function(worker, *args, **kwargs)

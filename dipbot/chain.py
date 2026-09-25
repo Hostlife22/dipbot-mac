@@ -128,10 +128,17 @@ def route_path(route, reverse=False):
     return tokens, packed
 
 
+class StaleBlock(ValueError, TimeoutError):
+    """Retryable old market data; never a fresh quote or permission to trade."""
+
+
 class Chain:
-    def __init__(self, endpoint: str, *, request_timeout=10):
+    def __init__(self, endpoint: str, *, request_timeout=10, max_block_age=30):
         if not 0 < request_timeout <= 30:
             raise ValueError("Недопустимый RPC timeout")
+        if not 1 <= max_block_age <= 30:
+            raise ValueError("Недопустимый возраст блока")
+        self.max_block_age = max_block_age
         parsed = urlsplit(endpoint)
         if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")):
             raise ValueError("RPC должен быть HTTPS (HTTP допустим для localhost)")
@@ -155,7 +162,9 @@ class Chain:
             raise ValueError("RPC подключён не к BSC mainnet (chainId 56)")
         block = self.w3.eth.get_block("latest")
         age = time.time() - block["timestamp"]
-        if not -15 <= age <= 30:
+        if age > getattr(self, 'max_block_age', 30):
+            raise StaleBlock('RPC возвращает устаревший блок; новые данные ожидаются')
+        if age < -15:
             raise ValueError("RPC возвращает устаревший блок; проверьте узел и часы Mac")
         self.checked_header = block
         return block["number"]
