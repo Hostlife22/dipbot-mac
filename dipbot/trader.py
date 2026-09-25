@@ -386,7 +386,8 @@ def reconcile_receipts(chain, store, owner):
                 raise UncertainTransaction('Ранее подтверждённый receipt исчез; нужна ручная сверка reorg') from None
             alternative = None
             for other in operation['transactions']:
-                linked = other.get('replaces') == record['hash'] or record.get('replaces') == other['hash']
+                linked = (other.get('replaces') == record['hash'] or record.get('replaces') == other['hash']
+                          or (record.get('replaces') is not None and record.get('replaces') == other.get('replaces')))
                 if not linked or type(record.get('nonce')) is not int or other.get('nonce') != record['nonce']:
                     continue
                 try:

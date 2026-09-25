@@ -119,3 +119,46 @@ def test_conflicting_receipts_and_disappeared_confirmation_keep_latch(tmp_path):
     with pytest.raises(UncertainTransaction,match='исчез'):
         reconcile_receipts(trader.chain,trader.store,trader.owner)
     assert trader.store.data['operation']
+
+
+def test_retry_bumps_highest_fee_and_reconciles_all_siblings(tmp_path):
+    trader,sent,receipts=make(tmp_path,timeout=True)
+    with pytest.raises(UncertainTransaction):cancel_pending(trader,expected_hash=H,expected_gas_price=125000000)
+    rows=trader.store.data['operation']['transactions'];rows[-1]['prepared_at']-=31
+    plan=cancellation_plan(trader.store.data['operation'],D('.1'))
+    assert plan['attempt']==2 and plan['gas_price']==156250000
+    with pytest.raises(ValueError,match='изменился'):
+        cancel_pending(trader,expected_hash=H,expected_gas_price=125000000)
+    with pytest.raises(UncertainTransaction):cancel_pending(trader,expected_hash=H,expected_gas_price=156250000)
+    assert len(sent)==2 and len(rows)==3
+    winner=rows[-1]['hash']
+    receipts[winner]={'transactionHash':bytes.fromhex(winner[2:]),'status':1,
+        'blockNumber':42,'blockHash':b'b'*32,'gasUsed':21000,'effectiveGasPrice':156250000}
+    reconcile_receipts(trader.chain,trader.store,trader.owner)
+    assert [r['status'] for r in rows]==['superseded','superseded','confirmed']
+    assert len(trader.store.data['gas_ledger'])==1 and trader.store.data['operation']
+
+
+def test_retry_checks_previous_cancel_receipt_before_signing(tmp_path):
+    trader,sent,receipts=make(tmp_path,timeout=True)
+    with pytest.raises(UncertainTransaction):cancel_pending(trader,expected_hash=H,expected_gas_price=125000000)
+    row=trader.store.data['operation']['transactions'][-1];row['prepared_at']-=31
+    receipts[row['hash']]={}
+    with pytest.raises(ValueError,match='Receipt'):
+        cancel_pending(trader,expected_hash=H,expected_gas_price=156250000)
+    assert len(sent)==1
+
+
+def test_retry_limit_and_original_winning_after_two_cancels(tmp_path):
+    trader,sent,receipts=make(tmp_path,timeout=True)
+    for expected in (125000000,156250000,195312500):
+        with pytest.raises(UncertainTransaction):cancel_pending(trader,expected_hash=H,expected_gas_price=expected)
+        trader.store.data['operation']['transactions'][-1]['prepared_at']-=31
+    with pytest.raises(ValueError,match='3 попытки'):
+        cancellation_plan(trader.store.data['operation'],D('.1'))
+    receipts[H]={'transactionHash':bytes.fromhex(H[2:]),'status':1,
+        'blockNumber':42,'blockHash':b'b'*32,'gasUsed':21000,'effectiveGasPrice':100000000}
+    reconcile_receipts(trader.chain,trader.store,trader.owner)
+    rows=trader.store.data['operation']['transactions']
+    assert [r['status'] for r in rows]==['confirmed','superseded','superseded','superseded']
+    assert len(trader.store.data['gas_ledger'])==1

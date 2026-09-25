@@ -1142,7 +1142,7 @@ class Window(QMainWindow):
         fee = Decimal(plan['maximum_fee_wei'])/Decimal(10)**18
         gas = Decimal(plan['gas_price'])/Decimal(10)**9
         if QMessageBox.question(self, 'Отмена pending',
-            f"Попытка заменить {plan['original_hash']}\nNonce {plan['nonce']}; перевод 0 BNB себе.\n"
+            f"Попытка отмены {plan['attempt']}/3: {plan['original_hash']}\nNonce {plan['nonce']}; перевод 0 BNB себе.\n"
             f"GAS {gas} gwei; комиссия до {fee} BNB.\n"
             'Исходная сделка может подтвердиться раньше отмены. Блокировка останется до сверки балансов. Продолжить?',
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:

@@ -22,14 +22,27 @@ def cancellation_plan(operation, gas_gwei):
     if (type(nonce) is not int or nonce < 0 or type(old_fee) is not int or old_fee <= 0
             or request.get('chainId') != 56 or request.get('nonce') != nonce):
         raise ValueError('В записи недостаточно проверенных данных для отмены')
-    if any(r.get('replaces') == target['hash'] for r in records):
-        raise ValueError('Отмена уже записана; сначала проверьте receipts, повтор запрещён')
+    attempts = [r for r in records if r.get('replaces') == target['hash']]
+    if len(attempts) >= 3:
+        raise ValueError('Достигнут предел: 3 попытки отмены; нужна ручная сверка')
+    for attempt in attempts:
+        saved = attempt.get('request', {})
+        fee = saved.get('gasPrice')
+        if (attempt.get('status') != 'pending' or attempt.get('nonce') != nonce
+                or saved.get('chainId') != 56 or saved.get('nonce') != nonce
+                or type(fee) is not int or fee <= 0
+                or attempt.get('broadcast_route','primary') != target.get('broadcast_route','primary')):
+            raise ValueError('Предыдущая отмена требует сверки, новый повтор запрещён')
+        prepared = attempt.get('prepared_at')
+        if type(prepared) is not int or not 30 <= time.time()-prepared:
+            raise ValueError('Отмена уже записана: до повторного просмотра подождите 30 секунд')
+        old_fee = max(old_fee, fee)
     gas_price = max(int(gas_gwei*10**9), (old_fee*125+99)//100)
     maximum_fee = gas_price*21000
     if maximum_fee > 5*10**15:
         raise ValueError('Комиссия отмены превышает 0.005 BNB')
     return {'original_hash':target['hash'], 'nonce':nonce, 'gas_price':gas_price,
-            'maximum_fee_wei':maximum_fee, 'broadcast_route':target.get('broadcast_route','primary')}
+            'attempt':len(attempts)+1, 'maximum_fee_wei':maximum_fee, 'broadcast_route':target.get('broadcast_route','primary')}
 
 
 def cancel_pending(trader, *, expected_hash, expected_gas_price):
@@ -51,12 +64,16 @@ def cancel_pending(trader, *, expected_hash, expected_gas_price):
         broadcaster.check()
     elif plan['broadcast_route'] != 'primary':
         raise ValueError('Неизвестный маршрут исходной отправки')
-    try:
-        eth.get_transaction_receipt(plan['original_hash'])
-    except TransactionNotFound:
-        pass
-    else:
-        raise ValueError('Исходный receipt уже найден; сначала выполните сверку')
+    # Any sibling can win while a previous RPC acknowledgement is missing.
+    for candidate in operation['transactions']:
+        if candidate['hash'] != plan['original_hash'] and candidate.get('replaces') != plan['original_hash']:
+            continue
+        try:
+            eth.get_transaction_receipt(candidate['hash'])
+        except TransactionNotFound:
+            pass
+        else:
+            raise ValueError('Receipt исходной сделки или отмены уже найден; сначала выполните сверку')
     nonce = plan['nonce']
     latest, pending = eth.get_transaction_count(trader.owner,'latest'), eth.get_transaction_count(trader.owner,'pending')
     if type(latest) is not int or type(pending) is not int or latest != nonce or pending not in (nonce,nonce+1):
@@ -82,7 +99,7 @@ def cancel_pending(trader, *, expected_hash, expected_gas_price):
         trader.store.save()
         receipt = eth.wait_for_transaction_receipt(tx_hash, timeout=120,poll_latency=.2)
     except Exception:
-        raise UncertainTransaction('Исход отмены неизвестен; повтор заблокирован. Проверьте оба receipts') from None
+        raise UncertainTransaction('Исход отмены неизвестен; торговля заблокирована. Проверьте все receipts перед новой попыткой') from None
     trader.validate_receipt(receipt,tx_hash)
     trader.check_canonical(receipt)
     record.update(status='confirmed' if receipt['status']==1 else 'reverted',
