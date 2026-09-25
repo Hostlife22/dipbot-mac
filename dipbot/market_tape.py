@@ -38,7 +38,7 @@ class MarketTape:
             'exit_policy': {'tp_sl_basis','trailing_pct','max_hold_seconds','cooldown_seconds'},
             'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},
-            'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss'},
+            'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss','min_swaps'},
             'signal_policy': {'mode','window_seconds','rebound_pct','max_block_age'},
         }
         for name, keys in nested.items():

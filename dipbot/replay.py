@@ -29,6 +29,8 @@ class ReplayCosts:
 
 
 def replay(samples, settings, policy, costs=None, *, size_unit='quote', requested_amount=None, exit_policy=None):
+    if settings.min_swaps:
+        raise ValueError('Replay цен не содержит Swap-события для фильтра активности')
     if size_unit not in ('quote','usd'):
         raise ValueError('Неизвестная единица replay AMOUNT')
     requested_amount = settings.amount if requested_amount is None else D(str(requested_amount))

@@ -436,6 +436,7 @@ class Window(QMainWindow):
         grid = self.form(strategy)
         for key, title, value in [("slippage", "SLIPPAGE %", "3"),
                  ("dynamic", "DYNAMIC", "150"),
+                 ("min_swaps", "Мин. Swap за 100 блоков · 0 выкл.", "0"),
                  ("max_roundtrip_loss", "Макс. потери BUY→SELL %", "3")]:
             self.params[key] = self.field(value)
             self.params[key].setAlignment(Qt.AlignRight)

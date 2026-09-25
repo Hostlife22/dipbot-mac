@@ -776,6 +776,12 @@ class Worker(QThread):
         settings = self.strategy.settings
         if self.sizing.unit == 'usd':
             settings = replace(settings, amount=self.sizing.amount_quote(self.requested_amount, self.pool.quote, self.rates))
+        if self.mode in ('LIVE', 'PAPER') and settings.min_swaps:
+            from .activity import swap_count
+            activity = swap_count(self.chain, self.pool)
+            self.log.emit(f"Активность пула: {activity['count']} Swap за блоки {activity['from_block']}–{activity['to_block']}")
+            if activity['count'] < settings.min_swaps:
+                raise EntryRejected('Вход пропущен: недостаточно Swap в выбранном пуле')
         if self.mode in ('LIVE', 'PAPER') and callable(getattr(self.chain, 'entry_quote', None)):
             if self.mode == 'LIVE':
                 self.require_live()

@@ -39,7 +39,7 @@ def test_nonempty_malformed_optional_result_is_still_an_error():
 def test_recovered_ui_defaults_and_old_preferences_coexist():
     migrated=preferences.from_windows_ui({})
     assert migrated['settings']=={'amount':'0.02','dip':'3','take_profit':'2',
-        'stop_loss':'2','slippage':'3','dynamic':'150','max_roundtrip_loss':'3'}
+        'stop_loss':'2','slippage':'3','dynamic':'150','max_roundtrip_loss':'3','min_swaps':'0'}
     old={'version':1,'settings':{k:str(v) for k,v in asdict(Settings(stop_loss=D(5),slippage=D(2))).items() if k!='max_gap'},
          'gas':'0.1','interval':'0.1'}
     assert preferences.normalize(old)['settings']['stop_loss']=='5'

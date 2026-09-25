@@ -19,8 +19,11 @@ class Settings:
     dynamic: D = D("150")
     max_gap: float = 0.55
     max_roundtrip_loss: D = D("3")
+    min_swaps: D = D(0)
 
     def __post_init__(self):
+        if not self.min_swaps.is_finite() or not 0 <= self.min_swaps <= 10000 or self.min_swaps != self.min_swaps.to_integral_value():
+            raise ValueError('Минимум Swap должен быть целым числом от 0 до 10000')
         values = (self.amount, self.dip, self.take_profit, self.stop_loss, self.slippage, self.dynamic)
         if any(not x.is_finite() for x in values):
             raise ValueError("Параметры должны быть конечными числами")

@@ -361,3 +361,24 @@ endpoint не попадают в отчёт. Фоновая диагности�
 и 17 тестов выходов/UI прошли; GUI smoke и обе размерности четырёх вкладок прошли.
 При визуальном просмотре исправлены невидимые нативные checkbox на тёмной теме:
 явная рамка и SVG-галочка. [Скриншот](improvements/rpc-diagnostics.png).
+
+## Этап 15: фильтр активности пула
+
+Необязательный минимум Swap за последние 100 блоков проверяется перед PAPER/LIVE
+входом, до transaction intent. Ноль отключает фильтр и сохраняет прежнее поведение.
+Проверяются адрес, topic, длина события, диапазон блоков, removed, дубли и hash
+конечного блока. Запрос ограничен 100 блоками и 10000 результатами. Ошибка не
+считается нулевой активностью. Это не число независимых участников, не USD-объём,
+не проверка wash trading, blacklist или honeypot.
+
+Сигнатуры сверены с исходниками PancakeSwap:
+[V2](https://github.com/pancakeswap/pancake-swap-core/blob/master/contracts/interfaces/IPancakePair.sol),
+[V3](https://github.com/pancakeswap/pancake-v3-contracts/blob/main/projects/v3-core/contracts/interfaces/pool/IPancakeV3PoolEvents.sol).
+V3 включает protocolFeesToken0/1: сигнатура Uniswap V3 здесь неверна.
+Replay только цен отказывается моделировать включённый фильтр без Swap-данных.
+
+Read-only mainnet: V2 USDT/WBNB — 22 события в блоках 123950287–123950386;
+V3 fee500 — 1 событие в 123950341–123950440. Отправок нет.
+Первый общий прогон выявил 8 устаревших ожиданий полного словаря defaults;
+добавлен выключенный min_swaps=0 и отдельный тест миграции старых настроек.
+35 целевых тестов после исправления прошли, GUI smoke прошёл.
