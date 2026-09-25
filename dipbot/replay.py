@@ -28,6 +28,34 @@ class ReplayCosts:
         return 1-(self.fee_bps+self.impact_bps+self.tax_bps)/10000
 
 
+def pool_fee_bps(header, override=None):
+    """Pancake fee tiers are millionths; one basis point is 100 millionths."""
+    if override is not None:
+        try:
+            value = D(str(override))
+        except ArithmeticError as exc:
+            raise ValueError("Некорректная комиссия replay") from exc
+        if not value.is_finite() or not 0 <= value < 10000:
+            raise ValueError('Некорректная комиссия replay')
+        return value
+    pool = header.get('pool') or {}
+    if isinstance(pool, str):
+        return D(25)  # Old exported tapes kept only the pool address.
+    if not isinstance(pool, dict):
+        raise ValueError('Повреждены метаданные пула')
+    if pool.get('router') == 'V3':
+        try:
+            fee = D(str(pool.get('fee', 'NaN')))
+        except ArithmeticError as exc:
+            raise ValueError('Повреждён тариф V3 в записи') from exc
+        if fee not in (100, 500, 2500, 10000):
+            raise ValueError('В записи нет известного тарифа V3; задайте --fee-bps явно')
+        return fee / 100
+    if pool.get('router') in (None, 'V2'):
+        return D(25)  # Legacy tapes without pool metadata retain the documented V2 assumption.
+    raise ValueError('Неизвестный router; задайте --fee-bps явно')
+
+
 def replay(samples, settings, policy, costs=None, *, size_unit='quote', requested_amount=None, exit_policy=None):
     if settings.min_swaps:
         raise ValueError('Replay цен не содержит Swap-события для фильтра активности')

@@ -5,7 +5,7 @@ from decimal import Decimal as D
 import json
 from pathlib import Path
 
-from dipbot.replay import replay, ReplayCosts
+from dipbot.replay import replay, ReplayCosts, pool_fee_bps
 from dipbot.signal_policy import SignalPolicy
 from dipbot.exit_policy import ExitPolicy
 from dipbot.strategy import Settings
@@ -36,7 +36,7 @@ def main():
     parser.add_argument('input',type=Path)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--latency',type=float)
-    parser.add_argument('--fee-bps',default='25')
+    parser.add_argument('--fee-bps')
     parser.add_argument('--impact-bps',default='0')
     parser.add_argument('--tax-bps',default='0')
     parser.add_argument('--gas-quote')
@@ -48,7 +48,7 @@ def main():
     raw=header['settings']
     settings=Settings(**{k:(float(v) if k=='max_gap' else D(str(v))) for k,v in raw.items()})
     paper=header.get('paper_policy',{})
-    costs=ReplayCosts(D(args.fee_bps),D(args.impact_bps),D(args.tax_bps),
+    costs=ReplayCosts(pool_fee_bps(header,args.fee_bps),D(args.impact_bps),D(args.tax_bps),
         D(args.gas_quote if args.gas_quote is not None else str(paper.get('fee_quote',0))),
         args.latency if args.latency is not None else float(paper.get('latency_seconds',.25)))
     results=[replay(samples,settings,SignalPolicy(mode,args.window,D(args.rebound)),costs,
