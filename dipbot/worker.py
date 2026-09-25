@@ -26,6 +26,7 @@ from .market_tape import MarketTape
 from .sizing import SizingPolicy
 from .exit_policy import ExitPolicy
 from .rpc_health import RpcHealth
+from .cost_policy import CostPolicy
 from .chain import StaleBlock
 from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
@@ -59,6 +60,8 @@ class Worker(QThread):
         self.execution_monitor = None
         self.rates = RateBook()
         self.sizing = SizingPolicy()
+        self.cost_policy = CostPolicy()
+        self.gas_gwei = D(".1")
         self.requested_amount = None
         self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
         self.recorder = None
@@ -262,6 +265,7 @@ class Worker(QThread):
         mode = data["mode"]
         policy = SignalPolicy.parse(data.get("signal_policy", {}))
         sizing = SizingPolicy.parse(data.get("sizing", {}))
+        cost_policy = CostPolicy.parse(data.get("entry_cost_policy", {}))
         exit_policy = ExitPolicy.parse(data.get("exit_policy", {}))
         settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
         requested_amount = settings.amount
@@ -316,6 +320,7 @@ class Worker(QThread):
         old_cooldown = self.strategy.cooldown_until if mode == self.mode else None
         self.mode, self.interval, self.live = mode, interval, live
         self.sizing, self.requested_amount = sizing, requested_amount
+        self.cost_policy, self.gas_gwei = cost_policy, D(data["gas"])
         old_entry = self.strategy.entry
         old_entry_time, old_peak = self.strategy.entry_time, self.strategy.peak_price
         self.strategy = Strategy(settings, policy, exit_policy)
@@ -344,7 +349,7 @@ class Worker(QThread):
                 self.recorder = MarketTape(self.store.path.parent / 'market-recordings', {
                     'mode': self.mode, 'pool': asdict(self.pool) if self.pool else None,
                     'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
-                    'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(),
+                    'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(), 'entry_cost_policy':cost_policy.export(),
                     'starts_with_position': self.strategy.entry is not None})
                 self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
             except OSError:
@@ -800,7 +805,11 @@ class Worker(QThread):
                 self.require_live()
             raw = raw_amount(settings.amount, self.pool.quote_decimals)
             check = self.chain.entry_quote(self.pool, raw, settings.max_roundtrip_loss)
-            self.event.emit('entry_check', {'block': check.block,
+            estimated_cost = self.cost_policy.assess(check, self.pool, self.gas_gwei, self.rates)
+            if estimated_cost is not None:
+                self.log.emit(f'Расчётные расходы цикла: {estimated_cost:.2f}% (модель газа, без token tax)')
+            self.event.emit('entry_check', {'estimated_cost_pct':str(estimated_cost) if estimated_cost is not None else None,
+                'block': check.block,
                 'roundtrip_loss_pct': str(check.roundtrip_loss_pct)})
             if self.stop_event.is_set():
                 raise ValueError('STOP запрошен во время проверки входа')

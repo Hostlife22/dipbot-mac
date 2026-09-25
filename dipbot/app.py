@@ -227,6 +227,9 @@ class Window(QMainWindow):
                 self.signal_window.setValue(float(policy.get('window_seconds', 60)))
                 self.signal_rebound.setValue(float(policy.get('rebound_pct', 0)))
                 self.block_age_limit.setValue(float(policy.get('max_block_age', 5)))
+                costs = saved_preferences.get('entry_cost_policy', {})
+                self.cost_limit.setValue(float(costs.get('maximum_pct',0)))
+                self.cost_gas.setValue(float(costs.get('roundtrip_gas',400000)))
                 exits = saved_preferences.get('exit_policy', {})
                 self.exit_basis.setCurrentIndex(self.exit_basis.findData(exits.get('tp_sl_basis','spot')))
                 for key, field in self.exit_fields.items():
@@ -471,6 +474,21 @@ class Window(QMainWindow):
         grid.addRow('Окно максимума', self.signal_window)
         grid.addRow('Подтверждение отскока', self.signal_rebound)
         grid.addRow('Макс. возраст блока', self.block_age_limit)
+        self.cost_limit = QDoubleSpinBox()
+        self.cost_limit.setRange(0,100)
+        self.cost_limit.setSuffix(' %')
+        self.cost_limit.setToolTip('Необязательный фильтр одной покупки: BUY→SELL quote + заданная модель газа. '
+            '0 отключает. Это не накопительный бюджет. Задавайте ниже TP, если цель должна покрывать расходы; '
+            'token tax и будущая цена газа не предсказаны.')
+        self.cost_gas = QDoubleSpinBox()
+        self.cost_gas.setRange(21000,2000000)
+        self.cost_gas.setDecimals(0)
+        self.cost_gas.setValue(400000)
+        self.cost_gas.setToolTip('Допущение полного цикла, не измеренный gas estimate данного токена. '
+            'Зависит от approve, wrap и маршрута; уточняйте по receipts/fork.')
+        self.editable += [self.cost_limit,self.cost_gas]
+        grid.addRow('Расходы цикла · 0 выкл.', self.cost_limit)
+        grid.addRow('Модель газа на цикл', self.cost_gas)
         self.exit_basis = QComboBox()
         self.exit_basis.addItem('Цена пула (совместимость)', 'spot')
         self.exit_basis.addItem('Котировка продажи позиции', 'quote')
@@ -782,6 +800,9 @@ class Window(QMainWindow):
         self.update_controls()
         self.worker.submit(name, **data)
 
+    def entry_cost_policy(self):
+        return {'maximum_pct':str(self.cost_limit.value()),'roundtrip_gas':int(self.cost_gas.value())}
+
     def exit_policy(self):
         return {'tp_sl_basis':self.exit_basis.currentData(),
                 **{key: str(field.value()) for key, field in self.exit_fields.items()}}
@@ -809,7 +830,7 @@ class Window(QMainWindow):
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
         self.send(command, mode=mode, generation=self.auto_generation, settings={k: v.text().strip() for k, v in self.params.items()},
-                  exit_policy=self.exit_policy(), sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
+                  entry_cost_policy=self.entry_cost_policy(), exit_policy=self.exit_policy(), sizing=self.sizing_policy(), record_market=self.record_market.isChecked(), signal_policy=self.signal_policy(), interval=self.interval.value(), gas=self.gas.text(), token=self.token.text(), router=self.router.currentText(),
                   pool=self.pool_input.text(), **extra)
 
     def sell_position(self):
@@ -1219,7 +1240,7 @@ class Window(QMainWindow):
                       if addr.lower() == payload['quote'].lower()), payload['quote']))
             if payload['source'] == 'BSC' and self.isVisible():
                 self.usd.set_token(payload['quote'])
-                self.gas_usd.set_token(WBNB if self.mode.currentText() == 'LIVE' and payload['quote'].lower() != WBNB.lower() else '')
+                self.gas_usd.set_token(WBNB if (self.mode.currentText() == 'LIVE' or (self.mode.currentText() == 'PAPER' and self.cost_limit.value() > 0)) and payload['quote'].lower() != WBNB.lower() else '')
         elif name == "price":
             if self.mode.currentText() != 'DEMO' and not self.selection_ready:
                 return
@@ -1387,6 +1408,7 @@ class Window(QMainWindow):
                 "usd_pair_amounts": self.usd_pair_amounts,
                 "signal_policy": self.signal_policy(),
                 "exit_policy": self.exit_policy(),
+                "entry_cost_policy":self.entry_cost_policy(),
                 "sizing": self.sizing_policy(),
                 "record_market": self.record_market.isChecked(),
                 "adaptive_rpc": self.adaptive_rpc.isChecked(),

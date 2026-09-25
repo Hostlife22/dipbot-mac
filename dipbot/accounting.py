@@ -1,4 +1,4 @@
-"""Explicit historical USD marks and complete/missing accounting, never trading inputs."""
+"""Explicit USD marks, complete/missing accounting and fresh FX for optional sizing/cost filters."""
 from decimal import Decimal as D
 import threading
 import time

@@ -32,9 +32,10 @@ class MarketTape:
         self.started = time.monotonic()
         self.sequence = self.dropped = self.written = 0
         self.error_type = ''
-        allowed = {'mode', 'pool', 'signal_policy', 'settings', 'starts_with_position', 'sizing', 'requested_amount', 'exit_policy'}
+        allowed = {'mode', 'pool', 'signal_policy', 'settings', 'starts_with_position', 'sizing', 'requested_amount', 'exit_policy', 'entry_cost_policy'}
         metadata = dict(metadata)
         nested = {
+            'entry_cost_policy': {'maximum_pct','roundtrip_gas'},
             'exit_policy': {'tp_sl_basis','trailing_pct','max_hold_seconds','cooldown_seconds'},
             'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},

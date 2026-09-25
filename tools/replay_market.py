@@ -16,6 +16,8 @@ def load(path):
         rows = [json.loads(line) for line in stream if line.strip()]
     if not rows or rows[0].get('event') != 'header' or rows[0].get('version') != 1:
         raise ValueError('Неизвестный формат рыночной записи')
+    if D(str(rows[0].get('entry_cost_policy',{}).get('maximum_pct',0))):
+        raise ValueError('Replay цен не воспроизводит включённый фильтр расходов RPC/газа')
     if rows[0].get('starts_with_position'):
         raise ValueError('Запись начинается с открытой позицией; нужен её полный контекст')
     if rows[-1].get('event') != 'end' or rows[-1].get('dropped') != 0:

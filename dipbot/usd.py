@@ -1,4 +1,4 @@
-"""Indicative display conversion only; never used by strategy or execution."""
+"""Indicative USD marks for display/accounting and explicitly selected USD sizing."""
 import json
 import re
 import time
