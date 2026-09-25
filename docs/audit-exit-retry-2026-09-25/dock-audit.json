@@ -1,0 +1,33 @@
+{
+  "consistent": true,
+  "errors": [],
+  "fills": {
+    "BUY": 3,
+    "SELL": 3
+  },
+  "exits": {
+    "TIME_EXIT": 1,
+    "STOP_LOSS": 1,
+    "STOP": 1
+  },
+  "open_position": false,
+  "natural_completed_cycles": 2,
+  "reentry_signal_gaps_seconds": [
+    184.6766157430029,
+    60.349319531997025
+  ],
+  "cooldown_seconds": 3.0,
+  "observed_natural_exits": [
+    "STOP_LOSS",
+    "TIME_EXIT"
+  ],
+  "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+  "ui_passed": true,
+  "ui_errors": [],
+  "ui_mismatches": [],
+  "clean_stop": true,
+  "test_restarts": 0,
+  "observed_seconds": 600.0,
+  "retry_events": [],
+  "transactions_sent": 0
+}

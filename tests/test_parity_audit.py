@@ -207,7 +207,7 @@ def test_confirmed_sell_failed_price_does_not_resurrect_position(tmp_path):
     worker.mode = 'LIVE'
     worker.pool = pool(USDT, WBNB)
     worker.live = SimpleNamespace(owner=address('0x'+'34'*20), begin=lambda _: None,
-        swap=lambda *args: 100, finish=lambda: None)
+        swap=lambda *args, **kwargs: 100, finish=lambda: None)
     def failed_price(_): raise TimeoutError()
     worker.chain = SimpleNamespace(balance=lambda *args: 100, price=failed_price)
     worker.set_position(100, D(1))

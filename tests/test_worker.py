@@ -58,7 +58,7 @@ def test_live_sell_uses_only_tracked_amount(tmp_path):
     worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
     sold = []
     worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
-        finish=lambda: None, swap=lambda pool, amount, buy, tolerance: sold.append(amount))
+        finish=lambda: None, swap=lambda pool, amount, buy, tolerance, **kwargs: sold.append(amount))
     worker.chain = SimpleNamespace(balance=lambda *args: 1000, price=lambda _: D("1.2"))
     worker.set_position(200, D(1))
     worker.strategy.bought(D(1))

@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2'):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc=''):
     if automatic_only and exercise_recovery:
         raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
@@ -110,7 +110,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             w.rpc.setText(endpoint)
             w.save_rpc.setChecked(False)
             w.adaptive_rpc.setChecked(adaptive_rpc)
-            w.backup_rpc.clear()  # Controlled comparison uses one explicit endpoint.
+            w.backup_rpc.setText(backup_rpc)
             next(b for b in w.findChildren(QPushButton) if b.text() == 'Подключить').click()
             wait(lambda:not w.busy)
             w.token.setText(token)
@@ -312,10 +312,11 @@ if __name__ == '__main__':
     parser.add_argument('--automatic-only', action='store_true', help='Observe natural entries without forcing manual BUY')
     parser.add_argument('--fee-usd', default='0.01', help='Fixed PAPER operation cost converted at setup; an assumption, not actual gas')
     parser.add_argument('--adaptive-rpc', action='store_true')
+    parser.add_argument('--backup-rpc',default='')
     parser.add_argument('--rpc',default='https://bsc-dataseed.binance.org')
     parser.add_argument('--take-profit',default='2');parser.add_argument('--stop-loss',default='2')
     args=parser.parse_args()
     if args.automatic_only and args.exercise_recovery:
         parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc))

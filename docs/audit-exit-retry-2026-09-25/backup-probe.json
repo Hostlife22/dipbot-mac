@@ -1,0 +1,14 @@
+{
+  "transactions_sent": 0,
+  "endpoint": "https://bsc-dataseed.binance.org",
+  "pool": "0x68fBDF8107b82094049f0aC2b1814cc0af2fA0De",
+  "price": "2.85300851908122631108159688011244967753030782529874011846018922729859826774602E-7",
+  "quote_raw": 282447841706,
+  "passed": true,
+  "rpc_methods": {
+    "eth_chainId": 21,
+    "eth_getBlockByNumber": 5,
+    "eth_getCode": 3,
+    "eth_call": 9
+  }
+}

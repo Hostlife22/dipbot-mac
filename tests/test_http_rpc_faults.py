@@ -114,3 +114,29 @@ def test_actual_worker_backoff_and_stop_during_rate_limit(tmp_path,node):
         assert not w.running and not w.paper.position
     finally:
         w.quit_event.set();assert w.wait(5000)
+
+
+@pytest.mark.parametrize('fault',[429,503,'disconnect'])
+def test_exit_read_recovers_over_real_http_without_resubmitting(tmp_path,node,fault):
+    state,endpoint=node;w=worker_at(tmp_path,endpoint)
+    w.paper.buy_quoted(D(100),D(1));w.strategy.bought(D(100))
+    state['fault']=fault
+    waits=[]
+    def recover(delay):
+        waits.append(delay);state['fault']=None
+        return False
+    w.stop_event.wait=recover
+    assert w.exit_read(lambda source:source.price(w.pool))==100
+    assert waits==[.5] and w.paper.position==1 and w.exit_retry is None
+    assert not any('send' in method.lower() for method in state['calls'])
+
+
+def test_exit_read_persistent_http_503_is_bounded(tmp_path,node):
+    state,endpoint=node;w=worker_at(tmp_path,endpoint)
+    w.paper.buy_quoted(D(100),D(1));w.strategy.bought(D(100))
+    state['fault']=503
+    waits=[];w.stop_event.wait=lambda delay:waits.append(delay)
+    with pytest.raises(requests.exceptions.HTTPError):
+        w.exit_read(lambda source:source.price(w.pool))
+    assert waits==[.5,1.,2.] and w.paper.position==1 and w.exit_retry is None
+    assert not any('send' in method.lower() for method in state['calls'])

@@ -186,7 +186,7 @@ class LiveTrader:
         return address(router), abi
 
     def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D, *, signal_minimum=None,
-             simulate=False, deadline_seconds=30):
+             simulate=False, deadline_seconds=30, quote_reader=None):
         if signal_minimum is not None and (not buy or not isinstance(signal_minimum, int)
                                           or not 0 < signal_minimum < 2**256):
             raise ValueError("Некорректный BUY minOut снимка")
@@ -195,12 +195,13 @@ class LiveTrader:
         src, dest = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
         if self.chain.balance(src, self.owner) < amount:
             raise ValueError("Недостаточно базового актива / токенов; используйте Converter")
-        initial_min = minimum_out(self.chain.quote(pool, amount, buy), tolerance)
+        read_quote = quote_reader or self.chain.quote
+        initial_min = minimum_out(read_quote(pool, amount, buy), tolerance)
         if signal_minimum is not None:
             initial_min = max(initial_min, signal_minimum)
         self.approve(src, router, amount)
         # Approval may take time; preserve the original bound and also quote again.
-        min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
+        min_out = max(initial_min, minimum_out(read_quote(pool, amount, buy), tolerance))
         mark(self, 'quote', label='BUY' if buy else 'SELL')
         before, snapshot = self.balance_snapshot(dest)
         source_before = (self.chain.balance_at(src, self.owner, snapshot['blockNumber'])

@@ -19,6 +19,7 @@ from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minim
 from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_receipts
 
 
+from .exit_reads import retry_read, ExitReadCancelled
 from .entry_guard import EntryRejected
 from .signal_policy import SignalPolicy
 from .head_feed import HeadFeed, HeadSchedule
@@ -96,6 +97,7 @@ class Worker(QThread):
         self.entry_retry_at = 0.0
         self.entry_notice = ""
         self.halt_reason = ""
+        self.exit_retry = None
 
     def discovery_current(self, generation):
         return (generation is None or generation == self.discovery_generation) and not (
@@ -135,6 +137,8 @@ class Worker(QThread):
                 self.event.emit("busy", True)
                 try:
                     self.command(name, data)
+                except ExitReadCancelled:
+                    pass  # STOP below owns cancellation; do not report it as an RPC failure.
                 except Exception as exc:
                     if name in ("discover", "verify", "select", "compare_routes") and not self.discovery_current(data.get("generation")):
                         continue
@@ -216,6 +220,8 @@ class Worker(QThread):
                             truncated=True, count=None, events=[], error_type='Busy')
                 try:
                     self.observe()
+                except ExitReadCancelled:
+                    pass  # STOP is processed at the next loop boundary; no execution retry.
                 except Exception as exc:
                     # Unhandled execution failures must still halt, including uncertain LIVE results.
                     self.running = False
@@ -264,6 +270,7 @@ class Worker(QThread):
             levels['TRAIL'] = str(self.strategy.peak_price*(1-self.strategy.exit_policy.trailing_pct/100))
         self.event.emit("status", {"running": self.running, "mode": self.mode,
                          "levels": levels,
+                         "exit_retry": self.exit_retry,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
                          "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
@@ -1002,6 +1009,31 @@ class Worker(QThread):
         self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
+    def exit_read(self, read, *, stopping=False):
+        """Retry only the supplied price/quote read; never wrap swap or send."""
+        def notify(value):
+            self.exit_retry = value
+            if value:
+                self.record_market('exit_read_retry', **value)
+            # Do not turn an active, known LIVE operation into a UI recovery latch.
+            self.event.emit('exit_retry', value)
+
+        def attempt(index):
+            operation = self.store.data.get('operation')
+            if operation and any(t.get('status') != 'confirmed' for t in operation.get('transactions', [])):
+                raise UncertainTransaction('Результат транзакции неизвестен; повтор выхода заблокирован')
+            source = self.chain
+            if index and self.backup_chain is not None:
+                # Includes network, canonical pool, freshness and fork checks.
+                self.backup_price()
+                source = self.backup_chain
+            return read(source)
+
+        return retry_read(attempt,
+            cancelled=lambda: self.quit_event.is_set() or (self.stop_event.is_set() and not stopping),
+            wait=lambda delay: self.quit_event.wait(delay) if stopping else self.stop_event.wait(delay),
+            notify=notify)
+
     @monitor_execution
     @timed("worker.close_position")
     def close_position(self, reason):
@@ -1014,7 +1046,9 @@ class Worker(QThread):
             amount = min(position["amount"], self.chain.balance(self.pool.token, self.live.owner))
             if not amount:
                 raise ValueError("Кэш позиции не совпадает с балансом; нужна сверка")
-            received = self.live.swap(self.pool, amount, False, self.strategy.settings.slippage)
+            received = self.live.swap(self.pool, amount, False, self.strategy.settings.slippage,
+                quote_reader=lambda pool, amount, buy: self.exit_read(
+                    lambda source: source.quote(pool, amount, buy), stopping=reason == "STOP"))
             if isinstance(received, int) and 'cost_quote' in position:
                 pnl = D(received)/D(10)**self.pool.quote_decimals - D(position['cost_quote'])
                 key = self.live.owner.lower() + ':' + self.pool.quote.lower()
@@ -1034,16 +1068,17 @@ class Worker(QThread):
             if self.mode == 'PAPER' and reason != 'STOP':
                 self.stop_event.wait(self.paper_policy.latency_seconds)
             mark(self, 'paper_delay_finished')
-            price = self.read_price()
+            price = self.exit_read(lambda source: self.read_price() if source is self.chain else self.backup_price(),
+                                   stopping=reason == "STOP")
             mark(self, 'fill_price_read')
             paper_cost = self.paper.cost
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
-                quote = getattr(self.chain, 'paper_quote', self.chain.quote)
-                output = quote(self.pool, amount, False)
+                source, output = self.exit_read(lambda source: (source, getattr(source, 'paper_quote', source.quote)(
+                    self.pool, amount, False)), stopping=reason == 'STOP')
                 mark(self, 'fill_quote_received')
                 paper_fee = self.paper_operation_cost()
-                self.record_quote(self.chain, 'paper_fill', 'SELL', amount, output)
+                self.record_quote(source, 'paper_fill', 'SELL', amount, output)
                 pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, paper_fee)
             else:
                 pnl = self.paper.sell(price)

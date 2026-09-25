@@ -89,6 +89,9 @@ def run(output):
         snap('position')
         w.last_quote_at=time.monotonic()-3;w.update_quote_age();snap('stale');assert w.metrics['state'].text()=='STALE'
         status(quote_unavailable=True,position='123');snap('rpc-unavailable');assert w.metrics['state'].text()=='WAIT RPC'
+        status(quote_unavailable=False,position='123',levels={'ENTRY':'.000000416','TP':'.00000042432','SL':'.00000040768'},exit_retry={'error':'HTTPError','attempt':2,'limit':3,'retry_at':time.monotonic()+2})
+        events();geometry();snap('exit-rpc');assert w.metrics['state'].text()=='EXIT RPC'
+        status(exit_retry=None)
         w.stop_bot();snap('stopping');assert w.metrics['state'].text()=='STOPPING'
         seed();status(running=False,base='0',levels={});w.invalidate_discovery();w.searching=w.busy=True;w.update_controls();snap('searching')
         w.searching=w.busy=False;w.on_event('autopair','PENDING');snap('pending');assert w.metrics['state'].text()=='PENDING'

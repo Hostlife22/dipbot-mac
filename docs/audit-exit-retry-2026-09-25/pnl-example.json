@@ -1,0 +1,8 @@
+{
+  "spot_change_pct": "0.594549805813911511423143700",
+  "buy_quote_spent": "0.001290622338091427",
+  "sell_quote_received": "0.001272391578719878",
+  "fee_quote_each": "0.00001291572489505973522763965128",
+  "pnl_quote": "-0.00004406220916166847045527930256",
+  "basis": "PAPER router quotes plus fixed operation cost; chart markers are spot prices"
+}

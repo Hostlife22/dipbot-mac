@@ -1301,6 +1301,8 @@ class Window(QMainWindow):
         tone = ''
         if self.stop_pending:
             text, tone = 'STOPPING', 'warning'
+        elif getattr(self, 'exit_retry', None):
+            text, tone = 'EXIT RPC', 'warning'
         elif self.locked and self.mode.currentText() == 'LIVE':
             text, tone = 'LOCKED', 'danger'
         elif self.searching:
@@ -1343,6 +1345,11 @@ class Window(QMainWindow):
             return
         if self.stop_pending:
             self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
+            return
+        retry = getattr(self, 'exit_retry', None)
+        if retry:
+            remaining = max(0, retry['retry_at']-time.monotonic())
+            self.strategy_status.setText(f"Позиция открыта, выход ожидает RPC · {retry['error']} · попытка {retry['attempt']}/{retry['limit']} через {remaining:.1f} с")
             return
         if self.busy and getattr(self, 'ui_command', '') in ('buy', 'sell', 'convert', 'sweep'):
             self.strategy_status.setText({'buy': 'Покупка', 'sell': 'Продажа', 'convert': 'Конвертация', 'sweep': 'Продажа остатков'}[self.ui_command] + ' · ожидается результат исполнения')
@@ -1478,6 +1485,8 @@ class Window(QMainWindow):
             self.busy = payload
             if not payload:
                 self.searching = False
+        elif name == 'exit_retry':
+            self.exit_retry = payload
         elif name == "error":
             self.ui_error = str(payload)
             self.journal_toggle.setChecked(True)
@@ -1618,6 +1627,7 @@ class Window(QMainWindow):
         elif name == "status":
             self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
+            self.exit_retry = payload.get('exit_retry')
             health = payload.get('rpc_health', [])
             self.rpc_health_label.setText(' · '.join(
                 row['source'] + ': ' + (f"{row['median_ms']:.0f} мс" if row['median_ms'] is not None else 'нет замеров') +

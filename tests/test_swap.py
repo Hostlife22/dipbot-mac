@@ -5,10 +5,11 @@ from dipbot.trader import LiveTrader, UncertainTransaction
 from dipbot.strategy import D
 
 
+@pytest.mark.parametrize("with_quote_reader", [False, True])
 @pytest.mark.parametrize("version", ["V2", "V3"])
 @pytest.mark.parametrize("buy", [True, False])
 @pytest.mark.parametrize("signal_bound", [None, 99])
-def test_swap_keeps_preapproval_bound_and_accounts_received(version, buy, signal_bound):
+def test_swap_keeps_preapproval_bound_and_accounts_received(version, buy, signal_bound, with_quote_reader):
     pool = Pool(address("0x"+"12"*20), version, address(USDT), address(WBNB), 18, 18, False, 500 if version == "V3" else 0)
     trader = object.__new__(LiveTrader)
     trader.owner = address("0x"+"34"*20)
@@ -26,7 +27,13 @@ def test_swap_keeps_preapproval_bound_and_accounts_received(version, buy, signal
     trader.approve = lambda src, dst, n: approvals.append((src, dst, n))
     trader.send = lambda function, label: sent.append(function)
     signal_bound = signal_bound if buy else None
-    assert trader.swap(pool, 20, buy, D(2), signal_minimum=signal_bound) == 100
+    reads=[]
+    def reader(*args):
+        reads.append(args)
+        return trader.chain.quote(*args)
+    assert trader.swap(pool, 20, buy, D(2), signal_minimum=signal_bound,
+                       quote_reader=reader if with_quote_reader else None) == 100
+    assert len(reads)==(2 if with_quote_reader else 0)
     expected_minimum = signal_bound or 98
     src, dest = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
     assert approvals[0][0] == src and approvals[0][2] == 20
