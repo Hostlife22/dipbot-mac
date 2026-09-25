@@ -153,7 +153,9 @@ class Chart(QWidget):
             py = y(value)
             painter.setPen(QColor('#60e1bb' if label == 'BUY' else '#f4c76b'))
             painter.drawEllipse(QPointF(px, py), 4, 4)
-            painter.drawText(int(min(px+6, right-55)), int(max(top+12, py-8)), label)
+            caption = label + ' · рынок'
+            width = painter.fontMetrics().horizontalAdvance(caption)
+            painter.drawText(int(max(left, min(px+6, right-width))), int(max(top+12, py-8)), caption)
         if self.hover is not None and left <= self.hover.x() <= right and top <= self.hover.y() <= bottom:
             stamp = self.times[0]+elapsed*(self.hover.x()-left)/(right-left)
             index = min(range(len(self.times)), key=lambda i: abs(self.times[i]-stamp))
@@ -424,6 +426,18 @@ class Window(QMainWindow):
         self.quote_age.setObjectName('muted')
         self.quote_age.setWordWrap(True)
         layout.addWidget(self.quote_age)
+        self.position_estimate = QLabel('Открытая позиция, USD: —')
+        self.position_estimate.setObjectName('muted')
+        self.position_estimate.setWordWrap(True)
+        self.position_estimate.setToolTip('PAPER: оценка продажи после модельных расходов; LIVE: без будущего газа SELL. Котировка действительна 0,55 с. P&L сравнивается с сохранёнными расходами входа в USD.')
+        layout.addWidget(self.position_estimate)
+        self.trade_details = QLabel('Нет данных об исполнении')
+        self.trade_details.setWordWrap(True)
+        self.trade_details.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.trade_toggle = self.disclosure(layout, 'Исполнение и результат последней сделки · USD', self.trade_details)
+        self.trade_toggle.toggled.connect(lambda opened: QTimer.singleShot(0,
+            lambda: self.tabs.widget(0).ensureWidgetVisible(self.trade_details)) if opened else None)
+        self.chart.setToolTip(self.chart.toolTip() + ' Маркеры BUY/SELL — рыночные цены, без расходов; цены исполнения показаны в деталях сделки.')
         self.base_price = None
         self.usd = UsdRate(self)
         self.gas_usd = UsdRate(self)
@@ -1255,10 +1269,43 @@ class Window(QMainWindow):
         self.chart.update()
         self.refresh_pnl()
 
+    def refresh_trade_details(self):
+        payload = getattr(self, 'pnl_status', {})
+        same = payload.get('mode') == self.mode.currentText() and self.mode.currentText() != 'DEMO'
+        detail = payload.get('trade_detail') if same else None
+        def usd(value):
+            if value is None:
+                return '— (нет данных)'
+            return '≈ $' + price_text(Decimal(value), digits=6)
+        if detail:
+            rows = [('Средняя цена BUY (без доп. расходов)', 'buy_price_usd'),
+                    ('Средняя цена SELL (без доп. расходов)', 'sell_price_usd'),
+                    ('Обмен на входе', 'entry_gross_usd'), ('Расходы входа', 'entry_fee_usd'),
+                    ('Всего затрачено', 'entry_total_usd'), ('Получено от продажи', 'exit_gross_usd'),
+                    ('Расходы выхода', 'exit_fee_usd'), ('Результат закрытия', 'net_usd')]
+            self.trade_details.setText('\n'.join(label + ': ' + usd(detail.get(key)) for label, key in rows) +
+                '\nКомиссия пула уже в суммах обмена; повторно не вычитается. ' +
+                ('Расходы PAPER — модель.' if self.mode.currentText() == 'PAPER' else 'Расходы LIVE — записанный газ; неполный учёт не оценивается.') +
+                ('\nЧастичный/неполный выход: итог неизвестен.' if detail.get('complete') is False else ''))
+        else:
+            self.trade_details.setText('Нет данных об исполнении для выбранного режима/рынка')
+        estimate = payload.get('open_estimate') if same else None
+        age = time.monotonic()-estimate['at'] if estimate else None
+        if not self.display_position:
+            text = 'Открытая позиция, USD: —'
+        elif estimate and 0 <= age <= .55 and not self.quote_unavailable:
+            text = 'Оценка продажи: ' + usd(estimate['value_usd']) + ' · P&L позиции: ' + usd(estimate['pnl_usd'])
+            text += ' · без будущего газа SELL' if estimate['excludes_exit_gas'] else ' · по модели PAPER'
+            text += f' · {age:.1f} с назад'
+        else:
+            text = 'Открытая позиция, USD: — (нет свежей котировки продажи)'
+        self.position_estimate.setText(text)
+
     def refresh_pnl(self):
         payload = getattr(self, 'pnl_status', None)
         if payload is None:
             return
+        self.refresh_trade_details()
         mode = self.mode.currentText()
         text = f"{mode} · " + ('BOT работает' if self.running else 'BOT остановлен')
         historical = payload.get('historical_usd') if mode != 'DEMO' and payload['mode'] == mode else None
@@ -1399,6 +1446,7 @@ class Window(QMainWindow):
             f'{key}: {self.display_price(value)}' for key, value in self.chart.levels.items()))
 
     def update_quote_age(self):
+        self.refresh_trade_details()
         # Pull at UI cadence: no unbounded signal queue while an RPC/receipt blocks the executor.
         monitor = self.worker.execution_monitor
         if monitor is not None and self.mode.currentText() == self.worker.mode and self.selection_ready:

@@ -84,6 +84,16 @@ def run(output):
             geometry();snap('wait-'+reason)
         seed();status(entry_notice='Недостаточная активность: 0 Swap, нужно минимум 1; пауза 5 с, затем новый сигнал DIP')
         geometry();snap('wait-activity')
+        seed()
+        from dipbot.trade_view import entry_view, exit_view
+        detail=exit_view(entry_view(Decimal(1000000),Decimal(1),'.01',{'usd':'1'}),
+                         Decimal(1000000),Decimal('1.0059'),'.01',{'usd':'1'})
+        status(trade_detail=detail)
+        w.trade_toggle.setChecked(True);events();snap('trade-costs')
+        w.trade_toggle.setChecked(False)
+        seed();status(position='1000000',levels={'ENTRY':'.000000416'},
+            open_estimate={'at':time.monotonic(),'value_usd':'1.1','pnl_usd':'.09','excludes_exit_gas':False})
+        events();geometry();snap('open-position-usd')
         seed('DEMO');status(running=False,base='0',levels={});snap('demo-stopped')
         seed();status(position='123456789.123456789',levels={'ENTRY':'.000000416','TP':'.00000042432','SL':'.00000040768','TRAIL':'.000000415'})
         snap('position')
