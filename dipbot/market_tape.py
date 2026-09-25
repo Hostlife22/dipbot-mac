@@ -8,6 +8,7 @@ import time
 import uuid
 
 FIELDS = {
+    'cycle_latency': {'action','mode','signal_block','block_to_signal_ms','stages','error_type','truncated'},
     'quote': {'purpose','side','amount_in_raw','amount_out_raw','reverse_out_raw','block','block_hash','pool'},
     'activity': {'count','from_block','to_block','pool'},
     'stream_gap': {'previous_block','new_block','discontinuity'},

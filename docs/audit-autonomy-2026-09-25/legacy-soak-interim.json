@@ -1,0 +1,126 @@
+{
+  "mode": "PAPER",
+  "seconds_requested": 7200,
+  "transactions_sent": 0,
+  "natural_signals_only": true,
+  "automatic_restart": false,
+  "markets": [
+    {
+      "token": "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
+      "pool": "0x90A54475D512B8f3852351611c38faD30a513491",
+      "prices": 8692,
+      "signals": {},
+      "exits": {
+        "TIME_EXIT": 1,
+        "TAKE_PROFIT": 1,
+        "STOP_LOSS": 1
+      },
+      "fills": {
+        "BUY": 3,
+        "SELL": 3
+      },
+      "errors": [],
+      "active_seconds": 2752.90626231,
+      "running": false,
+      "settings": {
+        "amount": "0.00003",
+        "dip": "0.5",
+        "take_profit": "1",
+        "stop_loss": "1",
+        "slippage": "3",
+        "dynamic": "150",
+        "max_roundtrip_loss": "3",
+        "min_swaps": "0"
+      },
+      "signal_policy": {
+        "mode": "window",
+        "window_seconds": 60,
+        "rebound_pct": "0.1",
+        "max_block_age": 5
+      },
+      "exit_policy": {
+        "tp_sl_basis": "quote",
+        "trailing_pct": "0.75",
+        "max_hold_seconds": 180,
+        "cooldown_seconds": 5
+      },
+      "rpc_methods": {
+        "eth_chainId": 22675,
+        "eth_getBlockByNumber": 15984,
+        "eth_getCode": 4,
+        "eth_call": 6670
+      },
+      "position": "0",
+      "quote_unavailable": false
+    },
+    {
+      "token": "0x6d5AD1592ed9D6D1dF9b93c793AB759573Ed6714",
+      "pool": "0x9Eb0BC7a207f77811eE365729d00152622a745B7",
+      "prices": 18234,
+      "signals": {},
+      "exits": {
+        "TIME_EXIT": 1
+      },
+      "fills": {
+        "BUY": 1,
+        "SELL": 1
+      },
+      "errors": [],
+      "active_seconds": 5612.129924195,
+      "running": true,
+      "settings": {
+        "amount": "0.00003",
+        "dip": "0.5",
+        "take_profit": "1",
+        "stop_loss": "1",
+        "slippage": "3",
+        "dynamic": "150",
+        "max_roundtrip_loss": "3",
+        "min_swaps": "0"
+      },
+      "signal_policy": {
+        "mode": "window",
+        "window_seconds": 60,
+        "rebound_pct": "0.1",
+        "max_block_age": 5
+      },
+      "exit_policy": {
+        "tp_sl_basis": "quote",
+        "trailing_pct": "0.75",
+        "max_hold_seconds": 180,
+        "cooldown_seconds": 5
+      },
+      "rpc_methods": {
+        "eth_chainId": 44094,
+        "eth_getBlockByNumber": 31342,
+        "eth_getCode": 4,
+        "eth_call": 12739
+      },
+      "position": "0",
+      "quote_unavailable": false
+    }
+  ],
+  "started_at": 1790347548,
+  "elapsed_seconds": 5616.826905553,
+  "resources": [
+    {
+      "peak_rss_bytes": 99184640,
+      "python_threads": 4,
+      "cpu_user_seconds": 2.161608,
+      "cpu_system_seconds": 0.35419,
+      "monotonic_seconds": 24713.770581038,
+      "current_rss_bytes": 99209216,
+      "elapsed_seconds": 4.7030438570000115
+    },
+    {
+      "peak_rss_bytes": 106414080,
+      "python_threads": 6,
+      "cpu_user_seconds": 350.35814,
+      "cpu_system_seconds": 42.87956,
+      "monotonic_seconds": 30325.900526203,
+      "current_rss_bytes": 106409984,
+      "elapsed_seconds": 5616.826895128001
+    }
+  ],
+  "final": false
+}

@@ -1,4 +1,5 @@
 from .telemetry import timed, TIMINGS
+from .cycle_trace import mark
 """Sequential execution, durable transaction intent, explicit receipt accounting."""
 from dataclasses import asdict
 import time
@@ -88,6 +89,7 @@ class LiveTrader:
         tx_base = {"from": self.owner, "value": value, "gasPrice": self.gas_price,
                    "nonce": nonce, "chainId": 56}
         gas = (function.estimate_gas(tx_base) * 120 + 99) // 100
+        mark(self, 'gas_estimated', label=label)
         if gas * self.gas_price > self.max_fee:
             raise ValueError("Расчётная комиссия превышает лимит 0.005 BNB на транзакцию")
         exit_operation = self.operation['description'].upper().startswith(('SELL', 'SWEEP', 'CONVERTER SELL'))
@@ -100,9 +102,11 @@ class LiveTrader:
             raise ValueError('Построенная транзакция изменила сеть, nonce, сумму или газ')
         if tx.get('from', self.owner).lower() != self.owner.lower():
             raise ValueError('Построенная транзакция изменила отправителя')
+        mark(self, 'transaction_built', label=label)
         self.abort_entry_if_stopped(label)
         with TIMINGS.measure("execution.sign"):
             signed = self.account.sign_transaction(tx)
+        mark(self, 'signed', label=label)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
         record = {"hash": local_hash, "label": label, "nonce": nonce, "status": "pending",
                   "stage": "prepared", "prepared_at": int(time.time()),
@@ -113,6 +117,7 @@ class LiveTrader:
             record['prepared_block'] = header['number']
         self.operation["transactions"].append(record)
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
+        mark(self, 'intent_persisted', label=label)
         self.log(f"{label}: {local_hash}")
         try:
             try:
@@ -127,6 +132,7 @@ class LiveTrader:
                 remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
+            mark(self, 'broadcast_ack', label=label)
             record['stage'] = 'submitted'
             record['submitted_at'] = int(time.time())
             self.store.save()
@@ -136,6 +142,7 @@ class LiveTrader:
             raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
         self.validate_receipt(receipt, local_hash)
         self.check_canonical(receipt)
+        mark(self, 'receipt_validated', label=label, block=receipt['blockNumber'])
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
         record["stage"] = "receipt_validated"
@@ -194,6 +201,7 @@ class LiveTrader:
         self.approve(src, router, amount)
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(self.chain.quote(pool, amount, buy), tolerance))
+        mark(self, 'quote', label='BUY' if buy else 'SELL')
         before, snapshot = self.balance_snapshot(dest)
         source_before = (self.chain.balance_at(src, self.owner, snapshot['blockNumber'])
                          if snapshot is not None else self.chain.balance(src, self.owner))

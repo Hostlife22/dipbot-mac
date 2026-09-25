@@ -1,4 +1,5 @@
 from .telemetry import timed
+from .cycle_trace import signal_cycle, mark
 from dataclasses import asdict, replace
 import queue
 import re
@@ -235,6 +236,7 @@ class Worker(QThread):
                 self.log.emit('Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут')
 
     def record_quote(self, source, purpose, side, amount, output, reverse=None):
+        mark(self, 'quote')
         context = getattr(source, 'quote_context', None) or {}
         self.record_market('quote', purpose=purpose, side=side, amount_in_raw=amount,
             amount_out_raw=output, reverse_out_raw=reverse,
@@ -862,7 +864,8 @@ class Worker(QThread):
                                entry=str(self.strategy.entry))
         if action == "BUY":
             try:
-                self.open_position()
+                with signal_cycle(self, action, header):
+                    self.open_position()
             except EntryRejected as exc:
                 if self.mode not in ("PAPER", "LIVE") or self.store.data.get("operation") or self.paper.position or self.position():
                     raise
@@ -870,7 +873,8 @@ class Worker(QThread):
                 self.entry_notice = str(exc) + "; пауза 5 с, затем новый сигнал DIP"
                 self.log.emit("Вход пропущен: " + self.entry_notice)
         elif action:
-            self.close_position(action)
+            with signal_cycle(self, action, header):
+                self.close_position(action)
             if self.strategy.stopped:
                 self.running = False
 
