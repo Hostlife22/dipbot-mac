@@ -17,8 +17,7 @@ from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minim
 from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_receipts
 
 
-class EntryRejected(ValueError):
-    """PAPER quote rejected before any position or transaction exists."""
+from .entry_guard import EntryRejected
 
 
 def safe_error(exc):
@@ -577,7 +576,7 @@ class Worker(QThread):
             try:
                 self.open_position()
             except EntryRejected as exc:
-                if self.mode != "PAPER" or self.store.data.get("operation") or self.paper.position:
+                if self.mode not in ("PAPER", "LIVE") or self.store.data.get("operation") or self.paper.position or self.position():
                     raise
                 self.entry_retry_at = time.monotonic() + 5.0
                 self.entry_notice = str(exc) + "; пауза 5 с, затем новый сигнал DIP"
@@ -592,6 +591,15 @@ class Worker(QThread):
         if self.strategy.entry is not None:
             raise ValueError("Позиция уже открыта")
         settings = self.strategy.settings
+        if self.mode in ('LIVE', 'PAPER') and callable(getattr(self.chain, 'entry_quote', None)):
+            if self.mode == 'LIVE':
+                self.require_live()
+            raw = raw_amount(settings.amount, self.pool.quote_decimals)
+            check = self.chain.entry_quote(self.pool, raw, settings.max_roundtrip_loss)
+            self.event.emit('entry_check', {'block': check.block,
+                'roundtrip_loss_pct': str(check.roundtrip_loss_pct)})
+            if self.stop_event.is_set():
+                raise ValueError('STOP запрошен во время проверки входа')
         if self.mode == "LIVE":
             self.require_live()
             if self.stop_event.is_set():

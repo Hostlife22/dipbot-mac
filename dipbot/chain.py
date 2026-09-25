@@ -365,6 +365,20 @@ class Chain:
         return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInputSingle",
                          (token_in, token_out, amount, pool.fee, 0), block=block)[0]
 
+    @timed("chain.entry_quote")
+    def entry_quote(self, pool, amount, maximum):
+        from .entry_guard import assess
+        block = self.check(force_network=False)
+        header = dict(self.checked_header)
+        target = self.quote(pool, amount, True, block=block)
+        if type(target) is not int or target <= 0:
+            from .entry_guard import EntryRejected
+            raise EntryRejected('Вход пропущен: нулевая котировка BUY')
+        reverse = self.quote(pool, target, False, block=block)
+        # A numbered block can change during a reorg. Revalidate before accepting.
+        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
+        return assess(amount, target, reverse, block, maximum)
+
     def paper_quote(self, pool, amount, buy):
         # One immutable block for this simulated fill; no approval or signature.
         return self.quote(pool, amount, buy, block=self.check(force_network=False))

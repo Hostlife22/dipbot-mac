@@ -5,7 +5,7 @@ from dipbot.storage import Store
 
 def values():
     return {'version': 1, 'settings': {'amount': '0.03', 'dip': '4', 'take_profit': '6',
-            'stop_loss': '7', 'slippage': '2', 'dynamic': '150'}, 'gas': '0.1', 'interval': '0.103'}
+            'stop_loss': '7', 'slippage': '2', 'dynamic': '150', 'max_roundtrip_loss': '3'}, 'gas': '0.1', 'interval': '0.103'}
 
 
 def test_settings_restart_allowlist_excludes_credentials_and_live_mode(tmp_path):
@@ -33,3 +33,16 @@ def test_failed_preference_save_preserves_journal_and_memory(tmp_path):
     store.save = fail
     with pytest.raises(OSError): preferences.save(store, values() | {'gas': '2'})
     assert store.data == Store(store.path).data
+
+
+def test_old_preferences_get_guard_default_and_new_limit_survives_restart(tmp_path):
+    old = values()
+    old['settings'].pop('max_roundtrip_loss')
+    assert preferences.normalize(old)['settings']['max_roundtrip_loss'] == '3'
+    old['settings']['max_roundtrip_loss'] = '1.25'
+    store = Store(tmp_path / 'state.json')
+    preferences.save(store, old)
+    assert Store(store.path).data['ui_preferences']['settings']['max_roundtrip_loss'] == '1.25'
+    old['settings']['max_roundtrip_loss'] = 'NaN'
+    with pytest.raises(ValueError):
+        preferences.normalize(old)

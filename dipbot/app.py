@@ -399,10 +399,15 @@ class Window(QMainWindow):
         strategy = QGroupBox("ПАРАМЕТРЫ СТРАТЕГИИ")
         grid = self.form(strategy)
         for key, title, value in [("slippage", "SLIPPAGE %", "3"),
-                 ("dynamic", "DYNAMIC", "150")]:
+                 ("dynamic", "DYNAMIC", "150"),
+                 ("max_roundtrip_loss", "Макс. потери BUY→SELL %", "3")]:
             self.params[key] = self.field(value)
             self.params[key].setAlignment(Qt.AlignRight)
             grid.addRow(title, self.params[key])
+        self.params['max_roundtrip_loss'].setToolTip(
+            'Проверка котировок входа и обратного выхода на одном блоке до покупки. '
+            'Включает комиссии пула и влияние суммы. Не учитывает газ, token tax и изменение пула после BUY; '
+            'не гарантирует возможность будущей продажи. Применяется в PAPER и LIVE.')
         self.interval = QDoubleSpinBox()
         self.interval.setRange(0.1, 0.5)
         self.interval.setDecimals(3)

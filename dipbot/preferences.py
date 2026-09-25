@@ -2,14 +2,14 @@
 from .strategy import D, Settings
 from .storage import SaveAfterReplaceError
 
-FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic')
+FIELDS = ('amount', 'dip', 'take_profit', 'stop_loss', 'slippage', 'dynamic', 'max_roundtrip_loss')
 
 
 def normalize(value):
     if not isinstance(value, dict) or value.get('version') != 1:
         raise ValueError('Неизвестный формат настроек')
     try:
-        settings = Settings(**{k: D(str(value['settings'][k])) for k in FIELDS})
+        settings = Settings(**{k: D(str((value['settings'].get(k, '3') if k == 'max_roundtrip_loss' else value['settings'][k]))) for k in FIELDS})
         gas, interval = D(str(value['gas'])), D(str(value['interval']))
     except (KeyError, TypeError, ArithmeticError) as exc:
         raise ValueError('Повреждены настройки') from exc

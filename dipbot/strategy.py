@@ -15,6 +15,7 @@ class Settings:
     slippage: D = D("3")
     dynamic: D = D("150")
     max_gap: float = 0.55
+    max_roundtrip_loss: D = D("3")
 
     def __post_init__(self):
         values = (self.amount, self.dip, self.take_profit, self.stop_loss, self.slippage, self.dynamic)
@@ -24,6 +25,8 @@ class Settings:
             raise ValueError("AMOUNT и TP > 0; DIP между 0 и 100")
         if not 0 < self.stop_loss < 100 or not 0 <= self.slippage <= 20:
             raise ValueError("STOP LOSS между 0 и 100; SLIPPAGE от 0 до 20")
+        if not self.max_roundtrip_loss.is_finite() or not 0 <= self.max_roundtrip_loss <= 20:
+            raise ValueError("Лимит потерь BUY→SELL должен быть от 0 до 20%")
         if self.dynamic < 0:
             raise ValueError("DYNAMIC должен быть неотрицательным")
         if not math.isfinite(self.max_gap) or self.max_gap <= 0:
