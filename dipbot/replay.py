@@ -100,7 +100,7 @@ def replay(samples, settings, policy, costs=None, *, size_unit='quote', requeste
                 else:
                     quantity = output
                     cost = amount+costs.gas_quote
-                    strategy.bought(reference, now=now)  # Matches PAPER's signal-price TP/SL reference.
+                    strategy.bought(price, now=now)  # PAPER anchors exits to the fresh pre-fill spot; minOut keeps the signal snapshot.
                     trades.append({'t':now, 'side':'BUY', 'signal_t':pending['signal_t'],
                                    'price':str(price), 'quantity':str(quantity), 'cost':str(cost)})
                 pending = None

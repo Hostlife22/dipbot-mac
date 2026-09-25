@@ -231,5 +231,6 @@ class Strategy:
         self.base = price
         self.last_price = price
         self.down_streak = 0
-        if reason in ("STOP_LOSS", "STOP", "TRAILING_STOP"):
+        if reason == "STOP" or (reason in ("STOP_LOSS", "TRAILING_STOP")
+                                and not self.exit_policy.continue_after_risk_exit):
             self.stopped = True

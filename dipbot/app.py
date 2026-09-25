@@ -282,6 +282,7 @@ class Window(QMainWindow):
                 self.exit_basis.setCurrentIndex(self.exit_basis.findData(exits.get('tp_sl_basis','spot')))
                 for key, field in self.exit_fields.items():
                     field.setValue(float(exits.get(key, 0)))
+                self.continue_after_exit.setChecked(exits.get("continue_after_risk_exit", False))
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))
             except ValueError:
@@ -616,9 +617,16 @@ class Window(QMainWindow):
             grid.addRow(label, field)
         self.exit_fields['trailing_pct'].setToolTip(
             'Падение от максимальной наблюдавшейся цены после входа. TP/SL имеют приоритет. '
-            'После trailing stop автоматическая торговля останавливается.')
+            'По умолчанию после trailing stop автоматическая торговля останавливается.')
         self.exit_fields['max_hold_seconds'].setToolTip(
             'Выход на первой свежей котировке после срока. При отсутствии сети точное время не гарантируется.')
+        self.continue_after_exit = QCheckBox('Продолжать после SL / trailing')
+        self.continue_after_exit.setToolTip('После подтверждённого выхода ждать cooldown и новый DIP. '
+            'STOP, ошибка исполнения и неизвестная транзакция не перезапускаются. '
+            'Может приводить к последовательным убыточным входам; по умолчанию выключено.')
+        self.continue_after_exit.toggled.connect(lambda enabled: self.exit_fields['cooldown_seconds'].setMinimum(1 if enabled else 0))
+        self.editable.append(self.continue_after_exit)
+        grid.addRow(self.continue_after_exit)
         self.record_market = QCheckBox('Записывать рынок для повторной проверки')
         self.record_market.setChecked(True)
         self.record_market.setToolTip('Локальные цены/блоки/сигналы без ключей и RPC URL. До 10 MiB на запуск, '
@@ -936,7 +944,8 @@ class Window(QMainWindow):
         return {'maximum_pct':str(self.cost_limit.value()),'roundtrip_gas':int(self.cost_gas.value())}
 
     def exit_policy(self):
-        return {'tp_sl_basis':self.exit_basis.currentData(),
+        return {'continue_after_risk_exit':self.continue_after_exit.isChecked(),
+                'tp_sl_basis':self.exit_basis.currentData(),
                 **{key: str(field.value()) for key, field in self.exit_fields.items()}}
 
     def sizing_policy(self):
@@ -1022,6 +1031,9 @@ class Window(QMainWindow):
                     details.append('Маршрут отправки: отдельный RPC (endpoint хранится только в Keychain)')
                 review = tx.get('receipt_review')
                 if review:
+                    replacement = review.get('replacement_search', {})
+                    if replacement.get('hash'):
+                        details.append('Тот же nonce: ' + replacement['hash'] + ' · блок ' + str(replacement['block']))
                     details.append(PENDING_LABELS.get(review.get('state'), 'Неизвестный результат сверки') +
                                    ' · повторная отправка автоматически запрещена')
             if not operation.get('transactions'):

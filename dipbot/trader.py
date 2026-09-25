@@ -108,6 +108,9 @@ class LiveTrader:
                   "stage": "prepared", "prepared_at": int(time.time()),
                   "broadcast_route": "custom" if broadcaster is not self.chain else "primary",
                   "request": {k: tx[k] for k in ('chainId', 'nonce', 'value', 'gas', 'gasPrice', 'to')}}
+        header = getattr(self.chain, 'checked_header', {})
+        if type(header.get('number')) is int:
+            record['prepared_block'] = header['number']
         self.operation["transactions"].append(record)
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
         self.log(f"{label}: {local_hash}")

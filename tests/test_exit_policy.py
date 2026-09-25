@@ -177,3 +177,39 @@ def test_quote_status_renders_in_actual_qt_window(window):
     w.worker.status()
     assert w.exit_status.isHidden()
 from test_app_autopair_flow import window
+
+
+@pytest.mark.parametrize('reason', ['STOP_LOSS', 'TRAILING_STOP'])
+def test_opt_in_reentry_requires_new_baseline_after_cooldown(reason):
+    s = strategy(continue_after_risk_exit=True, cooldown_seconds=2)
+    s.bought(D(100), now=0)
+    s.sold(D(90), reason, now=1)
+    assert not s.stopped
+    assert s.observe(D(70), 2.99) is None
+    assert s.observe(D(60), 3) is None
+    assert s.base == 60
+    assert s.observe(D(57), 3.1) == 'BUY'
+
+
+def test_opt_in_never_restarts_explicit_stop():
+    s = strategy(continue_after_risk_exit=True, cooldown_seconds=2)
+    s.bought(D(100), now=0)
+    s.sold(D(90), 'STOP', now=1)
+    assert s.stopped and s.observe(D(50), 100) is None
+
+
+@pytest.mark.parametrize('values', [
+    {'continue_after_risk_exit': True},
+    {'continue_after_risk_exit': 'false', 'cooldown_seconds': 5},
+    {'continue_after_risk_exit': True, 'cooldown_seconds': .5},
+])
+def test_reentry_policy_rejects_ambiguous_or_zero_pause(values):
+    with pytest.raises(ValueError): ExitPolicy.parse(values)
+
+
+def test_reentry_ui_explicit_opt_in_and_export(window):
+    assert not window.continue_after_exit.isChecked()
+    window.continue_after_exit.setChecked(True)
+    p = ExitPolicy.parse(window.exit_policy())
+    assert p.continue_after_risk_exit and p.cooldown_seconds >= 1
+    assert ExitPolicy.parse(p.export()) == p

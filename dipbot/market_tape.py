@@ -41,7 +41,7 @@ class MarketTape:
         nested = {
             'paper_policy': {'latency_seconds','fee_quote'},
             'entry_cost_policy': {'maximum_pct','roundtrip_gas'},
-            'exit_policy': {'tp_sl_basis','trailing_pct','max_hold_seconds','cooldown_seconds'},
+            'exit_policy': {'continue_after_risk_exit','tp_sl_basis','trailing_pct','max_hold_seconds','cooldown_seconds'},
             'sizing': {'unit','reserve_bnb'},
             'pool': {'address','router','token','quote','token_decimals','quote_decimals','token_is_0','fee'},
             'settings': {'amount','dip','take_profit','stop_loss','slippage','dynamic','max_gap','max_roundtrip_loss','min_swaps'},

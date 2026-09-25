@@ -6,6 +6,7 @@ from web3.exceptions import TransactionNotFound
 LABELS = {
     'pending_visible': 'Транзакция видна узлу, receipt пока отсутствует',
     'mined_receipt_missing': 'Узел сообщает блок транзакции, но receipt недоступен',
+    'replacement_found': 'Найдена каноническая транзакция с тем же nonce; требуется сверка балансов',
     'nonce_consumed': 'Nonce уже использован: нужна сверка исходной или заменяющей транзакции',
     'pending_nonce_advanced': 'Есть pending nonce выше сохранённого; hash не найден этим узлом',
     'not_visible': 'Узел не видит hash; потеря транзакции не доказана',
@@ -37,6 +38,49 @@ def inspect_missing(chain, owner, record):
             result.update(latest_nonce=latest, pending_nonce=pending)
             result['state'] = ('nonce_consumed' if latest > nonce else
                                'pending_nonce_advanced' if pending > nonce else 'not_visible')
+            if latest > nonce and callable(getattr(chain.w3.eth, 'get_block', None)):
+                try:
+                    evidence = find_nonce_replacement(chain, owner, record)
+                    result['replacement_search'] = evidence
+                    if evidence.get('hash') and evidence['hash'].lower() != record['hash'].lower():
+                        result['state'] = 'replacement_found'
+                except Exception as exc:
+                    result['replacement_search'] = {'complete':False, 'error_type':type(exc).__name__}
     except Exception as exc:
         result = {'checked_at':int(time.time()),'state':'unavailable','error_type':type(exc).__name__}
     return result
+
+
+def find_nonce_replacement(chain, owner, record, *, max_blocks=32, timeout=8):
+    """Bounded read-only evidence. A found replacement never clears the latch."""
+    from .trader import LiveTrader
+    started = time.monotonic()
+    eth = chain.w3.eth
+    head = eth.get_block('latest')
+    number = head['number']
+    if type(number) is not int or number < 0:
+        raise ValueError('Invalid search head')
+    floor = max(0, number-max_blocks+1)
+    prepared = record.get('prepared_block')
+    if type(prepared) is int and 0 <= prepared <= number:
+        floor = max(floor, prepared)
+    scanned = 0
+    for height in range(number, floor-1, -1):
+        if time.monotonic()-started >= timeout:
+            return {'scanned_blocks':scanned, 'complete':False}
+        block = eth.get_block(height, full_transactions=True)
+        if block['number'] != height:
+            raise ValueError('Invalid search block')
+        scanned += 1
+        for tx in block['transactions']:
+            if tx.get('from', '').lower() != owner.lower() or tx.get('nonce') != record['nonce']:
+                continue
+            tx_hash = Web3.to_hex(tx['hash'])
+            receipt = eth.get_transaction_receipt(tx_hash)
+            LiveTrader.validate_receipt(receipt, tx_hash)
+            if receipt['blockNumber'] != height or receipt['blockHash'] != block['hash']:
+                raise ValueError('Replacement receipt disagrees with block')
+            chain.canonical_receipt(receipt)
+            return {'hash':tx_hash,'block':height,'block_hash':Web3.to_hex(block['hash']),
+                    'receipt_status':receipt['status'],'scanned_blocks':scanned,'complete':True}
+    return {'scanned_blocks':scanned,'complete':False}
