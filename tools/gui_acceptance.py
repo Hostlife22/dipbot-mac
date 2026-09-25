@@ -38,7 +38,7 @@ def run(endpoint, output):
         while not predicate():
             if time.monotonic() > deadline:
                 raise TimeoutError('GUI scenario deadline')
-            QTest.qWait(20)
+            app.processEvents();time.sleep(.02)
     def button(w, label):
         return next(b for b in w.findChildren(QPushButton) if b.text() == label)
     def click(w, label):
@@ -49,7 +49,7 @@ def run(endpoint, output):
             if isinstance(parent, QScrollArea):
                 parent.ensureWidgetVisible(b)
             parent = parent.parentWidget()
-        QTest.qWait(20)
+        app.processEvents();time.sleep(.02)
         QTest.mouseClick(b, Qt.LeftButton)
     def enter(field, text):
         field.setFocus()
@@ -61,7 +61,8 @@ def run(endpoint, output):
         w = Window(Store(Path(directory)/'state.json'))
         try:
             w.show()
-            QTest.qWait(200)
+            app.processEvents();time.sleep(.2)
+            w.market_toggle.setChecked(True)
             assert w.isVisible()
             chain = Chain(endpoint)
             calls = guard_provider(chain.w3.provider)

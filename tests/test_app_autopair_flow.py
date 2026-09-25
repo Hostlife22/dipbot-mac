@@ -171,7 +171,8 @@ def test_stop_preserves_verified_market_for_restart(window):
     w.stop_bot()
     w.running = False
     w.worker.stop_event.clear()
-    w.update_controls()
+    w.on_event('status', {'mode':'PAPER','running':False,'locked':False,
+        'position':'0','base':'0','realized':'0','levels':{}})
     assert w.start.isEnabled() and w.selection_ready
     assert w.pool_input.text() == POOL.address
     assert w.auto_generation == generation

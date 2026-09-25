@@ -29,6 +29,9 @@ class LiveTrader:
         self.max_fee = int(max_fee * 10**18)
         self.operation = None
         self.chain.check()
+        receipt_check = getattr(self.chain, 'check_receipt_access', None)
+        if receipt_check is not None:
+            receipt_check()
 
     def begin(self, description):
         if self.store.data.get("operation"):

@@ -68,7 +68,7 @@ def synthetic_cycles(directory, pool, base):
     return results
 
 
-def main(output, seconds, tokens=None, endpoint=ENDPOINT):
+def main(output, seconds, tokens=None, endpoint=ENDPOINT, record_samples=False):
     tokens = TOKENS if tokens is None else tokens
     app = QCoreApplication.instance() or QCoreApplication([])
     report = {'utc': datetime.now(timezone.utc).isoformat(), 'mode': 'PAPER',
@@ -130,6 +130,19 @@ def main(output, seconds, tokens=None, endpoint=ENDPOINT):
                         return value
                     chain.price = measured
                     worker.command('start', config(worker.pool))
+                    row['market_signals'] = []
+                    strategy = worker.strategy
+                    observe = strategy.observe
+                    def observed(value, now, original=observe, strategy=strategy,
+                                 signals=row['market_signals']):
+                        base, entry = strategy.base, strategy.entry
+                        result = original(value, now)
+                        if result:
+                            signals.append({'monotonic_s': now, 'action': result,
+                                'price': str(value), 'base_before': str(base),
+                                'entry_before': str(entry)})
+                        return result
+                    strategy.observe = observed
                     sessions.append((worker, row, logs, events, samples, calls))
                     row['selected_router'] = worker.pool.router
                     print(json.dumps({'ready': name, 'routes': len(pools)}), flush=True)
@@ -141,11 +154,14 @@ def main(output, seconds, tokens=None, endpoint=ENDPOINT):
             while sessions and time.monotonic() - began < seconds:
                 app.processEvents()
                 time.sleep(.01)
+                if all(not w.running for w, *_ in sessions):
+                    break  # Natural STOP_LOSS or RPC pause; do not silently restart.
                 if time.monotonic() - progress >= 30:
                     progress = time.monotonic()
                     print(json.dumps({'elapsed_s': round(progress-began),
                         'prices': {row['name']: len(samples) for _, row, _, _, samples, _ in sessions},
                         'running': {row['name']: w.running for w, row, *_ in sessions},
+                        'signals': {row['name']: len(row['market_signals']) for _, row, *_ in sessions},
                         'errors': {row['name']: [v for k, v in events if k == 'error']
                                    for _, row, _, events, _, _ in sessions}}), flush=True)
             report['observation_seconds'] = round(time.monotonic()-began, 2)
@@ -172,6 +188,12 @@ def main(output, seconds, tokens=None, endpoint=ENDPOINT):
                     gap_resets=sum('0.55' in line for line in logs),
                     gaps_over_550ms=sum(g > .55 for g in gaps),
                     clean_stop=not worker.paper.position and not worker.isRunning(), rpc_methods=dict(calls))
+                row['market_trade_log'] = [line for line in logs
+                    if any(marker in line for marker in ('BUY:', 'SELL:', 'P&L:', 'приостановлен'))]
+                row['paper_realized_wbnb'] = str(worker.paper.realized)
+                if record_samples:
+                    row['market_samples'] = [{'monotonic_s': at, 'latency_s': duration, 'price': str(value)}
+                                             for at, duration, value in samples]
                 if samples:
                     latencies = sorted(s[1]*1000 for s in samples)
                     row.update(active_span_s=round(samples[-1][0]-samples[0][0], 2),
@@ -192,6 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--seconds', type=int, default=180)
     parser.add_argument('--endpoint', choices=[ENDPOINT, 'https://bsc-dataseed.binance.org'], default=ENDPOINT)
     parser.add_argument('--token', action='append', help='Override sample: NAME=0xaddress (repeatable)')
+    parser.add_argument('--record-samples', action='store_true', help='Save actual timestamped RPC prices')
     args = parser.parse_args()
     if args.seconds <= 0:
         parser.error('--seconds must be positive')
@@ -202,4 +225,4 @@ if __name__ == '__main__':
             tokens = {name: address(token) for name, token in tokens.items()}
         except ValueError:
             parser.error('--token requires NAME=valid_address')
-    main(args.output, args.seconds, tokens, args.endpoint)
+    main(args.output, args.seconds, tokens, args.endpoint, args.record_samples)

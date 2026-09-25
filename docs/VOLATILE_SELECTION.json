@@ -1,0 +1,283 @@
+{
+  "utc": "2026-09-24T18:54:39.953790+00:00",
+  "source": "https://api.geckoterminal.com/api/v2/networks/bsc/new_pools",
+  "selection": "Fresh PancakeSwap V2/WBNB pools, liquidity > 10000 USD, recent buys and sells; SUP/PeaceBear strong m5 moves, MAME supplementary active market",
+  "pools": [
+    {
+      "id": "bsc_0xdb96388b0bdd5ef4d3a7d9f5b21d9917d90f724b",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.000147464452265977",
+        "base_token_price_native_currency": "0.000000197294714050828",
+        "quote_token_price_usd": "780.82",
+        "quote_token_price_native_currency": "1.0",
+        "base_token_price_quote_token": "0.0000001972947141",
+        "quote_token_price_base_token": "5068559.51418128",
+        "address": "0xdb96388b0bdd5ef4d3a7d9f5b21d9917d90f724b",
+        "name": "和平熊 / WBNB",
+        "pool_created_at": "2026-09-24T18:45:44Z",
+        "fdv_usd": "153689.6143",
+        "market_cap_usd": null,
+        "price_change_percentage": {
+          "m5": "73.076",
+          "m15": "493.788",
+          "m30": "493.788",
+          "h1": "493.788",
+          "h6": "493.788",
+          "h24": "493.788"
+        },
+        "transactions": {
+          "m5": {
+            "buys": 25,
+            "sells": 20,
+            "buyers": 21,
+            "sellers": 15
+          },
+          "m15": {
+            "buys": 113,
+            "sells": 91,
+            "buyers": 45,
+            "sellers": 34
+          },
+          "m30": {
+            "buys": 113,
+            "sells": 91,
+            "buyers": 45,
+            "sellers": 34
+          },
+          "h1": {
+            "buys": 113,
+            "sells": 91,
+            "buyers": 45,
+            "sellers": 34
+          },
+          "h6": {
+            "buys": 113,
+            "sells": 91,
+            "buyers": 45,
+            "sellers": 34
+          },
+          "h24": {
+            "buys": 113,
+            "sells": 91,
+            "buyers": 45,
+            "sellers": 34
+          }
+        },
+        "volume_usd": {
+          "m5": "11491.6663323445",
+          "m15": "52409.7536879062",
+          "m30": "52409.7536879062",
+          "h1": "52409.7536879062",
+          "h6": "52409.7536879062",
+          "h24": "52409.7536879062"
+        },
+        "reserve_in_usd": "26840.3752"
+      },
+      "relationships": {
+        "base_token": {
+          "data": {
+            "id": "bsc_0xaa738696dacec7706b31a4f4ada987b3ce167777",
+            "type": "token"
+          }
+        },
+        "quote_token": {
+          "data": {
+            "id": "bsc_0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+            "type": "token"
+          }
+        },
+        "dex": {
+          "data": {
+            "id": "pancakeswap_v2",
+            "type": "dex"
+          }
+        }
+      }
+    },
+    {
+      "id": "bsc_0x619a8d1ca458754b8afb6793899444b535893742",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.000367164451595347",
+        "base_token_price_native_currency": "0.000000446752160066594",
+        "quote_token_price_usd": "780.82",
+        "quote_token_price_native_currency": "1.0",
+        "base_token_price_quote_token": "0.0000004467521601",
+        "quote_token_price_base_token": "2238377.5376731",
+        "address": "0x619a8d1ca458754b8afb6793899444b535893742",
+        "name": "🐵SUP / WBNB",
+        "pool_created_at": "2026-09-24T18:45:39Z",
+        "fdv_usd": "348093.4547",
+        "market_cap_usd": null,
+        "price_change_percentage": {
+          "m5": "45.653",
+          "m15": "265.988",
+          "m30": "265.988",
+          "h1": "265.988",
+          "h6": "265.988",
+          "h24": "265.988"
+        },
+        "transactions": {
+          "m5": {
+            "buys": 58,
+            "sells": 28,
+            "buyers": 19,
+            "sellers": 15
+          },
+          "m15": {
+            "buys": 93,
+            "sells": 66,
+            "buyers": 21,
+            "sellers": 20
+          },
+          "m30": {
+            "buys": 93,
+            "sells": 66,
+            "buyers": 21,
+            "sellers": 20
+          },
+          "h1": {
+            "buys": 93,
+            "sells": 66,
+            "buyers": 21,
+            "sellers": 20
+          },
+          "h6": {
+            "buys": 93,
+            "sells": 66,
+            "buyers": 21,
+            "sellers": 20
+          },
+          "h24": {
+            "buys": 93,
+            "sells": 66,
+            "buyers": 21,
+            "sellers": 20
+          }
+        },
+        "volume_usd": {
+          "m5": "27049.784271768",
+          "m15": "43826.3581487297",
+          "m30": "43826.3581487297",
+          "h1": "43826.3581487297",
+          "h6": "43826.3581487297",
+          "h24": "43826.3581487297"
+        },
+        "reserve_in_usd": "68439.2634"
+      },
+      "relationships": {
+        "base_token": {
+          "data": {
+            "id": "bsc_0x760b9ad8b12e2257453039362fdb6a30c7c812f8",
+            "type": "token"
+          }
+        },
+        "quote_token": {
+          "data": {
+            "id": "bsc_0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+            "type": "token"
+          }
+        },
+        "dex": {
+          "data": {
+            "id": "pancakeswap_v2",
+            "type": "dex"
+          }
+        }
+      }
+    },
+    {
+      "id": "bsc_0x92f75d0e382efd85fd4bd2800682848d5931c0a7",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.0000886170065707813",
+        "base_token_price_native_currency": "0.000000111725767950956",
+        "quote_token_price_usd": "780.82",
+        "quote_token_price_native_currency": "1.0",
+        "base_token_price_quote_token": "0.000000111725768",
+        "quote_token_price_base_token": "8950486.69917371",
+        "address": "0x92f75d0e382efd85fd4bd2800682848d5931c0a7",
+        "name": "MAME / WBNB",
+        "pool_created_at": "2026-09-24T18:45:32Z",
+        "fdv_usd": "89119.19426",
+        "market_cap_usd": null,
+        "price_change_percentage": {
+          "m5": "1.723",
+          "m15": "260.905",
+          "m30": "260.905",
+          "h1": "260.905",
+          "h6": "260.905",
+          "h24": "260.905"
+        },
+        "transactions": {
+          "m5": {
+            "buys": 27,
+            "sells": 21,
+            "buyers": 26,
+            "sellers": 17
+          },
+          "m15": {
+            "buys": 116,
+            "sells": 89,
+            "buyers": 80,
+            "sellers": 46
+          },
+          "m30": {
+            "buys": 116,
+            "sells": 89,
+            "buyers": 80,
+            "sellers": 46
+          },
+          "h1": {
+            "buys": 116,
+            "sells": 89,
+            "buyers": 80,
+            "sellers": 46
+          },
+          "h6": {
+            "buys": 116,
+            "sells": 89,
+            "buyers": 80,
+            "sellers": 46
+          },
+          "h24": {
+            "buys": 116,
+            "sells": 89,
+            "buyers": 80,
+            "sellers": 46
+          }
+        },
+        "volume_usd": {
+          "m5": "5341.9177425031",
+          "m15": "20908.4553482581",
+          "m30": "20908.4553482581",
+          "h1": "20908.4553482581",
+          "h6": "20908.4553482581",
+          "h24": "20908.4553482581"
+        },
+        "reserve_in_usd": "18405.3329"
+      },
+      "relationships": {
+        "base_token": {
+          "data": {
+            "id": "bsc_0x406e61aa20d4caece9cf9d63ea376755b65b7777",
+            "type": "token"
+          }
+        },
+        "quote_token": {
+          "data": {
+            "id": "bsc_0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+            "type": "token"
+          }
+        },
+        "dex": {
+          "data": {
+            "id": "pancakeswap_v2",
+            "type": "dex"
+          }
+        }
+      }
+    }
+  ]
+}

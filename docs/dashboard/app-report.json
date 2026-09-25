@@ -1,0 +1,22 @@
+{
+  "frozen": true,
+  "platform": "cocoa",
+  "transactions_sent": 0,
+  "checks": 1302,
+  "mismatches": [],
+  "screenshots": [
+    "live_paper.png",
+    "replay_position.png",
+    "replay_after_tp.png",
+    "replay_stopped.png"
+  ],
+  "live_seconds": 25.01,
+  "mode_change_clears_chart": true,
+  "replay_buys": 4,
+  "replay_tp": 3,
+  "replay_sl": 1,
+  "market_change_clears_chart": true,
+  "clean_shutdown": true,
+  "passed": true,
+  "errors": []
+}

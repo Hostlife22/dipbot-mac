@@ -1,77 +1,135 @@
 import argparse
 from collections import deque
 import sys
+import time
 from datetime import datetime
+from decimal import Decimal
 
 from PySide6.QtCore import Qt, QLockFile, QTimer, QPointF
 from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QLineEdit, QComboBox, QDoubleSpinBox, QFormLayout, QVBoxLayout, QHBoxLayout,
     QGridLayout, QGroupBox, QPlainTextEdit, QTabWidget, QCheckBox, QMessageBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea)
+    QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QSizePolicy)
 
 from .chain import profiles
 from .dynamic import catalog
 from .storage import Store, Vault, data_dir
 from .worker import Worker
 from . import preferences
+from .usd import UsdRate, price_text
 
 
-STYLE = """
-QWidget { background: #10161e; color: #e7eef7; font-size: 13px; }
-QMainWindow { background: #10161e; }
-QLabel#title { font-size: 30px; font-weight: 700; letter-spacing: 2px; }
-QLabel#muted { color: #93a6bb; }
-QLabel#metric { font-size: 23px; font-weight: 600; color: #60e1bb; }
-QLabel#banner { background: #183448; color: #9eddfc; border-radius: 8px; padding: 12px; }
-QGroupBox { border: 1px solid #293647; border-radius: 10px; margin-top: 15px; padding: 15px; }
-QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 6px; color: #93a6bb; }
-QLineEdit, QComboBox, QDoubleSpinBox { background: #182330; border: 1px solid #34465c;
-    border-radius: 5px; padding: 7px; min-height: 20px; selection-background-color: #245b65; }
-QPushButton { background: #243446; border: 1px solid #3b5067; border-radius: 6px;
-    padding: 9px 14px; font-weight: 600; }
-QPushButton:hover { background: #31495f; }
-QPushButton:disabled { color: #607080; background: #19232d; border-color: #263342; }
-QPushButton#primary { background: #5de0b8; border-color: #5de0b8; color: #0d2921; }
-QPushButton#danger { background: #4a2633; color: #ffc2cf; border-color: #754052; }
-QPlainTextEdit, QTableWidget { background: #0b1119; border: 1px solid #293647; border-radius: 6px; }
-QHeaderView::section { background: #182330; color: #94a8bd; padding: 8px; border: 0; }
-QTabWidget::pane { border: 0; }
-QTabBar::tab { background: #182330; padding: 12px 24px; margin-right: 3px; }
-QTabBar::tab:selected { color: #60e1bb; border-bottom: 2px solid #60e1bb; }
-QScrollArea { border: 0; }
-"""
+from .theme import STYLE
 
 
 class Chart(QWidget):
     def __init__(self):
         super().__init__()
         self.values = deque(maxlen=180)
-        self.setMinimumHeight(140)
+        self.times = deque(maxlen=180)
+        self.levels = {}
+        self.usd_rate = None
+        self.markers = deque(maxlen=180)
+        self.hover = None
+        self.setToolTip("BUY/SELL отмечают завершённые операции по цене сигнала/наблюдения, не цене исполнения LIVE. Наведите курсор для просмотра цены и относительного времени.")
+        self.setMouseTracking(True)
+        self.setMinimumHeight(240)
+
+    def mark(self, label, price):
+        if self.times:
+            self.markers.append((self.times[-1], label, float(price)))
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        self.hover = event.position()
+        self.update()
+
+    def leaveEvent(self, event):
+        self.hover = None
+        self.update()
 
     def add(self, value):
         self.values.append(float(value))
+        self.times.append(time.monotonic())
+        self.update()
+
+    def clear(self):
+        self.values.clear()
+        self.times.clear()
+        self.levels.clear()
+        self.markers.clear()
+        self.hover = None
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
-        painter.setPen(QPen(QColor("#263444"), 1))
-        for y in range(25, h, 35):
-            painter.drawLine(0, y, w, y)
+        painter.setPen(QPen(QColor('#2a3546'), 1))
+        painter.setBrush(QColor('#111b29'))
+        painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 9, 9)
+        painter.setBrush(Qt.NoBrush)
         if len(self.values) < 2:
             painter.setPen(QColor("#93a6bb"))
             painter.drawText(self.rect(), Qt.AlignCenter, "График появится после START / выбора пула")
             return
-        lo, hi = min(self.values), max(self.values)
-        spread = hi - lo or max(abs(hi)*0.01, 0.000001)
+        bounds = list(self.values) + [float(v) for v in self.levels.values() if float(v) > 0]
+        bounds += [v for stamp, _, v in self.markers if stamp >= self.times[0]]
+        lo, hi = min(bounds), max(bounds)
+        padding = (hi-lo)*.1 if hi != lo else max(abs(hi)*.01, 1e-30)
+        lo, hi = max(0, lo-padding), hi+padding
+        spread = hi-lo
+        left, right, top, bottom = 120, max(130, w-185), 25, h-30
+        def y(value):
+            return bottom-(bottom-top)*(value-lo)/spread
+        elapsed = max(self.times[-1]-self.times[0], .001)
+        painter.setPen(QColor('#93a6bb'))
+        for index in range(4):
+            value = lo + spread*index/3
+            py = y(value)
+            painter.setPen(QPen(QColor('#263449'), 1))
+            painter.drawLine(QPointF(left, py), QPointF(right, py))
+            painter.setPen(QColor('#a5b3c5'))
+            painter.drawText(10, int(py)+4, price_text(value, self.usd_rate, 6))
+        painter.drawText(left, h-5, f'−{elapsed:.1f} с')
+        painter.drawText(int(right)-110, h-5, 'последняя цена')
+        colors = {'DIP':'#f4c76b', 'ENTRY':'#a7a4ef', 'TP':'#60e1bb', 'SL':'#f38e9e'}
+        label_y = top-18
+        for label, value in sorted(self.levels.items(), key=lambda item: -float(item[1])):
+            if float(value) <= 0:
+                continue
+            painter.setPen(QPen(QColor(colors.get(label, '#a7a4ef')), 1, Qt.DashLine))
+            py = y(float(value))
+            painter.drawLine(QPointF(left, py), QPointF(right, py))
+            label_y = max(py, label_y+18)
+            painter.drawText(int(right)+8, int(label_y)+4, f'{label} {price_text(value, self.usd_rate, 6)}')
         path = QPainterPath()
         for i, value in enumerate(self.values):
-            point = QPointF(8 + (w-16)*i/(len(self.values)-1), h-15-(h-30)*(value-lo)/spread)
-            path.moveTo(point) if i == 0 else path.lineTo(point)
+            point = QPointF(left+(right-left)*(self.times[i]-self.times[0])/elapsed, y(value))
+            if i == 0 or self.times[i]-self.times[i-1] > .55:
+                path.moveTo(point)
+            else:
+                path.lineTo(point)
         painter.setPen(QPen(QColor("#60e1bb"), 2))
         painter.drawPath(path)
+        for stamp, label, value in self.markers:
+            if stamp < self.times[0]:
+                continue
+            px = left+(right-left)*(stamp-self.times[0])/elapsed
+            py = y(value)
+            painter.setPen(QColor('#60e1bb' if label == 'BUY' else '#f4c76b'))
+            painter.drawEllipse(QPointF(px, py), 4, 4)
+            painter.drawText(int(min(px+6, right-55)), int(max(top+12, py-8)), label)
+        if self.hover is not None and left <= self.hover.x() <= right and top <= self.hover.y() <= bottom:
+            stamp = self.times[0]+elapsed*(self.hover.x()-left)/(right-left)
+            index = min(range(len(self.times)), key=lambda i: abs(self.times[i]-stamp))
+            px = left+(right-left)*(self.times[index]-self.times[0])/elapsed
+            painter.setPen(QPen(QColor('#a5b3c5'), 1, Qt.DotLine))
+            painter.drawLine(QPointF(px, top), QPointF(px, bottom))
+            painter.drawEllipse(QPointF(px, y(self.values[index])), 4, 4)
+            painter.setPen(QColor('#e7eef7'))
+            painter.drawText(left, 17, f'{price_text(self.values[index], self.usd_rate)} · {self.times[index]-self.times[-1]:.1f} с от последней котировки')
 
 
 class Window(QMainWindow):
@@ -84,16 +142,19 @@ class Window(QMainWindow):
         self.busy = False
         self.searching = False
         self.running = False
+        self.stop_pending = False
         self.active_mode = "DEMO"
         self.locked = bool(self.store.data.get("operation"))
         self.editable = []
         self.actions = []
         self.setWindowTitle("DipBot Mac · BSC")
-        self.resize(1190, 910)
+        self.resize(1180, 850)
+        self.setMinimumSize(920, 680)
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(25, 20, 25, 18)
+        layout.setContentsMargins(20, 16, 20, 12)
+        layout.setSpacing(10)
         title_row = QHBoxLayout()
         title = QLabel("DIP / BSC")
         title.setObjectName("title")
@@ -101,19 +162,24 @@ class Window(QMainWindow):
         title_row.addStretch()
         self.mode = QComboBox()
         self.mode.addItems(["DEMO", "PAPER", "LIVE"])
+        self.mode.setMinimumWidth(130)
         self.mode.currentTextChanged.connect(self.mode_changed)
         self.editable.append(self.mode)
         title_row.addWidget(QLabel("Режим"))
         title_row.addWidget(self.mode)
         layout.addLayout(title_row)
-        subtitle = QLabel("macOS · PancakeSwap V2 / V3 · Независимая реализация 0.1")
+        subtitle = QLabel("PancakeSwap V2 / V3  ·  BNB Smart Chain")
         subtitle.setObjectName("muted")
-        layout.addWidget(subtitle)
+        title.setToolTip(subtitle.text())
+        subtitle.deleteLater()
         self.banner = QLabel()
         self.banner.setObjectName("banner")
         self.banner.setWordWrap(True)
         layout.addWidget(self.banner)
         self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(True)
+        self.tabs.tabBar().setDrawBase(False)
+        self.tabs.tabBar().setExpanding(False)
         layout.addWidget(self.tabs, 1)
         self.build_bot()
         self.build_settings()
@@ -123,12 +189,17 @@ class Window(QMainWindow):
         self.activity = QPlainTextEdit()
         self.activity.setReadOnly(True)
         self.activity.setMaximumBlockCount(600)
-        self.activity.setMinimumHeight(120)
-        self.activity.setMaximumHeight(155)
-        layout.addWidget(QLabel("ACTIVITY LOG"))
+        self.activity.setFixedHeight(120)
+        self.activity.hide()
+        self.journal_toggle = QPushButton("▸  ACTIVITY LOG · журнал событий")
+        self.journal_toggle.setObjectName('journal')
+        self.journal_toggle.setCheckable(True)
+        self.journal_toggle.toggled.connect(self.toggle_journal)
+        layout.addWidget(self.journal_toggle)
         layout.addWidget(self.activity)
         self.footer = QLabel("Готов к DEMO. Реальные сделки доступны только в LIVE.")
         self.footer.setObjectName("muted")
+        self.footer.setWordWrap(True)
         layout.addWidget(self.footer)
         saved_preferences = self.store.data.get("ui_preferences")
         if saved_preferences is not None:
@@ -169,6 +240,7 @@ class Window(QMainWindow):
 
     def button(self, text, callback, kind=None):
         button = QPushButton(text)
+        button.setCursor(Qt.PointingHandCursor)
         button.clicked.connect(callback)
         if kind:
             button.setObjectName(kind)
@@ -178,6 +250,7 @@ class Window(QMainWindow):
     def field(self, value="", placeholder=""):
         field = QLineEdit(value)
         field.setPlaceholderText(placeholder)
+        field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.editable.append(field)
         return field
 
@@ -187,29 +260,110 @@ class Window(QMainWindow):
         scroll.setWidgetResizable(True)
         scroll.setWidget(content)
         self.tabs.addTab(scroll, name)
-        return QVBoxLayout(content)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 12, 4, 8)
+        layout.setSpacing(12)
+        return layout
+
+    def form(self, parent):
+        layout = QFormLayout(parent)
+        layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        layout.setHorizontalSpacing(14)
+        layout.setVerticalSpacing(10)
+        layout.setLabelAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        return layout
+
+    def disclosure(self, layout, title, content, expanded=False):
+        toggle = QPushButton()
+        toggle.setCheckable(True)
+        toggle.setChecked(expanded)
+        toggle.setCursor(Qt.PointingHandCursor)
+        def changed(opened):
+            content.setVisible(opened)
+            toggle.setText(('▾  ' if opened else '▸  ') + title)
+        toggle.toggled.connect(changed)
+        layout.addWidget(toggle)
+        layout.addWidget(content)
+        changed(expanded)
+        return toggle
 
     def build_bot(self):
         layout = self.tab("Торговля")
         metrics = QHBoxLayout()
         self.metrics = {}
+        self.metric_captions = {}
         for key, title in [("price", "ЦЕНА / БАЗОВЫЙ АКТИВ"), ("base", "БАЗА DIP"),
-                           ("position", "ПОЗИЦИЯ / TARGET"), ("state", "СОСТОЯНИЕ")]:
-            box = QGroupBox(title)
+                           ("position", "КОЛИЧЕСТВО TARGET"), ("state", "СОСТОЯНИЕ")]:
+            box = QWidget()
+            box.setObjectName('metricCard')
+            box.setMinimumHeight(64)
+            card = QVBoxLayout(box)
+            card.setContentsMargins(14, 10, 14, 10)
+            card.setSpacing(5)
+            caption = QLabel(title)
+            self.metric_captions[key] = caption
+            caption.setObjectName('metricCaption')
+            card.addWidget(caption)
             metric = QLabel("—")
             metric.setObjectName("metric")
-            QVBoxLayout(box).addWidget(metric)
-            metrics.addWidget(box)
+            metric.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            if key == 'price':
+                metric.setProperty('tone', 'positive')
+            card.addWidget(metric)
+            metrics.addWidget(box, 1)
             self.metrics[key] = metric
         layout.addLayout(metrics)
+        self.strategy_status = QLabel('Готов к запуску')
+        self.strategy_status.setObjectName('banner')
+        self.strategy_status.setWordWrap(True)
+        self.strategy_status.setToolTip('Расстояния рассчитаны от последней цены до уровней сигнала, без учёта расходов.')
+        self.display_position = Decimal(0)
+        self.last_price = None
+        layout.addWidget(self.strategy_status)
         self.chart = Chart()
+        self.chart.setToolTip(self.chart.toolTip() + " USD — ориентировочный пересчёт всех точек по последнему полученному курсу, не исторический валютный график.")
         layout.addWidget(self.chart)
-        body = QHBoxLayout()
+        self.levels_label = QLabel('Вход DIP: — · ENTRY: — · TP: — · SL: —')
+        self.levels_label.setWordWrap(True)
+        self.levels_label.setToolTip('ENTRY и TP/SL основаны на цене сигнала. TP не означает прибыль после расходов.')
+        self.levels_label.hide()  # Levels are labelled directly on the chart.
+        self.quote_age = QLabel('Котировок ещё нет')
+        self.quote_age.setObjectName('muted')
+        self.quote_age.setWordWrap(True)
+        layout.addWidget(self.quote_age)
+        self.base_price = None
+        self.usd = UsdRate(self)
+        self.usd.changed.connect(self.refresh_currency)
+        self.last_quote_at = None
+        self.display_unit = 'условных единиц (DEMO)'
+        self.price_source = 'DEMO'
+        self.age_timer = QTimer(self)
+        self.age_timer.timeout.connect(self.update_quote_age)
+        self.age_timer.start(250)
+        compact = QGroupBox('ОСНОВНЫЕ ПАРАМЕТРЫ')
+        compact_grid = QGridLayout(compact)
+        self.params = {}
+        for column, (key, title, value) in enumerate([
+                ('amount', 'AMOUNT (базовый актив)', '0.02'), ('dip', 'DIP %', '3'),
+                ('take_profit', 'TP %', '2'), ('stop_loss', 'STOP LOSS %', '2')]):
+            field = self.field(value)
+            field.setAlignment(Qt.AlignRight)
+            self.params[key] = field
+            compact_grid.addWidget(QLabel(title), 0, column)
+            compact_grid.addWidget(field, 1, column)
+        layout.insertWidget(0, compact)
+        self.market_summary = QLabel('Рынок: DEMO · локальная модель')
+        self.market_summary.setWordWrap(True)
+        layout.addWidget(self.market_summary)
+        body_widget = QWidget()
+        body = QHBoxLayout(body_widget)
+        body.setContentsMargins(0, 0, 0, 0)
         pool_group = QGroupBox("РЫНОК / AUTOPAIR")
-        form = QFormLayout(pool_group)
+        form = self.form(pool_group)
         saved_pool = self.store.data.get("last_pool", {})
         self.token = self.field(saved_pool.get("token", ""), "Адрес target-токена в BSC")
-        form.addRow("TOKEN ADDRESS", self.token)
+        form.addRow(QLabel("TOKEN ADDRESS"))
+        form.addRow(self.token)
         selectors = QHBoxLayout()
         self.router = QComboBox()
         self.router.addItems(["AUTO", "V2", "V3"])
@@ -221,7 +375,8 @@ class Window(QMainWindow):
         form.addRow(self.button("AutoPair · найти пулы", lambda: self.send("discover", token=self.token.text(),
                          quote=self.quote.currentText(), router=self.router.currentText())))
         self.pool_input = self.field(saved_pool.get("address", ""), "Адрес известного пула PancakeSwap")
-        form.addRow("POOL ADDRESS", self.pool_input)
+        form.addRow(QLabel("POOL ADDRESS"))
+        form.addRow(self.pool_input)
         form.addRow(self.button("CHECK POOL", lambda: self.send("verify", token=self.token.text(), pool=self.pool_input.text())))
         self.candidates = QComboBox()
         self.candidates.setMinimumContentsLength(20)
@@ -238,13 +393,11 @@ class Window(QMainWindow):
         form.addRow(self.pool_label)
         body.addWidget(pool_group, 3)
         strategy = QGroupBox("ПАРАМЕТРЫ СТРАТЕГИИ")
-        grid = QFormLayout(strategy)
-        self.params = {}
-        for key, title, value in [("amount", "AMOUNT (базовый актив)", "0.02"),
-                 ("dip", "DIP %", "3"), ("take_profit", "TP %", "2"),
-                 ("stop_loss", "STOP LOSS %", "2"), ("slippage", "SLIPPAGE %", "3"),
+        grid = self.form(strategy)
+        for key, title, value in [("slippage", "SLIPPAGE %", "3"),
                  ("dynamic", "DYNAMIC", "150")]:
             self.params[key] = self.field(value)
+            self.params[key].setAlignment(Qt.AlignRight)
             grid.addRow(title, self.params[key])
         self.interval = QDoubleSpinBox()
         self.interval.setRange(0.1, 0.5)
@@ -253,9 +406,17 @@ class Window(QMainWindow):
         self.interval.setToolTip("V3: минимум 0.103 с. Разрыв наблюдений > 0.55 с сбрасывает базу DIP.")
         self.interval.setSuffix(" s")
         self.editable.append(self.interval)
-        grid.addRow("Пауза между чтениями", self.interval)
-        body.addWidget(strategy, 2)
-        layout.addLayout(body)
+        grid.addRow("Интервал опроса", self.interval)
+        body.addWidget(strategy, 2, Qt.AlignTop)
+        self.market_toggle = self.disclosure(layout, "Рынок / AutoPair и дополнительные параметры", body_widget)
+        layout.removeWidget(self.market_summary)
+        layout.removeWidget(self.market_toggle)
+        market_row = QHBoxLayout()
+        market_row.addWidget(self.market_summary, 1)
+        market_row.addWidget(self.market_toggle)
+        layout.insertLayout(0, market_row)
+        self.market_toggle.toggled.connect(lambda opened: QTimer.singleShot(
+            0, lambda: self.tabs.widget(0).ensureWidgetVisible(body_widget)) if opened else None)
         self.execution_bar = QWidget()
         controls = QHBoxLayout(self.execution_bar)
         controls.setContentsMargins(0, 0, 0, 0)
@@ -271,18 +432,18 @@ class Window(QMainWindow):
         row = QHBoxLayout(converter)
         self.convert_amount = self.field("0.01")
         self.convert_amount.setMaximumWidth(120)
-        row.addWidget(QLabel("BNB"))
+        row.addWidget(QLabel("BNB"), 0)
         row.addWidget(self.convert_amount)
         row.addWidget(self.button("BUY BASE", lambda: self.trade("convert", buy=True, amount=self.convert_amount.text())))
         row.addWidget(self.button("SELL ALL BASE → BNB", lambda: self.trade("convert", buy=False, amount="0")))
         row.addWidget(self.button("SELL WALLET → BNB", lambda: self.trade("sweep"), "danger"))
-        layout.addWidget(converter)
+        self.disclosure(layout, "CONVERTER / WALLET SWEEP · LIVE", converter)
         layout.addStretch()
 
     def build_settings(self):
         layout = self.tab("RPC и кошелёк")
         group = QGroupBox("ПОДКЛЮЧЕНИЕ BSC")
-        form = QFormLayout(group)
+        form = self.form(group)
         self.rpc = self.field(placeholder="https://… — ваш BSC HTTP RPC")
         self.rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
         form.addRow("HTTP RPC", self.rpc)
@@ -294,11 +455,16 @@ class Window(QMainWindow):
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
+        self.gas.setMaximumWidth(180)
+        self.gas.setAlignment(Qt.AlignRight)
         form.addRow("GAS GWEI", self.gas)
-        form.addRow(QLabel("Лимит: 0.005 BNB газа на транзакцию. Комиссии approve и нескольких шагов суммируются."))
+        hint = QLabel("Лимит: 0.005 BNB газа на транзакцию. Комиссии approve и нескольких шагов суммируются.")
+        hint.setWordWrap(True)
+        hint.setObjectName('muted')
+        form.addRow(hint)
         layout.addWidget(group)
         wallet = QGroupBox("КОШЕЛЁК")
-        form = QFormLayout(wallet)
+        form = self.form(wallet)
         self.key = self.field(placeholder="Private key отдельного BSC-кошелька")
         self.key.setEchoMode(QLineEdit.Password)
         form.addRow("PRIVATE KEY", self.key)
@@ -321,13 +487,24 @@ class Window(QMainWindow):
     def build_pairs(self):
         layout = self.tab("Активы и балансы")
         row = QHBoxLayout()
-        row.addWidget(QLabel("42 адреса извлечены из EXE. Ликвидность и доступность проверяются через RPC."))
+        hint = QLabel("Базовые активы для AutoPair · балансы и ликвидность проверяются через RPC")
+        hint.setWordWrap(True)
+        hint.setObjectName('muted')
+        row.addWidget(hint)
         row.addStretch()
         row.addWidget(self.button("Обновить балансы", self.balances))
         layout.addLayout(row)
         self.table = QTableWidget(0, 3)
+        self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().hide()
+        self.table.verticalHeader().setDefaultSectionSize(38)
+        self.table.setMinimumHeight(330)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
         self.table.setHorizontalHeaderLabels(["Актив", "Контракт BSC", "Баланс"])
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.setColumnWidth(0, 160)
+        self.table.setColumnWidth(2, 180)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.doubleClicked.connect(self.pair_clicked)
@@ -337,31 +514,40 @@ class Window(QMainWindow):
 
     def build_about(self):
         layout = self.tab("О реализации")
-        text = QLabel(
-            "<h2>DipBot Mac 0.1 — экспериментальная сборка</h2>"
-            "<p>Это новый открытый исходный код по результатам статического разбора NRNF v1.4.14. "
-            "Лицензия и Windows EXE не используются.</p>"
-            "<p><b>Стратегия:</b> DIP от максимальной наблюдаемой цены; BUY; TP или STOP LOSS от "
-            "фактической цены входа. После SELL база сбрасывается. После STOP LOSS бот останавливается. "
-            "Если котировки отсутствовали более 10 секунд, база входа сбрасывается.</p>"
-            "<p><b>Dynamic:</b> допуск BUY = SLIPPAGE − DYNAMIC / 100. Этот допуск применяется "
-            "к котировке router. Точная формула minOut и правило «2 down moves» оригинала не восстановлены.</p>"
-            "<p><b>DEMO:</b> локальная синусоидальная цена. <b>PAPER:</b> реальные котировки, "
-            "виртуальные сделки. Модель учитывает заданное проскальзывание, но не газ, token tax и влияние объёма.</p>"
-            "<p><b>LIVE:</b> реальные BSC-транзакции, V2/V3, approve точной суммы, "
-            "ручные BUY/SELL, Converter и Sweep зарегистрированных активов. "
-            "AMOUNT задаётся в базовом ERC-20 активе; для WBNB сначала используйте Converter.</p>"
-            "<p>Конвертация через промежуточные токены выполняется несколькими транзакциями. "
-            "При сбое промежуточный актив остаётся в кошельке. V3 не поддерживает fee-on-transfer токены.</p>"
-            "<p>STOP во время отправки ждёт receipt, затем закрывает позицию. При неизвестном статусе "
-            "автоматическое закрытие невозможно; приложение сохраняет hash для сверки.</p>"
-            "<p>Частота чтений зависит от RPC; эквивалентность оригиналу и задержка 100 мс не подтверждены. "
-            "Выполнены ограниченные LIVE-тесты V2/V3. Перед использованием средств нужна проверка "
-            "на выделенном тестовом кошельке.</p>")
-        text.setWordWrap(True)
-        text.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        layout.addWidget(text)
+        intro = QLabel("DipBot Mac · Руководство")
+        intro.setObjectName('title')
+        layout.addWidget(intro)
+        sections = [
+            ("РЕЖИМЫ РАБОТЫ", "<b>DEMO</b> — заданный локальный цикл цен, без RPC и кошелька.<br><br>"
+             "<b>PAPER</b> — реальные цены BSC и виртуальные сделки. Модель списывает заданное "
+             "проскальзывание, но не учитывает газ, token tax и влияние объёма.<br><br>"
+             "<b>LIVE</b> — реальные транзакции. Нужны RPC, кошелёк и проверенный пул."),
+            ("ЦЕНА И СТРАТЕГИЯ", "Цена показывает стоимость <b>1 TARGET в базовом активе</b>, не в долларах. "
+             "AMOUNT задаётся в базовом активе, количество TARGET — число токенов позиции.<br><br>"
+             "Вход DIP рассчитывается от текущей базы. База обновляется при росте или двух снижениях; "
+             "проверка DIP выполняется первой. Разрыв наблюдений больше <b>0.55 с</b> сбрасывает базу входа.<br><br>"
+             "TP и SL отсчитываются от цены сигнала. TAKE PROFIT не гарантирует прибыль после расходов. "
+             "После STOP LOSS бот останавливается; скачок цены может превысить заданный порог."),
+            ("УПРАВЛЕНИЕ И ВОССТАНОВЛЕНИЕ", "<b>STOP</b> останавливает стратегию и закрывает позицию. "
+             "Если транзакция уже отправлена, бот ждёт receipt. При неизвестном результате LIVE блокируется: "
+             "проверяйте receipts и балансы во вкладке «RPC и кошелёк».<br><br>"
+             "Converter может выполнять несколько транзакций. При частичном сбое промежуточный актив "
+             "остаётся в кошельке. V3 не поддерживает fee-on-transfer токены."),
+            ("О ПРИЛОЖЕНИИ", "Независимая экспериментальная реализация для macOS, PancakeSwap V2/V3, BSC. "
+             "Полная эквивалентность Windows-оригиналу и прибыльность стратегии не подтверждены.")]
+        for title, description in sections:
+            group = QGroupBox(title)
+            box = QVBoxLayout(group)
+            text = QLabel(description)
+            text.setWordWrap(True)
+            text.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            box.addWidget(text)
+            layout.addWidget(group)
         layout.addStretch()
+
+    def toggle_journal(self, expanded):
+        self.activity.setVisible(expanded)
+        self.journal_toggle.setText(("▾" if expanded else "▸") + "  ACTIVITY LOG · журнал событий")
 
     def log(self, message):
         self.activity.appendPlainText(datetime.now().strftime("%H:%M:%S") + "  " + message)
@@ -385,10 +571,12 @@ class Window(QMainWindow):
         self.worker.discovery_generation = self.auto_generation
         self.autopair_timer.stop()
         self.selection_ready = False
+        self.reset_price_display()
         self.candidates.clear()
         if clear_pool:
             self.pool_input.clear()
         self.pool_label.setText("Пул не проверен · выполните AutoPair или CHECK POOL")
+        self.market_summary.setText(self.pool_label.text())
         self.update_controls()
 
     def schedule_autopair(self, *_):
@@ -444,12 +632,17 @@ class Window(QMainWindow):
         self.send("sell")
 
     def stop_bot(self):
+        self.stop_pending = True
         if self.searching or not self.selection_ready:
             self.invalidate_discovery()
         else:
             self.autopair_timer.stop()
         self.worker.stop_event.set()
         self.log("STOP запрошен. Если сделка отправлена — ожидается receipt; затем закрытие позиции")
+        self.footer.setText('Остановка запрошена · ожидается завершение текущей операции и закрытие позиции')
+        self.metrics['state'].setText('STOPPING')
+        self.update_strategy_status()
+        self.update_controls()
 
     def select_pool(self):
         pool = self.candidates.currentData()
@@ -508,18 +701,118 @@ class Window(QMainWindow):
                         "PAPER": "PAPER · Реальная цена BSC, виртуальные сделки. Выберите пул и нажмите START.",
                         "LIVE": "LIVE · Реальные средства. Укажите RPC, сохраните кошелёк и проверьте выбранный пул."}
         self.banner.setText(descriptions[mode])
+        self.banner.setProperty('mode', mode)
+        self.banner.style().unpolish(self.banner)
+        self.banner.style().polish(self.banner)
+        if mode == 'DEMO':
+            self.display_unit = 'условных единиц (DEMO)'
+        if hasattr(self, 'chart'):
+            self.reset_price_display()
         if hasattr(self, "selection_ready"):
             self.update_controls()
+        if mode == "DEMO":
+            self.market_summary.setText("Рынок: DEMO · локальная модель")
+        elif hasattr(self, "pool_label"):
+            self.market_summary.setText(self.pool_label.text())
+
+    def reset_price_display(self):
+        self.chart.clear()
+        self.usd.set_token('')
+        self.base_price = None
+        self.last_quote_at = None
+        self.last_price = None
+        self.display_position = Decimal(0)
+        self.price_source = self.mode.currentText()
+        self.metrics['price'].setText('—')
+        self.metrics['base'].setText('—')
+        self.levels_label.setText('Вход DIP: — · ENTRY: — · TP: — · SL: —')
+        self.update_quote_age()
+
+    def display_price(self, value, digits=8):
+        if value is None:
+            return '—'
+        if self.price_source in ('DEMO', 'REPLAY'):
+            return f'{float(value):.{digits}g}'
+        return price_text(value, self.usd.current(), digits)
+
+    def refresh_currency(self):
+        if not hasattr(self, 'usd') or not hasattr(self, 'price_source'):
+            return
+        rate = self.usd.current() if self.price_source not in ('DEMO', 'REPLAY') else None
+        self.chart.usd_rate = rate
+        unit = 'USD' if rate is not None else ('DEMO' if self.price_source == 'DEMO' else self.display_unit)
+        if len(unit) > 16:
+            unit = unit[:6] + '…' + unit[-4:]
+        self.metric_captions['price'].setText('ЦЕНА, ' + unit)
+        self.metric_captions['base'].setText('БАЗА DIP, ' + unit)
+        self.metrics['price'].setText(self.display_price(getattr(self, 'last_price', None)))
+        self.metrics['base'].setText(self.display_price(self.base_price))
+        if getattr(self, 'last_price', None) is not None:
+            self.metrics['price'].setToolTip(f'{self.last_price} {self.display_unit} / TARGET · USD — ориентировочный пересчёт')
+        self.chart.update()
+
+    def update_strategy_status(self):
+        if self.stop_pending:
+            self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
+            return
+        if self.locked and self.mode.currentText() == 'LIVE':
+            text = 'Требуется сверка LIVE · проверьте незавершённую операцию'
+        elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
+            text = 'Котировка устарела · нет обновлений более 0,55 с'
+        elif self.display_position > 0:
+            text = 'Позиция открыта' + (' · автоматическая стратегия остановлена' if not self.running else '')
+        elif self.running:
+            text = 'Ждёт падения до DIP' if 'DIP' in self.chart.levels else 'Получает котировки · формирует базу DIP'
+        else:
+            text = 'Готов к запуску' if self.mode.currentText() == 'DEMO' or getattr(self, 'selection_ready', False) else 'Выберите рынок · раскройте AutoPair'
+        fresh = self.last_quote_at is not None and time.monotonic()-self.last_quote_at <= .55
+        if fresh and self.last_price is not None and self.last_price > 0:
+            for key in (('TP', 'SL') if self.display_position > 0 else ('DIP',) if self.running else ()):
+                if key not in self.chart.levels:
+                    continue
+                level = Decimal(str(self.chart.levels[key]))
+                distance = ((level-self.last_price) if key == 'TP' else (self.last_price-level))/self.last_price*100
+                text += f' · до {key}: {distance:.2f}%' if distance > 0 else f' · {key}: уровень достигнут'
+        self.strategy_status.setText(text)
+
+    def update_quote_age(self):
+        self.update_strategy_status()
+        self.refresh_currency()
+        if self.last_quote_at is None:
+            self.quote_age.setText('Котировок ещё нет')
+            return
+        age = max(0, time.monotonic()-self.last_quote_at)
+        source = {'DEMO':'локальная модель DEMO', 'REPLAY':'повтор записанных цен'}.get(self.price_source, 'BSC / RPC')
+        state = ' · нет новых котировок > 0.55 с' if self.running and age > .55 else ''
+        if self.chart.usd_rate is not None:
+            conversion = f'USD ≈ · курс {self.display_unit}/USD получен {time.monotonic()-self.usd.received_at:.0f} с назад (DEX Screener)'
+        elif self.price_source == 'BSC':
+            conversion = f'{self.display_unit} · USD недоступен / курс загружается'
+        else:
+            conversion = self.display_unit
+        self.quote_age.setText(f'1 TARGET в {conversion} · {source} · последняя котировка {age:.1f} с назад{state}')
 
     def update_controls(self):
+        idle = not self.busy and not self.running and not self.stop_pending
+        position_open = self.display_position > 0
         for widget in self.editable + self.actions:
-            widget.setEnabled(not self.busy and not self.running)
+            widget.setEnabled(idle)
+        if position_open:
+            for widget in (self.mode, self.token, self.pool_input, self.router, self.quote, self.candidates):
+                widget.setEnabled(False)
+            blocked = {'AutoPair · найти пулы', 'CHECK POOL', 'Выбрать', 'ADD BASE',
+                       'Подключить', 'VERIFY WALLET AND SAVE · Keychain',
+                       'REMOVE выбранную пользовательскую базу'}
+            for button in self.actions:
+                if button.text() in blocked:
+                    button.setEnabled(False)
         ready = self.mode.currentText() == "DEMO" or self.selection_ready
-        self.start.setEnabled(not self.busy and not self.running and ready)
-        self.buy.setEnabled(not self.busy and not self.running and ready)
-        if self.searching and not self.running:
+        live_locked = self.mode.currentText() == 'LIVE' and self.locked
+        self.start.setEnabled(idle and ready and not live_locked)
+        self.buy.setEnabled(idle and ready and not position_open and not live_locked)
+        if self.searching and not self.running and not self.stop_pending and not position_open:
             self.token.setEnabled(True)
-        self.sell.setEnabled(not self.busy)
+        self.sell.setEnabled(not self.busy and not self.stop_pending and position_open and not live_locked)
         self.stop.setEnabled(True)
 
     def on_event(self, name, payload):
@@ -535,11 +828,30 @@ class Window(QMainWindow):
             if not payload:
                 self.searching = False
         elif name == "error":
+            self.journal_toggle.setChecked(True)
             self.footer.setText("ОШИБКА: " + payload)
             QMessageBox.warning(self, "Операция прервана", payload)
+        elif name == 'price_context':
+            if self.price_source != payload['source']:
+                self.reset_price_display()
+            self.price_source = payload['source']
+            self.display_unit = ('условных единиц (DEMO)' if payload['source'] == 'DEMO' else
+                next((name for name, addr in profiles().items()
+                      if addr.lower() == payload['quote'].lower()), payload['quote']))
+            if payload['source'] == 'BSC' and self.isVisible():
+                self.usd.set_token(payload['quote'])
         elif name == "price":
+            if self.mode.currentText() != 'DEMO' and not self.selection_ready:
+                return
+            self.last_price = Decimal(str(payload))
             self.chart.add(payload)
-            self.metrics["price"].setText(f"{float(payload):.8g}")
+            self.metrics["price"].setText(self.display_price(payload))
+            self.metrics['price'].setToolTip(str(payload))
+            self.last_quote_at = time.monotonic()
+            self.update_quote_age()
+        elif name == 'trade_marker':
+            if payload['mode'] == self.mode.currentText() and self.chart.values:
+                self.chart.mark(payload['side'], payload['price'])
         elif name == "autopair":
             self.pool_label.setText({"PENDING": "PENDING · ожидается ликвидность; повторите AutoPair",
                                      "NOT_FOUND": "Пулы не найдены",
@@ -555,6 +867,9 @@ class Window(QMainWindow):
             for pool in payload:
                 self.candidates.addItem(pool.label, pool)
         elif name == "selected":
+            self.reset_price_display()
+            self.display_unit = next((name for name, addr in profiles().items()
+                                      if addr.lower() == payload.quote.lower()), payload.quote)
             self.selection_ready = True
             self.remember_amount()
             self.router.blockSignals(True)
@@ -570,6 +885,7 @@ class Window(QMainWindow):
             self.pool_input.setText(payload.address)
             self.token.setText(payload.token)
             self.pool_label.setText(payload.label + "\nAMOUNT в активе " + payload.quote)
+            self.market_summary.setText("Рынок: " + payload.label)
         elif name == "sweep_report":
             status = {"completed": "завершён", "stopped": "остановлен — частичный результат",
                       "interrupted": "прерван — частичный результат"}.get(payload.get("status"), "результат")
@@ -608,15 +924,38 @@ class Window(QMainWindow):
                 self.table.setItem(row, 2, item)
         elif name == "status":
             self.running, self.active_mode, self.locked = payload["running"], payload["mode"], payload["locked"]
-            self.metrics["state"].setText("LOCKED" if self.locked and self.active_mode == "LIVE" else "RUNNING" if self.running else "IDLE")
-            self.metrics["base"].setText(f"{float(payload['base']):.8g}")
+            if not self.running and not self.busy and not self.worker.stop_event.is_set():
+                self.stop_pending = False
+            self.metrics["state"].setText("STOPPING" if self.stop_pending else "LOCKED" if self.locked and self.active_mode == "LIVE" else "RUNNING" if self.running else "IDLE")
+            state = self.metrics['state']
+            tone = 'danger' if self.locked and self.active_mode == 'LIVE' else 'positive' if self.running else ''
+            if state.property('tone') != tone:
+                state.setProperty('tone', tone)
+                state.style().unpolish(state)
+                state.style().polish(state)
+            active = (payload['mode'] == self.mode.currentText() and
+                      (payload['running'] or float(payload['position']) > 0) and
+                      (self.mode.currentText() == 'DEMO' or self.selection_ready))
+            self.base_price = Decimal(payload['base']) if active and Decimal(payload['base']) > 0 else None
+            self.metrics['base'].setText(self.display_price(self.base_price))
             self.metrics["position"].setText(f"{float(payload['position']):.8g}")
-            self.footer.setText(f"{self.active_mode} · " + ("BOT работает" if self.running else "BOT остановлен") +
-                                f" · PAPER realized P&L: {payload['realized']}" + (" · LIVE LOCKED" if self.locked else ""))
+            self.metrics['position'].setToolTip(payload['position'])
+            levels = payload.get('levels', {}) if active else {}
+            self.chart.levels = {key: value for key, value in levels.items() if float(value) > 0}
+            self.display_position = Decimal(payload['position']) if active else Decimal(0)
+            self.update_strategy_status()
+            self.chart.update()
+            self.levels_label.setText(' · '.join(f'{title}: {float(levels[key]):.8g}'
+                if key in levels and float(levels[key]) > 0 else f'{title}: —'
+                for key, title in [('DIP', 'Вход DIP'), ('ENTRY', 'ENTRY'), ('TP', 'TP'), ('SL', 'SL')]))
+            shown_mode = self.active_mode if self.running else self.mode.currentText()
+            self.footer.setText(f"{shown_mode} · " + ("BOT работает" if self.running else "BOT остановлен") +
+                                f" · {self.active_mode} realized P&L: {format(Decimal(payload['realized']), '.8g') if payload['realized'] != '—' else '—'}" + (" · LIVE LOCKED" if self.locked else ""))
         self.update_controls()
 
     def closeEvent(self, event):
-        if self.busy or self.running:
+        if (self.busy or self.running or getattr(self, "stop_pending", False)
+                or getattr(self, "display_position", 0) > 0):
             QMessageBox.information(self, "Сначала STOP", "Остановите BOT и дождитесь завершения текущей операции перед закрытием")
             event.ignore()
             return
@@ -636,12 +975,15 @@ class Window(QMainWindow):
         except (ValueError, OSError):
             QMessageBox.warning(self, "Настройки не сохранены",
                                 "Не удалось сохранить параметры. Предыдущие настройки сохранены, если запись не была заменена.")
+        self.usd.set_token('')
         event.accept()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true", help="Offline GUI startup test, temporary state")
+    parser.add_argument('--display-check', help='Isolated read-only GUI audit directory')
+    parser.add_argument('--display-replay', help='Recorded PAPER report with market_samples for GUI replay')
     parser.add_argument("--paper-acceptance", help="Isolated read-only PAPER check directory")
     parser.add_argument("--acceptance-seconds", type=int, default=600)
     parser.add_argument("--acceptance-resume", action="store_true")
@@ -650,6 +992,11 @@ def main():
     app = QApplication(sys.argv[:1])
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
+    if args.display_check:
+        if not args.display_replay:
+            parser.error('--display-check requires --display-replay')
+        from .display_check import run
+        return run(app, args.display_check, args.display_replay, args.acceptance_seconds)
     if args.paper_acceptance:
         from .acceptance import run
         return run(app, args.paper_acceptance, args.acceptance_seconds, args.acceptance_resume, args.acceptance_endpoint)

@@ -1,0 +1,8 @@
+{
+  "observations": 953,
+  "distinct_auto_prices": 26,
+  "median_gap_seconds": 0.1471135805004451,
+  "max_gap_seconds": 0.6000514210027177,
+  "gaps_over_550ms": 1,
+  "automatic_trades": []
+}

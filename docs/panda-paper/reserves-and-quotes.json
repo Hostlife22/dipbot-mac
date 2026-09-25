@@ -1,0 +1,21 @@
+{
+  "pool": "0x2FD5EDe569c2223870E291D951839E18E3e1D071",
+  "token": "0x3A91c7d22D8D306EB109c9E9fA78aC162CcA7777",
+  "quote": "0x9b8E987e6fEc8Cf1380C4dcA7071e2C7853AEEA1",
+  "block": 123818446,
+  "reserves": [
+    "116776193358850662519750651",
+    "826506224760404795785"
+  ],
+  "price_in_quote": "0.00000707769452820378743830651225497107562555224453033691886283453557933453852705078",
+  "independent_equal": true,
+  "buy_input_raw": 30000000000000,
+  "quoted_buy_target": "4.228071555966309184",
+  "quoted_roundtrip_base": "0.000029850185341153",
+  "rpc_methods": {
+    "eth_chainId": 25,
+    "eth_getBlockByNumber": 3,
+    "eth_getCode": 3,
+    "eth_call": 11
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "source": "https://api.geckoterminal.com/api/v2/networks/bsc/tokens/0x7fa04e5b78080114d6ae550f3886afea09b46e8e/pools",
+  "pools": [
+    {
+      "pool": "0x13ff1009f2f0f3ffcdafa9fcabe97af81e4991ffa3970a24357d162993f444c6",
+      "dex": "pancakeswap-infinity-clmm",
+      "name": "GENIUS / GENIUS",
+      "liquidity_usd": "16087.4265",
+      "m5": {
+        "buys": 11,
+        "sells": 7,
+        "buyers": 9,
+        "sellers": 7
+      }
+    },
+    {
+      "pool": "0x04dc0c558dec11fb359f18733480cc7229258a730849f7f16dc4dfd1016f9376",
+      "dex": "uniswap-v4-bsc",
+      "name": "GENIUS / BNB 20%",
+      "liquidity_usd": "165.7316",
+      "m5": {
+        "buys": 0,
+        "sells": 2,
+        "buyers": 0,
+        "sellers": 2
+      }
+    },
+    {
+      "pool": "0x1d981121c6c6f47aadeb72afaf8fd707de8bd1177df07ce15661afd67785aa94",
+      "dex": "pancakeswap-infinity-clmm",
+      "name": "GENIUS / BNB 0.323%",
+      "liquidity_usd": "150.6934",
+      "m5": {
+        "buys": 0,
+        "sells": 4,
+        "buyers": 0,
+        "sellers": 4
+      }
+    },
+    {
+      "pool": "0x8eff7ddd097952d0ac1fb5c8afe654dd8d251036b5aca0e353363e702355a3d6",
+      "dex": "uniswap-v4-bsc",
+      "name": "GENIUS / BNB 18%",
+      "liquidity_usd": "26.8038",
+      "m5": {
+        "buys": 0,
+        "sells": 2,
+        "buyers": 0,
+        "sellers": 2
+      }
+    },
+    {
+      "pool": "0xd69f7a9793363210d84123b699e4a5d134ab7d9f2bcdf1ef5a862b9e4dc1a237",
+      "dex": "pancakeswap-infinity-clmm",
+      "name": "GENIUS / BNB 0.122%",
+      "liquidity_usd": "3.0417",
+      "m5": {
+        "buys": 0,
+        "sells": 0,
+        "buyers": 0,
+        "sellers": 0
+      }
+    },
+    {
+      "pool": "0xebcb6af19d372cd5cdff215063a33785a9273534a70c853a42f931ef6a643ac4",
+      "dex": "uniswap-v4-bsc",
+      "name": "GENIUS / USDT 50%",
+      "liquidity_usd": "2.7254",
+      "m5": {
+        "buys": 0,
+        "sells": 0,
+        "buyers": 0,
+        "sellers": 0
+      }
+    },
+    {
+      "pool": "0x34d97e09c013c94bc92e5aedeeb395396759d517a8576b5fd3d19acc6001c019",
+      "dex": "uniswap-v4-bsc",
+      "name": "GENIUS / USDT 30%",
+      "liquidity_usd": "0.0",
+      "m5": {
+        "buys": 0,
+        "sells": 0,
+        "buyers": 0,
+        "sellers": 0
+      }
+    }
+  ]
+}

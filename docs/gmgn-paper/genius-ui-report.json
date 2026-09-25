@@ -1,0 +1,26 @@
+{
+  "token": "0x7fa04e5b78080114d6ae550f3886afea09b46e8e",
+  "utc": "2026-09-24T20:04:34.279688+00:00",
+  "mode": "PAPER",
+  "transactions_sent": 0,
+  "checks": 2,
+  "mismatches": [],
+  "errors": [],
+  "samples": [],
+  "trades": [],
+  "source": "live BSC RPC, no replay",
+  "candidates": [],
+  "failure": "Пулы не найдены",
+  "passed": false,
+  "logs": [
+    "BSC подключена, chainId 56, блок 123817781",
+    "AutoPair: NOT_FOUND; найдено 0 пулов"
+  ],
+  "rpc_methods": {
+    "eth_chainId": 6,
+    "eth_getBlockByNumber": 2,
+    "eth_getCode": 1,
+    "eth_call": 2
+  },
+  "distinct_prices": 0
+}

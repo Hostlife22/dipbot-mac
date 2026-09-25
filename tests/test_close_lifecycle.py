@@ -18,6 +18,7 @@ def window_fixture(tmp_path, monkeypatch, *, busy=False, running=False, stopped=
     normalized=preferences.from_windows_ui({})
     field=lambda value:NS(text=lambda:str(value))
     window=NS(busy=busy,running=running,store=store,
+        usd=NS(set_token=lambda token:calls.append('usd_stop')),
         worker=NS(quit_event=threading.Event(),wait=wait),
         invalidate_discovery=lambda:calls.append('invalidate'),
         remember_amount=lambda:calls.append('remember'),
@@ -55,3 +56,12 @@ def test_close_wait_timeout_then_retry_preserves_journal(tmp_path,monkeypatch):
     saved=Store(window.store.path).data
     assert saved['operation']['description']=='synthetic pending'
     assert saved['ui_preferences']['selection']=={'router':'V2','pair':'WBNB'}
+
+
+@pytest.mark.parametrize('field,value', [('display_position', 1), ('stop_pending', True)])
+def test_close_refuses_manual_position_or_pending_stop(tmp_path, monkeypatch, field, value):
+    window, event, state, calls = window_fixture(tmp_path, monkeypatch)
+    setattr(window, field, value)
+    Window.closeEvent(window, event)
+    assert calls == ['message', 'ignore']
+    assert not window.worker.quit_event.is_set()

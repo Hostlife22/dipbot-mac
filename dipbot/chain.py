@@ -156,6 +156,24 @@ class Chain:
             raise ValueError("RPC возвращает устаревший блок; проверьте узел и часы Mac")
         return block["number"]
 
+    def check_receipt_access(self):
+        """Reject endpoints that accept broadcasts but refuse receipt reads."""
+        head = self.check(force_network=False)
+        try:
+            for offset in (3, 4, 5):
+                block = self.w3.eth.get_block(max(0, head-offset))
+                if not block['transactions']:
+                    continue
+                tx_hash = block['transactions'][0]
+                receipt = self.w3.eth.get_transaction_receipt(tx_hash)
+                if (receipt['transactionHash'] != tx_hash or receipt['blockNumber'] != block['number']
+                        or receipt['status'] not in (0, 1)):
+                    raise ValueError('Receipt does not match the probe block')
+                return
+            raise ValueError('No receipt probe transaction')
+        except Exception:
+            raise ValueError('RPC не подтверждает чтение receipts. Выберите другой RPC перед LIVE; транзакция не отправлена') from None
+
     def decimals(self, token):
         token = address(token)
         if token not in self._decimals:

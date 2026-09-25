@@ -44,6 +44,7 @@ class Worker(QThread):
         self.running = False
         self.strategy = Strategy(Settings())
         self.paper = PaperTrader(D("2"))
+        self.paper_context = None
         self.live = None
         self.tick = 0
         self.current_price = None
@@ -127,7 +128,13 @@ class Worker(QThread):
                 self.status()
 
     def status(self):
+        settings = self.strategy.settings
+        base, entry = self.strategy.base or D(0), self.strategy.entry or D(0)
+        levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
+                   'SL': str(entry*(1-settings.stop_loss/100))} if entry else
+                  {'DIP': str(base*(1-settings.dip/100))})
         self.event.emit("status", {"running": self.running, "mode": self.mode,
+                         "levels": levels,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
                          "entry": str(self.strategy.entry or 0),
@@ -189,6 +196,14 @@ class Worker(QThread):
             wallet_registry.register(self.store, live.owner, self.pool, pair_name)
         if self.pool and self.pool.router == "V3":
             interval = max(interval, 0.103)
+        if mode != "LIVE":
+            context = (mode,) if mode == "DEMO" else (mode, self.pool.token.lower(), self.pool.quote.lower())
+            if self.paper_context != context:
+                if self.paper.position and self.paper_context is not None:
+                    raise ValueError("Сначала закройте позицию предыдущего PAPER-рынка")
+                if not self.paper.position:
+                    self.paper = PaperTrader(settings.slippage)
+                self.paper_context = context
         self.mode, self.interval, self.live = mode, interval, live
         old_entry = self.strategy.entry
         self.strategy = Strategy(settings)
@@ -397,6 +412,10 @@ class Worker(QThread):
         verified = self.chain.verify_pool(pool.address, pool.token)
         if not self.discovery_current(generation):
             return
+        if self.paper_context is not None and self.paper_context != (
+                self.mode, verified.token.lower(), verified.quote.lower()):
+            self.paper = PaperTrader(self.paper.slippage)
+            self.paper_context = None
         self.pool = verified
         self.pool_generation = self.discovery_generation if generation is None else generation
         self.store.data.setdefault("known_pools", {})[self.pool.address.lower()] = asdict(self.pool)
@@ -420,6 +439,9 @@ class Worker(QThread):
             price = self.chain.price(self.pool)
         self.current_price = price
         self.price_time = time.monotonic()
+        demo = self.mode == 'DEMO' and not force_chain
+        self.event.emit('price_context', {'source': 'DEMO' if demo else getattr(self.chain, 'price_source', 'BSC'),
+                                        'quote': '' if demo else self.pool.quote})
         self.event.emit("price", str(price))
         return price
 
@@ -463,6 +485,7 @@ class Worker(QThread):
             execution = self.paper.buy(settings.amount, self.current_price)
             entry = self.current_price
         self.strategy.bought(entry)
+        self.event.emit("trade_marker", {"mode": self.mode, "side": "BUY", "price": str(entry)})
         self.log.emit(f"{self.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
     def close_position(self, reason):
@@ -486,6 +509,7 @@ class Worker(QThread):
             pnl = self.paper.sell(price)
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (без газа и token tax)")
         self.strategy.sold(price, reason)
+        self.event.emit("trade_marker", {"mode": self.mode, "side": "SELL", "price": str(price)})
         if self.mode == "LIVE":
             # SELL is already accounted for if this independent read fails.
             self.strategy.base = self.read_price()
