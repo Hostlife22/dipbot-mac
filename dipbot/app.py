@@ -16,6 +16,7 @@ from .chain import profiles, WBNB
 from .dynamic import catalog
 from .storage import Store, Vault, data_dir
 from .worker import Worker
+from .telemetry import TIMINGS
 from . import preferences
 from .usd import UsdRate, price_text
 
@@ -562,6 +563,17 @@ class Window(QMainWindow):
             'переключение после трёх замеров при преимуществе 25%. Отправка остаётся на основном RPC.')
         self.editable.append(self.adaptive_rpc)
         form.addRow(self.adaptive_rpc)
+        self.timing_report = QPlainTextEdit()
+        self.timing_report.setReadOnly(True)
+        self.timing_report.setMaximumHeight(150)
+        self.timing_report.setPlaceholderText('Задержки появятся после запросов. p50/p95/p99 — мс.')
+        self.timing_report.setToolTip('До 2048 последних замеров на ряд; счётчики за текущий процесс. '
+            'Включены неудачные попытки. Это задержки приложения, не гарантия включения сделки в блок.')
+        form.addRow('Измерения задержек', self.timing_report)
+        self.timing_timer = QTimer(self)
+        self.timing_timer.setInterval(5000)
+        self.timing_timer.timeout.connect(self.refresh_timings)
+        self.timing_timer.start()
         self.rpc_health_label = QLabel('')
         self.rpc_health_label.setWordWrap(True)
         form.addRow(self.rpc_health_label)
@@ -1137,6 +1149,15 @@ class Window(QMainWindow):
         if getattr(self, 'market_rpc_source', 'BSC') != 'BSC':
             source += ' · резервный RPC'
         self.quote_age.setText(f'1 TARGET в {conversion} · {source} · последняя котировка {age:.1f} с назад{state}')
+
+    def refresh_timings(self):
+        if not self.timing_report.isVisible():
+            return
+        rows = TIMINGS.snapshot()
+        self.timing_report.setPlainText('\n'.join(
+            f"{name}: {row['p50_ms']:.1f} / {row['p95_ms']:.1f} / {row['p99_ms']:.1f} мс"
+            f" · {row['count']} вызовов · {row['errors']} ошибок"
+            for name, row in sorted(rows.items())))
 
     def update_controls(self):
         idle = not self.busy and not self.running and not self.stop_pending

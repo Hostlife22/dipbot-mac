@@ -53,7 +53,13 @@ QScrollBar::handle:vertical:hover { background: #677e9c; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
 QCheckBox { spacing: 8px; background: transparent; }
+QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #8293ac; border-radius: 3px; background: #101a29; }
+QCheckBox::indicator:checked { background: #6cddbf; border-color: #6cddbf; image: url("@CHECKMARK@"); }
+QCheckBox::indicator:disabled { border-color: #44536b; }
+QCheckBox::indicator:checked:disabled { background: #496a66; }
 QToolTip { color: #f0f5fc; background: #25354b; border: 1px solid #576e8b; padding: 7px; }
 """
 
 STYLE = STYLE.replace("@CHEVRON@", (Path(__file__).parent / "assets" / "chevron-down.svg").as_posix())
+
+STYLE = STYLE.replace("@CHECKMARK@", (Path(__file__).parent / "assets" / "checkmark.svg").as_posix())

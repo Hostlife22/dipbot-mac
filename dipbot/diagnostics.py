@@ -34,6 +34,10 @@ class Diagnostics:
         sys.excepthook = self.exception
         threading.excepthook = self.thread_exception
         self.write({'event': 'start', 'previous_unclean': self.previous_unclean})
+        self.stop = threading.Event()
+        self.checkpoint_thread = threading.Thread(target=self.checkpoints, daemon=True,
+                                                   name='diagnostic-checkpoint')
+        self.checkpoint_thread.start()
 
     def write(self, event):
         try:
@@ -53,11 +57,25 @@ class Diagnostics:
     def thread_exception(self, args):
         self.exception(args.exc_type, args.exc_value, args.exc_traceback)
 
-    def close(self, clean=True):
+    def checkpoint(self):
         try:
             report = Store(self.directory / 'timings.json')
-            report.data = {'units': 'milliseconds', 'series': TIMINGS.snapshot()}
+            report.data = {'units': 'milliseconds', 'recorded_at': int(time.time()),
+                           'series': TIMINGS.snapshot()}
             report.save()
+        except (OSError, ValueError):
+            pass  # A diagnostic failure must not halt trading.
+
+    def checkpoints(self):
+        while not self.stop.wait(30):
+            self.checkpoint()
+
+    def close(self, clean=True):
+        self.stop.set()
+        self.checkpoint_thread.join(timeout=1)
+        try:
+            if not self.checkpoint_thread.is_alive():
+                self.checkpoint()
             self.session.data['clean_exit'] = clean and not self.had_exception
             self.session.data['ended'] = int(time.time())
             self.session.save()

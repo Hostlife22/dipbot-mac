@@ -65,3 +65,29 @@ os._exit(7)
         assert d.previous_unclean
     finally:
         d.close()
+
+
+def test_checkpoint_survives_abrupt_process_exit(tmp_path):
+    code = '''
+import os, sys
+from dipbot.diagnostics import Diagnostics
+from dipbot.telemetry import TIMINGS
+d = Diagnostics(sys.argv[1])
+TIMINGS.record('synthetic.read', .123)
+d.checkpoint()
+os._exit(9)
+'''
+    proc = subprocess.run([sys.executable, '-c', code, str(tmp_path)], timeout=20)
+    assert proc.returncode == 9
+    saved = json.loads((tmp_path/'timings.json').read_text())
+    assert saved['series']['synthetic.read']['p50_ms'] == 123
+    assert not json.loads((tmp_path/'session.json').read_text())['clean_exit']
+
+
+def test_corrupt_diagnostic_file_does_not_block_shutdown(tmp_path):
+    d = Diagnostics(tmp_path)
+    (tmp_path/'timings.json').write_text('broken')
+    d.checkpoint()
+    d.close()
+    assert not d.checkpoint_thread.is_alive()
+    assert json.loads((tmp_path/'session.json').read_text())['clean_exit']
