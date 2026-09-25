@@ -410,7 +410,7 @@ class Worker(QThread):
                     'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
                     'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(), 'entry_cost_policy':cost_policy.export(), 'paper_policy':paper_policy.export(),
                     'starts_with_position': self.strategy.entry is not None})
-                self.log.emit('Запись рынка включена: локальный архив market-recordings (до 10 MiB на запуск)')
+                self.log.emit('Запись рынка включена: локальный архив market-recordings (части до 10 MiB, архив до 200 MiB)')
             except OSError:
                 self.log.emit('Запись рынка недоступна: проверьте свободное место и лимит архива')
 

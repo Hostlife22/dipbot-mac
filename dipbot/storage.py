@@ -50,8 +50,8 @@ class Store:
         for index,(key,value) in enumerate(self.data.items()):
             if index:
                 payload.append(',')
-            payload.extend((encode(key), ':',
-                value.encoded() if isinstance(value, Ledger) else encode(value)))
+            payload.extend((encode(key), ':'))
+            payload.extend(value.encoded_parts() if isinstance(value, Ledger) else (encode(value),))
         payload.append('}')
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".state-")
         replaced = False

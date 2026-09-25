@@ -104,20 +104,72 @@ class TrackedList(list):
 
 
 class Ledger(TrackedDict):
+    group_size = 1000
+
     def __init__(self,value):
         self.revision=0
         self._json=None
+        self._parts=None
         self._derived={}
-        super().__init__(value,self.invalidate)
+        self._groups=[]
+        self._key_groups={}
+        self._encoded_groups={}
+        self._layout_dirty=False
+        self.changed=self.invalidate
+        dict.__init__(self)
+        for key,item in value.items():self[key]=item
 
-    def invalidate(self):
+    def _clear_summary(self):
         self.revision+=1
         self._json=None
+        self._parts=None
         self._derived.clear()
 
+    def invalidate(self):
+        # Root deletion/reordering is rare; reconstruct grouping on the next save.
+        self._clear_summary()
+        self._layout_dirty=True
+        self._encoded_groups.clear()
+
+    def _layout(self):
+        if self._layout_dirty:
+            keys=list(self)
+            self._groups=[keys[i:i+self.group_size] for i in range(0,len(keys),self.group_size)]
+            self._key_groups={key:i for i,group in enumerate(self._groups) for key in group}
+            self._layout_dirty=False
+
+    def _touch_key(self,key):
+        self._clear_summary()
+        group=self._key_groups.get(key)
+        if group is not None:self._encoded_groups.pop(group,None)
+
+    def __setitem__(self,key,value):
+        value=tracked(value,lambda:self._touch_key(key))
+        self._layout()
+        if key not in self:
+            if not self._groups or len(self._groups[-1])>=self.group_size:
+                self._groups.append([])
+            self._groups[-1].append(key)
+            self._key_groups[key]=len(self._groups)-1
+        self._touch_key(key)
+        dict.__setitem__(self,key,value)
+
+    def encoded_parts(self):
+        if self._parts is None:
+            self._layout()
+            parts=['{']
+            for index,group in enumerate(self._groups):
+                if index:parts.append(',')
+                if index not in self._encoded_groups:
+                    encoded=json.dumps({key:self[key] for key in group},ensure_ascii=False,separators=(',',':'))
+                    self._encoded_groups[index]=encoded[1:-1]
+                parts.append(self._encoded_groups[index])
+            parts.append('}')
+            self._parts=tuple(parts)
+        return self._parts
+
     def encoded(self):
-        if self._json is None:
-            self._json=json.dumps(self,ensure_ascii=False,separators=(',',':'))
+        if self._json is None:self._json=''.join(self.encoded_parts())
         return self._json
 
     def summary(self,key,calculate):

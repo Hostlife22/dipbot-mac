@@ -19,7 +19,7 @@ def test_operator_cleanup_closes_virtual_position_and_joins(tmp_path):
 
 
 def test_archive_drops_are_not_a_successful_complete_recording():
-    recorder=NS(path=Path('synthetic.jsonl'),written=100,dropped=1,error_type='',thread=NS(is_alive=lambda:False))
+    recorder=NS(completed=True,paths=[Path('synthetic.jsonl')],path=Path('synthetic.jsonl'),written=100,dropped=1,error_type='',thread=NS(is_alive=lambda:False))
     assert not recording_health([NS(recorder=recorder)])['recordings_complete']
     recorder.dropped=0
     assert recording_health([NS(recorder=recorder)])['recordings_complete']

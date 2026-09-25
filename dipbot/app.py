@@ -637,7 +637,7 @@ class Window(QMainWindow):
         grid.addRow(self.continue_after_exit)
         self.record_market = QCheckBox('Записывать рынок для повторной проверки')
         self.record_market.setChecked(True)
-        self.record_market.setToolTip('Локальные цены/блоки/сигналы без ключей и RPC URL. До 10 MiB на запуск, '
+        self.record_market.setToolTip('Локальные цены/блоки/сигналы без ключей и RPC URL. Части до 10 MiB с автоматическим продолжением, '
             '200 MiB на архив; переполнение отмечается как неполные данные.')
         self.editable.append(self.record_market)
         grid.addRow(self.record_market)

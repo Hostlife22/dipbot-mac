@@ -53,9 +53,10 @@ def recording_health(workers):
         if recorder is not None:
             rows.append({'file':recorder.path.name,'written':recorder.written,
                          'dropped':recorder.dropped,'error_type':recorder.error_type,
-                         'writer_joined':not recorder.thread.is_alive()})
+                         'writer_joined':not recorder.thread.is_alive(),'completed':recorder.completed,
+                         'segments':len(recorder.paths)})
     return {'recordings':rows,'recordings_complete':len(rows)==len(workers) and bool(rows)
-            and all(not r['dropped'] and not r['error_type'] and r['writer_joined'] for r in rows)}
+            and all(not r['dropped'] and not r['error_type'] and r['writer_joined'] and r['completed'] for r in rows)}
 
 
 def run(directory, markets, seconds, *, autonomous=False, amount_usd=None, fee_usd="0", trailing="0.75", take_profit="1", stop_loss="1"):

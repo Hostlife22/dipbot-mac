@@ -51,16 +51,20 @@ def benchmark(sizes=(100,1000,10000,100000), repeats=5):
                 assert D(summary['value']) == D('.098')*count
                 assert expenses['allocation_complete']
                 assert D(expenses['realized_less_other_gas_usd']) == D('.098')*count
+            changed_key=next(iter(store.data['gas_ledger']))
+            store.data['gas_ledger'][changed_key]['block']+=1
+            start=time.perf_counter();store.save();updated_ms=(time.perf_counter()-start)*1000
             start=time.perf_counter();loaded=Store(store.path);load_ms=(time.perf_counter()-start)*1000
             assert len(loaded.data['closed_trades'])==count
             assert len(loaded.data['gas_ledger'])==2*count
             assert loaded.data['operation']==store.data['operation']
+            assert loaded.data['gas_ledger'][changed_key]==store.data['gas_ledger'][changed_key]
             rows.append({'closed_trades':count,'gas_receipts':2*count,
                          'bytes':store.path.stat().st_size,'samples_ms':durations,
                          'median_ms':statistics.median(durations),'max_ms':max(durations),
                          'load_ms':load_ms,'summary_median_ms':statistics.median(summaries),
                          'closed_summary_median_ms':statistics.median(closed_summaries),
-                         'cold_save_ms':durations[0], 'warm_save_median_ms':statistics.median(durations[1:])})
+                         'updated_receipt_save_ms':updated_ms, 'cold_save_ms':durations[0], 'warm_save_median_ms':statistics.median(durations[1:])})
     return {'synthetic':True,'schema':'production accounting writers',
             'includes_fsync':True,'sizes':rows,'repeats':repeats,
             'limitations':'Single process, temporary filesystem, no long-run or concurrent GUI guarantee'}

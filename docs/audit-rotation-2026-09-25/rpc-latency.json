@@ -1,0 +1,74 @@
+{
+  "utc": "2026-09-25T17:15:56.094268+00:00",
+  "endpoints": [
+    {
+      "host": "bsc-dataseed.binance.org",
+      "samples_per_router": 3,
+      "price": {
+        "V2": {
+          "count": 3,
+          "median_ms": 254.21,
+          "max_ms": 277.84
+        },
+        "V3": {
+          "count": 3,
+          "median_ms": 263.23,
+          "max_ms": 276.32
+        }
+      },
+      "wire_requests": {
+        "eth_getBlockByNumber": {
+          "count": 12,
+          "median_ms": 79.58,
+          "max_ms": 94.38
+        },
+        "eth_call": {
+          "count": 6,
+          "median_ms": 85.47,
+          "max_ms": 110.65
+        }
+      },
+      "block_number": 123987244,
+      "block_age_seconds": 1.094,
+      "passed": true
+    },
+    {
+      "host": "bsc-rpc.publicnode.com",
+      "samples_per_router": 3,
+      "price": {
+        "V2": {
+          "count": 3,
+          "median_ms": 222.13,
+          "max_ms": 277.69
+        },
+        "V3": {
+          "count": 3,
+          "median_ms": 236.17,
+          "max_ms": 292.03
+        }
+      },
+      "wire_requests": {
+        "eth_getBlockByNumber": {
+          "count": 12,
+          "median_ms": 74.21,
+          "max_ms": 113.45
+        },
+        "eth_call": {
+          "count": 6,
+          "median_ms": 71.26,
+          "max_ms": 110.01
+        }
+      },
+      "block_number": 123987243,
+      "block_age_seconds": 0.605,
+      "passed": true
+    },
+    {
+      "host": "bsc-dataseed-public.bnbchain.org",
+      "samples_per_router": 3,
+      "passed": false,
+      "error_type": "ConnectionError"
+    }
+  ],
+  "transactions_sent": 0
+}

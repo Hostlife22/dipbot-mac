@@ -1,0 +1,25 @@
+{
+  "mode": "PAPER",
+  "transactions_sent": 0,
+  "duration_completed": true,
+  "workers_joined": true,
+  "clean_stop": true,
+  "recordings": [
+    {
+      "file": "market-20260925-201353-e986f08ed59648a2ac69698226f719dc-0.jsonl",
+      "written": 130,
+      "dropped": 0,
+      "error_type": "",
+      "writer_joined": true,
+      "completed": true,
+      "segments": 19
+    }
+  ],
+  "recordings_complete": true,
+  "passed": true,
+  "elapsed_seconds": 30.822961363002833,
+  "test_segment_bytes": 4096,
+  "replay_observations": 65,
+  "fills": {},
+  "errors": []
+}
