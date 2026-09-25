@@ -1,6 +1,7 @@
 """Local crash evidence without exception messages, locals, credentials or wallet data."""
 import faulthandler
 import json
+import resource
 import os
 from pathlib import Path
 import sys
@@ -10,6 +11,15 @@ import traceback
 
 from .storage import Store
 from .telemetry import TIMINGS
+
+
+def resource_snapshot():
+    """No process arguments, paths, locals or thread names in the checkpoint."""
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    return {'peak_rss_bytes': int(usage.ru_maxrss * (1 if sys.platform == 'darwin' else 1024)),
+            'python_threads': threading.active_count(),
+            'cpu_user_seconds': usage.ru_utime, 'cpu_system_seconds': usage.ru_stime,
+            'monotonic_seconds': time.monotonic()}
 
 
 class Diagnostics:
@@ -44,7 +54,7 @@ class Diagnostics:
             with self.lock:
                 self.stream.write(json.dumps({'time': int(time.time()), **event}) + '\n')
                 self.stream.flush()
-        except OSError:
+        except (OSError, ValueError):
             pass  # Diagnostics must never change trading or recovery state.
 
     def exception(self, kind, value, tb):
@@ -61,7 +71,7 @@ class Diagnostics:
         try:
             report = Store(self.directory / 'timings.json')
             report.data = {'units': 'milliseconds', 'recorded_at': int(time.time()),
-                           'series': TIMINGS.snapshot()}
+                           'series': TIMINGS.snapshot(), 'resources': resource_snapshot()}
             report.save()
         except (OSError, ValueError):
             pass  # A diagnostic failure must not halt trading.

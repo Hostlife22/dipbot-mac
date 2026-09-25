@@ -91,3 +91,20 @@ def test_corrupt_diagnostic_file_does_not_block_shutdown(tmp_path):
     d.close()
     assert not d.checkpoint_thread.is_alive()
     assert json.loads((tmp_path/'session.json').read_text())['clean_exit']
+
+
+def test_resource_checkpoint_has_explicit_peak_units_without_sensitive_data(tmp_path):
+    d=Diagnostics(tmp_path)
+    try:
+        d.checkpoint()
+        resources=json.loads((tmp_path/'timings.json').read_text())['resources']
+        assert resources['peak_rss_bytes']>0 and resources['python_threads']>=1
+        assert resources['cpu_user_seconds']>=0
+        assert set(resources)=={'peak_rss_bytes','python_threads','cpu_user_seconds','cpu_system_seconds','monotonic_seconds'}
+    finally:
+        d.close()
+
+
+def test_late_diagnostic_exception_cannot_raise_from_closed_stream(tmp_path):
+    d=Diagnostics(tmp_path);d.close()
+    d.write({'event':'late_callback'})

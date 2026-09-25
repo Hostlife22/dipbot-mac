@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import tempfile
 
+from .telemetry import timed
+
 
 def data_dir():
     root = Path.home() / "Library/Application Support/DipBotMac" if sys.platform == "darwin" else Path.home() / ".local/share/dipbot-mac"
@@ -22,6 +24,7 @@ class Store:
         if not isinstance(self.data, dict):
             raise ValueError("Повреждён state.json; торговля заблокирована")
 
+    @timed("storage.save")
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".state-")
