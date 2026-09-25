@@ -20,3 +20,12 @@ def test_custom_url_is_not_overwritten_by_selector_sync(window):
 def test_backup_can_be_disabled(window):
     window.backup_rpc_preset.setCurrentIndex(2)
     assert window.backup_rpc.text()==''
+
+
+def test_websocket_is_opt_in_and_loaded_from_keychain(window, monkeypatch):
+    from dipbot.storage import Vault
+    assert window.ws_rpc.text() == '' and window.worker.head_feed is None
+    monkeypatch.setattr(Vault, 'get', lambda self, name: 'wss://example.invalid/synthetic' if name == 'ws_rpc' else None)
+    window.load_rpc()
+    assert window.ws_rpc.text() == 'wss://example.invalid/synthetic'
+    assert window.worker.head_feed is None  # Loading never connects automatically.

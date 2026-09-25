@@ -485,12 +485,15 @@ class Window(QMainWindow):
         self.backup_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
         self.backup_rpc_preset = self.add_rpc_presets(form, 'Источник резерва', self.backup_rpc, BACKUP)
         form.addRow('Резервный RPC', self.backup_rpc)
+        self.ws_rpc = self.field(placeholder='Необязательный wss://… · новые блоки + HTTP fallback')
+        self.ws_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        form.addRow('WebSocket RPC', self.ws_rpc)
         self.save_rpc = QCheckBox("Сохранить RPC в macOS Keychain")
         self.editable.append(self.save_rpc)
         form.addRow(self.save_rpc)
         row = QHBoxLayout()
         row.addWidget(self.button("Подключить", lambda: self.send("connect", rpc=self.rpc.text().strip(),
-            backup_rpc=self.backup_rpc.text().strip(), save=self.save_rpc.isChecked())))
+            backup_rpc=self.backup_rpc.text().strip(), ws_rpc=self.ws_rpc.text().strip(), save=self.save_rpc.isChecked())))
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
@@ -776,6 +779,9 @@ class Window(QMainWindow):
         try:
             primary = Vault().get("rpc")
             backup = Vault().get('backup_rpc')
+            websocket = Vault().get('ws_rpc')
+            if websocket is not None:
+                self.ws_rpc.setText(websocket)
             if primary is not None:
                 self.rpc.setText(primary)
             if backup is not None:

@@ -19,6 +19,7 @@ from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_rec
 
 from .entry_guard import EntryRejected
 from .signal_policy import SignalPolicy
+from .head_feed import HeadFeed, HeadSchedule
 
 
 def safe_error(exc):
@@ -46,6 +47,8 @@ class Worker(QThread):
         self.stop_event = threading.Event()
         self.chain = None
         self.backup_chain = None
+        self.head_feed = None
+        self.head_schedule = HeadSchedule()
         self.backup_until = 0.0
         self.backup_verified_pool = None
         self.market_source = 'BSC'
@@ -82,10 +85,18 @@ class Worker(QThread):
         self.commands.put((name, data))
 
     def run(self):
+        try:
+            self.run_loop()
+        finally:
+            if self.head_feed is not None:
+                self.head_feed.stop()
+
+    def run_loop(self):
         next_tick = time.monotonic()
         while not self.quit_event.is_set():
             try:
-                timeout = min(0.05, max(0, next_tick - time.monotonic())) if self.running else 0.05
+                timeout = (min(0.05, max(0, next_tick - time.monotonic()))
+                           if self.running and self.head_feed is None else 0.05)
                 name, data = self.commands.get(timeout=timeout)
             except queue.Empty:
                 name = None
@@ -134,8 +145,14 @@ class Worker(QThread):
                     self.event.emit("error", safe_error(exc))
                     self.log.emit("STOP: " + safe_error(exc))
                 self.status()
-            if self.running and time.monotonic() >= next_tick:
+            head = self.head_feed.snapshot() if self.head_feed is not None and self.mode != 'DEMO' and not self.quote_unavailable else None
+            due = (self.head_schedule.due(head, time.monotonic(), next_tick)
+                   if self.head_feed is not None and self.mode != 'DEMO' else time.monotonic() >= next_tick)
+            if self.running and due:
                 poll_started = time.monotonic()
+                if self.head_schedule.consume(head, poll_started) and self.strategy.entry is None:
+                    self.strategy.reset_anchor()
+                    self.log.emit('Пропуск или смена ветви WebSocket: база DIP сброшена; читается актуальное состояние HTTP')
                 try:
                     self.observe()
                 except Exception as exc:
@@ -270,6 +287,11 @@ class Worker(QThread):
                 backup = Chain(data['backup_rpc'].strip())
                 backup.restrict_to_reads()
                 backup.check()
+            feed = HeadFeed(data['ws_rpc'].strip()) if data.get('ws_rpc', '').strip() else None
+            if self.head_feed is not None:
+                self.head_feed.stop()
+            self.head_feed = feed.start() if feed is not None else None
+            self.head_schedule = HeadSchedule()
             self.chain = chain
             self.backup_chain = backup
             self.backup_until = 0.0
@@ -280,6 +302,7 @@ class Worker(QThread):
             if data.get("save"):
                 Vault().save("rpc", data["rpc"])
                 Vault().save('backup_rpc', data.get('backup_rpc', '').strip())
+                Vault().save('ws_rpc', data.get('ws_rpc', '').strip())
         elif name == "wallet":
             account = Account.from_key(data["key"])
             Vault().save("wallet", data["key"])

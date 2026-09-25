@@ -390,6 +390,7 @@ dependencies = [
     { name = "keyring" },
     { name = "pyside6" },
     { name = "web3" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -403,6 +404,7 @@ requires-dist = [
     { name = "keyring", specifier = ">=25,<26" },
     { name = "pyside6", specifier = ">=6.8,<7" },
     { name = "web3", specifier = ">=7.6,<8" },
+    { name = "websockets", specifier = ">=15,<16" },
 ]
 
 [package.metadata.requires-dev]

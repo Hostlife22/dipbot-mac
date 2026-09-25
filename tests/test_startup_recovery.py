@@ -62,7 +62,7 @@ def test_keychain_load_custom_empty_backup_and_missing_defaults(window,monkeypat
     monkeypatch.setattr(Vault,'get',lambda *a:None)
     window.load_rpc()
     assert (window.rpc.text(),window.backup_rpc.text())==(primary,backup)
-    monkeypatch.setattr(Vault,'get',lambda self,name:{'rpc':'https://example.invalid/test','backup_rpc':''}[name])
+    monkeypatch.setattr(Vault,'get',lambda self,name:{'rpc':'https://example.invalid/test','backup_rpc':''}.get(name))
     window.load_rpc()
     assert window.rpc.text()=='https://example.invalid/test' and not window.backup_rpc.text()
     assert not window.running and window.worker.chain is None
