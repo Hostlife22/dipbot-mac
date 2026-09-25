@@ -176,6 +176,9 @@ class Window(QMainWindow):
         self.banner.setObjectName("banner")
         self.banner.setWordWrap(True)
         layout.addWidget(self.banner)
+        self.recovery_notice = QPushButton()
+        self.recovery_notice.clicked.connect(self.show_recovery)
+        layout.addWidget(self.recovery_notice)
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
         self.tabs.tabBar().setDrawBase(False)
@@ -212,6 +215,7 @@ class Window(QMainWindow):
             except ValueError:
                 saved_preferences = None
                 self.log("Сохранённые параметры некорректны: использованы значения по умолчанию")
+        self.refresh_recovery()
         self.mode_changed()
         self.update_profiles()
         saved_preferences = saved_preferences or {}
@@ -480,13 +484,24 @@ class Window(QMainWindow):
         form.addRow("WALLET ADDRESS", self.wallet)
         form.addRow(self.button("Обновить балансы", self.balances))
         layout.addWidget(wallet)
-        recovery = QGroupBox("НЕЗАВЕРШЁННЫЕ ТРАНЗАКЦИИ")
+        recovery = self.recovery_group = QGroupBox("ВОССТАНОВЛЕНИЕ LIVE")
         rec = QVBoxLayout(recovery)
+        self.recovery_details = QLabel()
+        self.recovery_details.setTextFormat(Qt.PlainText)
+        self.recovery_details.setWordWrap(True)
+        self.recovery_details.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        rec.addWidget(self.recovery_details)
+        self.saved_positions = QComboBox()
+        rec.addWidget(self.saved_positions)
+        rec.addWidget(self.button("Подготовить сохранённый пул", self.prepare_saved_position))
+        self.receipt_result = QLabel('Подключите RPC, затем проверьте receipts. Для чтения ключ не требуется.')
+        self.receipt_result.setWordWrap(True)
+        rec.addWidget(self.receipt_result)
         text = QLabel("После таймаута или аварийного закрытия LIVE блокируется. Сначала проверьте receipt и балансы. "
                       "Снятие блокировки сбрасывает кэш позиций; реальные остатки остаются в кошельке.")
         text.setWordWrap(True)
         rec.addWidget(text)
-        rec.addWidget(self.button("Проверить receipts", lambda: self.send("reconcile", gas=self.gas.text())))
+        rec.addWidget(self.button("Проверить receipts", self.check_receipts))
         rec.addWidget(self.button("Балансы сверены · снять блокировку", self.unlock, "danger"))
         layout.addWidget(recovery)
         layout.addStretch()
@@ -662,10 +677,68 @@ class Window(QMainWindow):
         self.key.clear()
         self.send("wallet", key=key)
 
+    def refresh_recovery(self):
+        operation = self.store.data.get('operation')
+        positions = self.store.data.get('positions', {})
+        signature = repr((operation, positions))
+        if getattr(self, '_recovery_signature', None) == signature:
+            return
+        self._recovery_signature = signature
+        self.recovery_notice.setVisible(bool(operation or positions))
+        self.recovery_notice.setText(f'Восстановление LIVE · сохранённых позиций: {len(positions)}' +
+            (' · незавершённая операция · открыть' if operation else ' · открыть'))
+        details = ['Локальные записи, не подтверждённый текущий баланс. Торговля автоматически не запускается.']
+        if operation:
+            details.append('Кошелёк операции: ' + str(operation.get('wallet', 'не указан')))
+            for tx in operation.get('transactions', []):
+                details.append(str(tx.get('hash', 'hash не записан')) + ' · ' + str(tx.get('status', 'неизвестно')))
+            if not operation.get('transactions'):
+                details.append('Hash транзакции не записан; перед снятием блокировки проверьте балансы.')
+        selected = self.saved_positions.currentData()
+        self.saved_positions.clear()
+        for key, position in positions.items():
+            pool = position['pool']
+            amount = Decimal(position['amount']) / Decimal(10)**pool['token_decimals']
+            label = f"{key.split(':')[0]} · {pool['router']} · {pool['address']} · TARGET {amount}"
+            self.saved_positions.addItem(label, key)
+            details.append(label)
+        index = self.saved_positions.findData(selected)
+        if index >= 0:
+            self.saved_positions.setCurrentIndex(index)
+        self.recovery_details.setText('\n'.join(details))
+
+    def check_receipts(self):
+        self.receipt_result.setText("Проверка receipts через RPC…")
+        self.send("reconcile", gas=self.gas.text())
+
+    def show_recovery(self):
+        self.tabs.setCurrentIndex(1)
+        self.tabs.widget(1).ensureWidgetVisible(self.recovery_group)
+
+    def prepare_saved_position(self):
+        if self.running or self.busy or self.display_position > 0:
+            return
+        record = self.store.data.get('positions', {}).get(self.saved_positions.currentData())
+        if not record:
+            return
+        self.mode.setCurrentText('LIVE')
+        self.invalidate_discovery()
+        self.router.setCurrentText(record['pool']['router'])
+        self.token.setText(record['pool']['token'])
+        self.pool_input.setText(record['pool']['address'])
+        self.autopair_timer.stop()
+        self.market_toggle.setChecked(True)
+        self.tabs.setCurrentIndex(0)
+        self.log('Пул подготовлен. Подключите RPC и выполните CHECK POOL; сохранённая запись не заменяет проверку сети.')
+
     def load_rpc(self):
         try:
-            self.rpc.setText(Vault().get("rpc") or "")
-            self.backup_rpc.setText(Vault().get('backup_rpc') or '')
+            primary = Vault().get("rpc")
+            backup = Vault().get('backup_rpc')
+            if primary is not None:
+                self.rpc.setText(primary)
+            if backup is not None:
+                self.backup_rpc.setText(backup)
         except Exception:
             QMessageBox.warning(self, "Keychain", "Не удалось прочитать RPC из Keychain")
 
@@ -963,7 +1036,11 @@ class Window(QMainWindow):
                 except ValueError:
                     pass
                 self.table.setItem(row, 2, item)
+        elif name == "receipt_review":
+            self.receipt_result.setText(payload)
+            self.refresh_recovery()
         elif name == "status":
+            self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
             self.entry_notice = payload.get('entry_notice', '')
             self.halt_reason = payload.get('halt_reason', '')

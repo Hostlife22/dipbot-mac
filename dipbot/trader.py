@@ -300,29 +300,33 @@ class LiveTrader:
             raise UncertainTransaction("Некорректный receipt или другой hash; блокировка сохранена")
 
     def reconcile(self):
-        operation = self.store.data.get("operation")
-        if not operation:
-            return "Незавершённых операций нет"
-        if operation["wallet"].lower() != self.owner.lower():
-            raise ValueError("Для сверки нужен тот же кошелёк, который начал операцию")
-        self.chain.check()
-        for record in operation["transactions"]:
-            try:
-                receipt = self.chain.w3.eth.get_transaction_receipt(record["hash"])
-            except TransactionNotFound:
-                raise UncertainTransaction(f"Не найден receipt {record['hash']}; блокировка сохранена") from None
-            self.validate_receipt(receipt, record["hash"])
-            self.check_canonical(receipt)
-            if record.get('block_hash') and record['block_hash'] != Web3.to_hex(receipt['blockHash']):
-                raise UncertainTransaction('Блок ранее подтверждённой транзакции изменился; нужна ручная сверка')
-            if 'blockHash' in receipt:
-                record['block_hash'] = Web3.to_hex(receipt['blockHash'])
-            record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
-            record["block"] = receipt["blockNumber"]
-        # Do not clear the latch automatically: balances/position also need review.
-        self.store.save()
-        return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"
+        return reconcile_receipts(self.chain, self.store, self.owner)
 
+
+def reconcile_receipts(chain, store, owner):
+    operation = store.data.get("operation")
+    if not operation:
+        return "Незавершённых операций нет"
+    if operation["wallet"].lower() != owner.lower():
+        raise ValueError("Для сверки нужен тот же кошелёк, который начал операцию")
+    chain.check()
+    for record in operation["transactions"]:
+        try:
+            receipt = chain.w3.eth.get_transaction_receipt(record["hash"])
+        except TransactionNotFound:
+            raise UncertainTransaction(f"Не найден receipt {record['hash']}; блокировка сохранена") from None
+        LiveTrader.validate_receipt(receipt, record["hash"])
+        if hasattr(chain, "canonical_receipt"):
+            LiveTrader.retry_read(lambda: chain.canonical_receipt(receipt))
+        if record.get('block_hash') and record['block_hash'] != Web3.to_hex(receipt['blockHash']):
+            raise UncertainTransaction('Блок ранее подтверждённой транзакции изменился; нужна ручная сверка')
+        if 'blockHash' in receipt:
+            record['block_hash'] = Web3.to_hex(receipt['blockHash'])
+        record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
+        record["block"] = receipt["blockNumber"]
+    # Do not clear the latch automatically: balances/position also need review.
+    store.save()
+    return "Все записанные транзакции завершены. Проверьте балансы; затем снимите блокировку вручную"
 
 class PaperTrader:
     def __init__(self, slippage: D):

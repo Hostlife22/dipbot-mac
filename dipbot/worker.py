@@ -13,7 +13,7 @@ from .storage import Store, Vault, SaveAfterReplaceError
 from . import dynamic, wallet_registry
 from .routes import seed_preference
 from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minimum_out
-from .trader import LiveTrader, PaperTrader, UncertainTransaction
+from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_receipts
 
 
 class EntryRejected(ValueError):
@@ -95,6 +95,8 @@ class Worker(QThread):
                 except Exception as exc:
                     if name in ("discover", "verify", "select") and not self.discovery_current(data.get("generation")):
                         continue
+                    if name == "reconcile":
+                        self.event.emit("receipt_review", safe_error(exc))
                     self.running = False
                     self.halt_reason = safe_error(exc)
                     self.log.emit("ОШИБКА: " + safe_error(exc))
@@ -428,6 +430,12 @@ class Worker(QThread):
             self.sweep()
         elif name in ("reconcile", "unlock"):
             self.require_chain()
+            if name == "reconcile":
+                operation = self.store.data.get("operation")
+                result = reconcile_receipts(self.chain, self.store, operation["wallet"] if operation else "")
+                self.log.emit(result)
+                self.event.emit("receipt_review", result)
+                return
             key = Vault().get("wallet")
             if not key:
                 raise ValueError("Нет кошелька в Keychain")

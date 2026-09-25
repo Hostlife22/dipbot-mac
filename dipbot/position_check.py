@@ -87,7 +87,18 @@ def run(app, directory, resume=False):
             if resume:
                 operation = w.store.data['operation'].copy()
                 positions = w.store.data['positions'].copy()
-                assert not w.worker.running
+                assert not w.worker.running and w.worker.chain is None and w.mode.currentText() == 'DEMO'
+                assert not w.recovery_notice.isHidden()
+                assert w.router.currentText() == 'V2' and w.quote.currentText() == 'WBNB'
+                assert w.params['amount'].text() == '1'
+                w.quote.setCurrentText('USDT'); assert w.params['amount'].text() == '0.25'
+                w.quote.setCurrentText('WBNB'); assert w.params['amount'].text() == '1'
+                report['scenarios'].append('pair_amounts_restored_without_autostart')
+                snap('startup_recovery')
+                w.recovery_notice.click(); assert w.tabs.currentIndex() == 1
+                w.prepare_saved_position()
+                assert w.token.text() == pool.token and w.pool_input.text() == pool.address
+                assert not w.selection_ready and not w.start.isEnabled()
                 select('LIVE')
                 w.worker.mode = 'LIVE'
                 w.worker.live = SimpleNamespace(owner=owner)
@@ -106,6 +117,25 @@ def run(app, directory, resume=False):
                 assert w.store.data['operation'] == operation and w.store.data['positions'] == positions
                 snap('live_restart_locked')
                 report['scenarios'].append('fresh_process_restores_position_and_pending_lock')
+                from web3 import Web3
+                from web3.exceptions import TransactionNotFound
+                pending = [True]
+                def receipt(tx_hash):
+                    if pending[0]:
+                        raise TransactionNotFound('synthetic pending')
+                    return {'transactionHash':Web3.to_bytes(hexstr=tx_hash), 'status':1, 'blockNumber':7}
+                w.worker.chain.check = lambda:7
+                w.worker.chain.w3 = SimpleNamespace(eth=SimpleNamespace(get_transaction_receipt=receipt))
+                w.show_recovery(); w.check_receipts()
+                wait(lambda:not w.busy and len(errors) == 1)
+                assert 'Не найден receipt' in w.receipt_result.text()
+                assert w.locked and w.store.data['positions'] == positions
+                pending[0] = False
+                w.check_receipts(); wait(lambda:not w.busy and 'Все записанные' in w.receipt_result.text())
+                assert w.locked and not w.start.isEnabled()
+                assert w.store.data['operation']['transactions'][0]['status'] == 'confirmed'
+                snap('receipt_review_locked')
+                report['scenarios'].append('keyless_receipt_review_pending_then_confirmed_stays_locked')
             else:
                 select('PAPER')
                 quantity = start_buy(); snap('dip_buy')
@@ -147,10 +177,14 @@ def run(app, directory, resume=False):
                 # Known synthetic fixture for a second, fresh application process.
                 w.store.data['positions'] = {owner.lower()+':'+pool.address.lower():
                     {'amount':10**16, 'entry':'96', 'pool':asdict(pool)}}
-                w.store.data['operation'] = {'description':'synthetic unknown BUY', 'owner':owner,
+                w.store.data['operation'] = {'description':'synthetic unknown BUY', 'wallet':owner,
                     'transactions':[{'hash':'0x'+'56'*32, 'status':'pending'}]}
                 w.store.save()
                 report['scenarios'].append('saved_synthetic_restart_fixture')
+                w.quote.setCurrentText('USDT'); w.params['amount'].setText('0.25')
+                w.quote.setCurrentText('WBNB'); w.params['amount'].setText('1')
+                w.close()
+                assert not w.isVisible()
             report['passed'] = True
         finally:
             w.worker.quit_event.set(); assert w.worker.wait(15000)
