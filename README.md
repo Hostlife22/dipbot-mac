@@ -14,7 +14,7 @@ PancakeSwap V2 / V3 · Python · PySide6 · macOS Keychain
 ![Python](https://img.shields.io/badge/Python-3.12–3.13-3776AB?logo=python&logoColor=white)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
-[Руководство](README_RU.md) · [Архитектура](docs/ARCHITECTURE_RU.md) · [Разработка](CONTRIBUTING.md) · [История изменений](CHANGELOG.md)
+[Выпуск 25.09.2026](docs/RELEASE_2026_09_25_RU.md) · [Руководство](README_RU.md) · [Архитектура](docs/ARCHITECTURE_RU.md) · [Разработка](CONTRIBUTING.md) · [История изменений](CHANGELOG.md)
 
 </div>
 
