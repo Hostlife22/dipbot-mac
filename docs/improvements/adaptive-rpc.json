@@ -1,0 +1,24 @@
+{
+  "seconds": 6.703740362001554,
+  "quotes": 36,
+  "errors": [],
+  "sources": [
+    {
+      "source": "\u043e\u0441\u043d\u043e\u0432\u043d\u043e\u0439",
+      "samples": 32,
+      "median_ms": 151.5505765000853,
+      "consecutive_errors": 0,
+      "preferred": true
+    },
+    {
+      "source": "\u0440\u0435\u0437\u0435\u0440\u0432\u043d\u044b\u0439",
+      "samples": 3,
+      "median_ms": 149.86553799826652,
+      "consecutive_errors": 0,
+      "preferred": false
+    }
+  ],
+  "last_block": 123949926,
+  "accelerated_probe_schedule": true,
+  "transactions_sent": 0
+}

@@ -17,7 +17,7 @@ def window_fixture(tmp_path, monkeypatch, *, busy=False, running=False, stopped=
         return state['stopped']
     normalized=preferences.from_windows_ui({})
     field=lambda value:NS(text=lambda:str(value))
-    window=NS(busy=busy,running=running,store=store,exit_policy=lambda: {},signal_policy=lambda: {},sizing_policy=lambda: {},record_market=NS(isChecked=lambda:False),
+    window=NS(busy=busy,running=running,store=store,exit_policy=lambda: {},signal_policy=lambda: {},sizing_policy=lambda: {},record_market=NS(isChecked=lambda:False),adaptive_rpc=NS(isChecked=lambda:False),
         usd=NS(set_token=lambda token:calls.append('usd_stop')),
         gas_usd=NS(set_token=lambda token:None),
         worker=NS(quit_event=threading.Event(),wait=wait),

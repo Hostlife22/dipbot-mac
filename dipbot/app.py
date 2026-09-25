@@ -218,6 +218,7 @@ class Window(QMainWindow):
                 sizing = saved_preferences.get('sizing', {})
                 self.amount_unit.setCurrentIndex(self.amount_unit.findData(sizing.get('unit','quote')))
                 self.gas_reserve.setText(sizing.get('reserve_bnb','0.0001'))
+                self.adaptive_rpc.setChecked(saved_preferences.get('adaptive_rpc', False))
                 self.record_market.setChecked(saved_preferences.get('record_market', True))
                 policy = saved_preferences.get('signal_policy', {})
                 self.signal_mode.setCurrentIndex(self.signal_mode.findData(policy.get('mode', 'legacy')))
@@ -556,12 +557,20 @@ class Window(QMainWindow):
         self.ws_rpc = self.field(placeholder='Необязательный wss://… · новые блоки + HTTP fallback')
         self.ws_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
         form.addRow('WebSocket RPC', self.ws_rpc)
+        self.adaptive_rpc = QCheckBox('Выбирать RPC котировок по задержке и ошибкам')
+        self.adaptive_rpc.setToolTip('Основной и резервный узел: проба альтернативы раз в 30 с, '
+            'переключение после трёх замеров при преимуществе 25%. Отправка остаётся на основном RPC.')
+        self.editable.append(self.adaptive_rpc)
+        form.addRow(self.adaptive_rpc)
+        self.rpc_health_label = QLabel('')
+        self.rpc_health_label.setWordWrap(True)
+        form.addRow(self.rpc_health_label)
         self.save_rpc = QCheckBox("Сохранить RPC в macOS Keychain")
         self.editable.append(self.save_rpc)
         form.addRow(self.save_rpc)
         row = QHBoxLayout()
         row.addWidget(self.button("Подключить", lambda: self.send("connect", rpc=self.rpc.text().strip(),
-            backup_rpc=self.backup_rpc.text().strip(), ws_rpc=self.ws_rpc.text().strip(), save=self.save_rpc.isChecked())))
+            adaptive_rpc=self.adaptive_rpc.isChecked(), backup_rpc=self.backup_rpc.text().strip(), ws_rpc=self.ws_rpc.text().strip(), save=self.save_rpc.isChecked())))
         row.addWidget(self.button("Загрузить RPC из Keychain", self.load_rpc))
         form.addRow(row)
         self.gas = self.field("0.1")
@@ -1283,6 +1292,11 @@ class Window(QMainWindow):
         elif name == "status":
             self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
+            health = payload.get('rpc_health', [])
+            self.rpc_health_label.setText(' · '.join(
+                row['source'] + ': ' + (f"{row['median_ms']:.0f} мс" if row['median_ms'] is not None else 'нет замеров') +
+                f", ошибок подряд {row['consecutive_errors']}" + (' (предпочтительный)' if row['preferred'] else '')
+                for row in health))
             self.entry_notice = payload.get('entry_notice', '')
             quote_exit = payload.get('exit_basis') == 'quote' and Decimal(payload.get('position', '0')) > 0
             self.exit_status.setVisible(quote_exit)
@@ -1345,6 +1359,7 @@ class Window(QMainWindow):
                 "exit_policy": self.exit_policy(),
                 "sizing": self.sizing_policy(),
                 "record_market": self.record_market.isChecked(),
+                "adaptive_rpc": self.adaptive_rpc.isChecked(),
                 "settings": {key: field.text().strip() for key, field in self.params.items()},
                 "gas": self.gas.text().strip(), "interval": str(self.interval.value())})
         except (ValueError, OSError):

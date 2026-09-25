@@ -24,6 +24,8 @@ from .market_monitor import monitor_execution
 from .market_tape import MarketTape
 from .sizing import SizingPolicy
 from .exit_policy import ExitPolicy
+from .rpc_health import RpcHealth
+from .chain import StaleBlock
 from .accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
 
 
@@ -62,6 +64,9 @@ class Worker(QThread):
         self.recorder_notice = False
         self.head_schedule = HeadSchedule()
         self.backup_until = 0.0
+        self.rpc_health = RpcHealth()
+        self.adaptive_rpc = False
+        self.last_market_header = None
         self.backup_verified_pool = None
         self.market_source = 'BSC'
         self.pool = None
@@ -207,6 +212,7 @@ class Worker(QThread):
                          "levels": levels,
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
+                         "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
                          "exit_basis": self.strategy.exit_policy.tp_sl_basis,
                          "exit_return": getattr(self, "exit_return", None),
                          "signal_mode": self.strategy.policy.mode,
@@ -366,6 +372,9 @@ class Worker(QThread):
             self.chain = chain
             self.backup_chain = backup
             self.backup_until = 0.0
+            self.rpc_health = RpcHealth()
+            self.adaptive_rpc = bool(data.get('adaptive_rpc', False))
+            self.last_market_header = None
             self.backup_verified_pool = None
             self.pool = None
             self.event.emit("pools", [])
@@ -613,7 +622,35 @@ class Worker(QThread):
         self.event.emit("price", str(price))
         return price
 
+    def adaptive_market_price(self):
+        source_id = self.rpc_health.choose(time.monotonic())
+        for attempt in range(2):
+            source = self.backup_chain if source_id else self.chain
+            started = time.monotonic()
+            try:
+                price = self.backup_price() if source_id else self.chain.price(self.pool)
+                header = getattr(source, 'price_block', None)
+                previous = self.last_market_header
+                if header and previous and (header['number'] < previous['number'] or (
+                        header['number'] == previous['number'] and header['hash'] != previous['hash'])):
+                    raise TimeoutError('RPC вернул более старый блок или другую ветвь')
+            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
+                if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+                    raise
+                self.rpc_health.failure(source_id, time.monotonic())
+                other = 1-source_id
+                if attempt or time.monotonic() < self.rpc_health.blocked_until[other]:
+                    raise
+                source_id = other
+                continue
+            self.rpc_health.success(source_id, time.monotonic()-started, time.monotonic())
+            self.last_market_header = dict(header) if header else previous
+            self.market_source = 'BSC · резервный RPC' if source_id else 'BSC'
+            return price
+
     def market_price(self):
+        if self.adaptive_rpc and self.backup_chain is not None:
+            return self.adaptive_market_price()
         # Execution always keeps self.chain / LiveTrader.chain on the primary.
         if self.backup_chain is not None and time.monotonic() < self.backup_until:
             return self.backup_price()
@@ -644,7 +681,7 @@ class Worker(QThread):
         backup = getattr(self.backup_chain, 'price_block', None)
         if primary and backup and (backup['number'] < primary['number'] or
                 (backup['number'] == primary['number'] and backup['hash'] != primary['hash'])):
-            raise ValueError('Резервный RPC отстаёт или вернул другую ветвь цепочки')
+            raise StaleBlock('Резервный RPC отстаёт или вернул другую ветвь цепочки')
         self.market_source = 'BSC · резервный RPC'
         return price
 

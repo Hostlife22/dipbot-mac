@@ -32,6 +32,10 @@ def normalize(value):
         result['exit_policy'] = ExitPolicy.parse(value['exit_policy']).export()
     if 'sizing' in value:
         result['sizing'] = SizingPolicy.parse(value['sizing']).export()
+    if 'adaptive_rpc' in value:
+        if type(value['adaptive_rpc']) is not bool:
+            raise ValueError('Повреждена настройка выбора RPC')
+        result['adaptive_rpc'] = value['adaptive_rpc']
     if 'record_market' in value:
         if type(value['record_market']) is not bool:
             raise ValueError('Некорректная настройка записи рынка')
