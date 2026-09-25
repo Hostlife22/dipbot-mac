@@ -1,0 +1,19 @@
+{
+  "mode": "read-only",
+  "quote": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+  "quote_symbol": "Cake",
+  "quote_usd": "2.75",
+  "input_raw": 363636363636363636,
+  "target_out_raw": 13016080692325106804004,
+  "reverse_out_raw": 361765655165913957,
+  "roundtrip_loss_pct": "0.514444829373661725514444829373661725514444829373661725514444829373661725514445",
+  "block": 123969858,
+  "rpc_methods": {
+    "eth_chainId": 23,
+    "eth_getBlockByNumber": 5,
+    "eth_getCode": 3,
+    "eth_call": 10
+  },
+  "note": "Independent same-block router quotes, without gas, token tax or subsequent pool-state simulation",
+  "rpc_methods_include_local_cache": true
+}

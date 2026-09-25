@@ -1,0 +1,66 @@
+{
+  "token": "0xe545faaa94da6fb3cc0aab88c3e188b13b637777",
+  "pool": "0x869B02c5425C89D88048f5e8Ce0c723E119FCdd5",
+  "quote_token": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+  "router": "V2",
+  "mode": "PAPER",
+  "transactions_sent": 0,
+  "observed_seconds": 120.0,
+  "passed": true,
+  "clean_stop": true,
+  "errors": [],
+  "mismatches": [],
+  "test_restarts": 3,
+  "settings": {
+    "amount": "1",
+    "dip": "0.5",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150",
+    "min_swaps": "1",
+    "max_roundtrip_loss": "3"
+  },
+  "sizing": {
+    "unit": "usd",
+    "reserve_bnb": "0.0001"
+  },
+  "paper_policy": {
+    "latency_seconds": 0.25,
+    "fee_quote": "0"
+  },
+  "signal_policy": {
+    "mode": "window",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.1",
+    "max_block_age": 5.0,
+    "volatility_multiplier": "2.0"
+  },
+  "exit_policy": {
+    "tp_sl_basis": "quote",
+    "trailing_pct": "0.0",
+    "max_hold_seconds": "60.0",
+    "cooldown_seconds": "3.0"
+  },
+  "distinct_prices": 119,
+  "monitor_superseded_price_events": null,
+  "trades_by_phase": {
+    "automatic_live_prices": {
+      "BUY": 5,
+      "SELL": 4
+    },
+    "stop": {
+      "SELL": 1
+    }
+  },
+  "logged_sell_reasons": {
+    "STOP_LOSS": 3,
+    "TAKE_PROFIT": 1,
+    "STOP": 1
+  },
+  "limitations": [
+    "Short 120-second current-code smoke; not a stability or profitability test",
+    "Virtual $1 positions, zero modeled gas fee; token tax not simulated",
+    "Test driver restarts a stopped flat strategy"
+  ]
+}

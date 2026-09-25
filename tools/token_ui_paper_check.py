@@ -186,7 +186,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     outage_finished = True
                 if exercise_recovery and elapsed >= 300 and not stop_restart_done:
                     phase[0] = 'controlled_stop_restart'
-                    w.stop.click();wait(lambda:not w.running and not w.busy and not w.worker.stop_event.is_set())
+                    w.stop.click();wait(lambda:not w.running and not w.busy and not w.stop_pending and not w.worker.stop_event.is_set())
                     assert not w.worker.paper.position
                     report['stop_restart_passed'] = True
                     capture('midrun_stop')
@@ -211,7 +211,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
             report['automatic_running_at_end'] = w.running
             capture('automatic_end')
             phase[0] = 'stop'
-            w.stop.click();wait(lambda:not w.running and not w.worker.stop_event.is_set() and not w.busy)
+            w.stop.click();wait(lambda:not w.running and not w.worker.stop_event.is_set() and not w.busy and not w.stop_pending)
             report['clean_stop'] = not w.worker.paper.position
             capture('stopped')
             if exercise_recovery:
@@ -240,7 +240,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     wait(lambda:not w.entry_notice, 30)
                     assert w.running and not report['errors']
                 report['synthetic_minout_resumed_without_start'] = True
-                w.stop.click(); wait(lambda:not w.running and not w.busy and not w.worker.stop_event.is_set())
+                w.stop.click(); wait(lambda:not w.running and not w.busy and not w.stop_pending and not w.worker.stop_event.is_set())
                 assert not w.worker.paper.position
             report['passed'] = report['clean_stop'] and not report['errors'] and not report['mismatches']
         except Exception as exc:
@@ -253,7 +253,7 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                     w.worker.backup_chain.price = original_backup_price
             w.worker.stop_event.set()
             wait(lambda:not w.worker.running and not w.worker.stop_event.is_set(), 60)
-            w.worker.quit_event.set();w.worker.wait(15000)
+            w.worker.quit_event.set();w.worker.wait()
             report['logs'] = logs
             report['router_fills'] = fills
             calls = Counter()

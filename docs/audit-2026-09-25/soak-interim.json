@@ -1,0 +1,39 @@
+{
+  "complete": false,
+  "requested_seconds": 7200,
+  "elapsed_seconds": 1355.173246541999,
+  "resources": [
+    {
+      "elapsed_seconds": 4.7030438570000115,
+      "current_rss_bytes": 99209216,
+      "python_threads": 4
+    },
+    {
+      "elapsed_seconds": 1355.173236472001,
+      "current_rss_bytes": 103108608,
+      "python_threads": 4
+    }
+  ],
+  "markets": [
+    {
+      "token": "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
+      "pool": "0x90A54475D512B8f3852351611c38faD30a513491",
+      "prices": 4468,
+      "fills": {},
+      "exits": {},
+      "errors": [],
+      "active_seconds": 1350.4342025080005,
+      "running": true
+    },
+    {
+      "token": "0x6d5AD1592ed9D6D1dF9b93c793AB759573Ed6714",
+      "pool": "0x9Eb0BC7a207f77811eE365729d00152622a745B7",
+      "prices": 4469,
+      "fills": {},
+      "exits": {},
+      "errors": [],
+      "active_seconds": 1350.4342025080005,
+      "running": true
+    }
+  ]
+}
