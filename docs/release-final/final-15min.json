@@ -1,0 +1,95 @@
+{
+  "token": "0xeCCBb861c0dda7eFd964010085488B69317e4444",
+  "utc": "2026-09-25T10:51:04.767583+00:00",
+  "mode": "PAPER",
+  "frozen": true,
+  "transactions_sent": 0,
+  "checks": 10759,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000151767953534014194961165608531277946020001115062370247671165007791464329564923",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000151599293943410257369926915022614275095500974297526003907925195062695595919177",
+      "phase": "manual_paper_sell"
+    }
+  ],
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 7,
+    "RUNNING": 5341,
+    "WAIT RPC": 6,
+    "STOPPING": 4,
+    "WAIT DIP": 28
+  },
+  "price_sources": {
+    "BSC": 5327,
+    "BSC · резервный RPC": 46
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C"
+  ],
+  "pool": "0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+  "router": "V2",
+  "token_decimals": 18,
+  "settings": {
+    "amount": "0.00003",
+    "dip": "3",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150"
+  },
+  "manual_realized": "-1.82985862219E-7",
+  "controlled_rpc_outage": "20 seconds; primary and backup market reads only",
+  "stop_restart_passed": true,
+  "test_restarts": 1,
+  "observed_seconds": 900.01,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "synthetic_minout_resumed_without_start": true,
+  "passed": true,
+  "logs": [
+    "BSC подключена, chainId 56, блок 123935952",
+    "Выбран V2 / WBNB / 2500 · 0x22af7297243c4eEF12E2D5A4f888b92E56BF127C",
+    "PAPER: router quote на сумму; комиссии/impact включены, газ и token tax не учтены",
+    "PAPER BUY: исполнение 0.0001521483266; база TP/SL 0.0001517679535",
+    "PAPER P&L: -1.8298586e-7 базового актива (без газа и token tax)",
+    "PAPER SELL: MANUAL",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "Основной RPC недоступен: котировки через резервный. Отправка сделок остаётся на основном RPC",
+    "Котировки недоступны: входы запрещены, повтор чтения с паузой до 5 с. Открытая позиция сохраняется",
+    "Чтение котировок восстановлено; проверка позиции возобновлена",
+    "Разрыв котировок > 0.55 с: база DIP сброшена",
+    "Котировки снова поступают с основного RPC",
+    "BOT остановлен",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "BOT остановлен",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "Вход пропущен: PAPER BUY: котировка ниже minOut снимка; покупка не исполнена; пауза 5 с, затем новый сигнал DIP",
+    "BOT остановлен"
+  ],
+  "rpc_methods": {
+    "eth_chainId": 16280,
+    "eth_getBlockByNumber": 5404,
+    "eth_getCode": 17,
+    "eth_call": 5438
+  },
+  "distinct_prices": 295,
+  "price_range": [
+    "0.000140230561412536128100341201599913004276672288433712698734651734217727670665309",
+    "0.000152046025167618266401405400451089238230705217578088702776945327096743425611489"
+  ],
+  "market_samples": 5337,
+  "market_range_percent": "8.267030143897407286132022700",
+  "median_observation_interval_s": 0.15872949399999925,
+  "gap_resets": 1,
+  "natural_buys": 0
+}

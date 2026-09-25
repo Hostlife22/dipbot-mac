@@ -1,0 +1,27 @@
+{
+  "elapsed": 571,
+  "samples": 3223,
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "0.000153950378869779619803140081326616814407053500226140481149981358277409521610736",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "0.000154012146388934243456771265048092363465999093047180186344927580446664913791298",
+      "phase": "manual_paper_sell"
+    }
+  ],
+  "errors": [],
+  "mismatches": [],
+  "price_sources": {
+    "BSC": 3177,
+    "BSC · резервный RPC": 46
+  },
+  "running": true,
+  "completion": "incomplete_no_final_report",
+  "reason": "Process ended without final report; cause not established"
+}

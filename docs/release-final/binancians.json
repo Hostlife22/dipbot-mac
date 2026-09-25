@@ -1,0 +1,83 @@
+{
+  "token": "0xA15A6b1b9C256AA42CeE7A0947A2404a72ED7777",
+  "utc": "2026-09-25T10:19:43.480614+00:00",
+  "mode": "PAPER",
+  "frozen": true,
+  "transactions_sent": 0,
+  "checks": 9752,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.33877481851909061153720119484096576065418534502464645161859162419263445497082E-7",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.33877481851909061153720119484096576065418534502464645161859162419263445497082E-7",
+      "phase": "manual_paper_sell"
+    }
+  ],
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 5,
+    "RUNNING": 4869,
+    "WAIT RPC": 6,
+    "STOPPING": 1
+  },
+  "price_sources": {
+    "BSC": 4823,
+    "BSC · резервный RPC": 48
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x17E6439085DD424Ca1aEfB6105Cee87E647eCB9d"
+  ],
+  "pool": "0x17E6439085DD424Ca1aEfB6105Cee87E647eCB9d",
+  "router": "V2",
+  "token_decimals": 18,
+  "settings": {
+    "amount": "0.00003",
+    "dip": "3",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150"
+  },
+  "manual_realized": "-1.498662174E-7",
+  "controlled_rpc_outage": "20 seconds; primary and backup market reads only",
+  "stop_restart_passed": true,
+  "test_restarts": 1,
+  "logs": [
+    "BSC подключена, chainId 56, блок 123931773",
+    "Выбран V2 / WBNB / 2500 · 0x17E6439085DD424Ca1aEfB6105Cee87E647eCB9d",
+    "PAPER: router quote на сумму; комиссии/impact включены, газ и token tax не учтены",
+    "PAPER BUY: исполнение 3.347145691e-7; база TP/SL 3.338774819e-7",
+    "PAPER P&L: -1.4986622e-7 базового актива (без газа и token tax)",
+    "PAPER SELL: MANUAL",
+    "START PAPER: DIP 3% / TP 2% / SL 2%",
+    "Основной RPC недоступен: котировки через резервный. Отправка сделок остаётся на основном RPC",
+    "Котировки недоступны: входы запрещены, повтор чтения с паузой до 5 с. Открытая позиция сохраняется",
+    "Чтение котировок восстановлено; проверка позиции возобновлена",
+    "Разрыв котировок > 0.55 с: база DIP сброшена",
+    "Котировки снова поступают с основного RPC",
+    "BOT остановлен",
+    "START PAPER: DIP 3% / TP 2% / SL 2%"
+  ],
+  "rpc_methods": {
+    "eth_chainId": 14765,
+    "eth_getBlockByNumber": 4901,
+    "eth_getCode": 16,
+    "eth_call": 4932
+  },
+  "distinct_prices": 13,
+  "price_range": [
+    "3.33877481851909061153720119484096576065418534502464645161859162419263445497082E-7",
+    "3.76659778066538635774099294839916516328065923005106502796767416094570907253397E-7"
+  ],
+  "completion": "interrupted",
+  "reason": "Stopped at user request to change market",
+  "market_sample_span_seconds": 825.77
+}
