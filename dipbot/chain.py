@@ -284,6 +284,8 @@ class Chain:
 
     @timed("chain.price")
     def price(self, pool: Pool) -> D:
+        # A failed read must invalidate the snapshot used by a subsequent PAPER fill.
+        self._paper_price_snapshot = None
         block = self.check(force_network=False)
         header = getattr(self, 'checked_header', None)
         key = (pool, block, bytes(header['hash'])) if header is not None and header.get('hash') else None
@@ -292,6 +294,7 @@ class Chain:
         if key is not None and cached is not None and cached[0] == key and getattr(self, 'price_cache_enabled', True):
             self.price_block = dict(header)
             self.price_cache_hit = True
+            self._paper_price_snapshot = (pool, dict(header), time.monotonic())
             TIMINGS.record('chain.price_cache_hit', 0)
             return cached[1]
         with localcontext() as context:
@@ -322,6 +325,7 @@ class Chain:
                 self._price_cache = (key, price)
             if header is not None:
                 self.price_block = dict(header)
+                self._paper_price_snapshot = (pool, dict(header), time.monotonic())
             return price
 
     def resolve_address(self, raw, catalogs):
@@ -416,8 +420,19 @@ class Chain:
 
     def paper_quote(self, pool, amount, buy):
         # One immutable block for this simulated fill; no approval or signature.
-        block = self.check(force_network=False)
-        header = dict(self.checked_header)
+        snapshot = getattr(self, '_paper_price_snapshot', None)
+        self._paper_price_snapshot = None  # Single-use, including failed quotes.
+        reusable = (getattr(self, 'paper_price_reuse_enabled', True) and snapshot is not None
+                    and snapshot[0] == pool and 0 <= time.monotonic()-snapshot[2] <= .55
+                    and 'timestamp' in snapshot[1]
+                    and -15 <= time.time()-snapshot[1]['timestamp'] <= getattr(self, 'max_block_age', 30))
+        if reusable:
+            header = dict(snapshot[1])
+            block = header['number']
+            TIMINGS.record('chain.paper_price_snapshot_reused', 0)
+        else:
+            block = self.check(force_network=False)
+            header = dict(self.checked_header)
         output = self.quote(pool, amount, buy, block=block)
         if type(output) is not int or not 0 <= output < 2**256:
             raise ValueError('Некорректная котировка PAPER')

@@ -29,14 +29,23 @@ def summarize(paths):
                 for stage in stages:
                     name=stage['stage']
                     # Repeated stages retain the final occurrence, including approves.
-                    if name in ('quote','signed','receipt_validated','broadcast_ack'):
+                    if name in ('quote','signed','receipt_validated','broadcast_ack',
+                                'preflight_started','activity_checked','entry_screened',
+                                'paper_delay_finished','fill_price_read','fill_quote_received','execution_applied'):
                         metrics['signal_to_last_'+name+'_ms']=stage['ms']
+                for before, after in zip(stages, stages[1:]):
+                    metrics['phase_'+before['stage']+'_to_'+after['stage']+'_ms'] = after['ms']-before['ms']
                 if row.get('block_to_signal_ms') is not None:
                     metrics['approx_block_timestamp_to_signal_ms']=row['block_to_signal_ms']
                 for name,value in metrics.items():
                     if type(value) not in (int,float) or not math.isfinite(value) or value<0:continue
-                    key=mode+'.'+name
-                    samples[key].append(value);counts[key]+=1
+                    action = {'BUY':'BUY', 'TAKE_PROFIT':'SELL', 'STOP_LOSS':'SELL',
+                              'TRAILING_STOP':'SELL', 'TIME_EXIT':'SELL',
+                              'CONTROLLED_BUY':'CONTROLLED_BUY',
+                              'CONTROLLED_SELL':'CONTROLLED_SELL'}.get(row.get('action'))
+                    for scope in ([mode, mode+'.'+action] if action else [mode]):
+                        key=scope+'.'+name
+                        samples[key].append(value);counts[key]+=1
         if not end or end.get('dropped'):
             incomplete.append(Path(path).name)
     result={}

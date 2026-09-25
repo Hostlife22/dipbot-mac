@@ -20,7 +20,9 @@ class CycleTrace:
 
     def mark(self, stage, *, kind=None, block=None):
         if stage not in {'signal','quote','gas_estimated','transaction_built','signed',
-                         'intent_persisted','broadcast_ack','receipt_validated','completed','failed'}:
+                         'intent_persisted','broadcast_ack','receipt_validated','completed','failed',
+                         'preflight_started','activity_checked','activity_skipped','entry_screened',
+                         'paper_delay_finished','fill_price_read','fill_quote_received','execution_applied'}:
             return
         if len(self.stages) >= 64:
             self.truncated = True

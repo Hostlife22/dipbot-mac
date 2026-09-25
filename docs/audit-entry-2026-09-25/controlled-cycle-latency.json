@@ -1,0 +1,400 @@
+{
+  "cycles": 6,
+  "failed_cycles": {},
+  "metrics": {
+    "PAPER.signal_to_application_complete_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 707.8118389981682,
+      "p95": 1166.8886010011192,
+      "p99": 1166.8886010011192
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_application_complete_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1139.3844220001483,
+      "p95": 1166.8886010011192,
+      "p99": 1166.8886010011192
+    },
+    "PAPER.signal_to_last_preflight_started_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 2.223960000264924,
+      "p95": 2.2478460014099255,
+      "p99": 2.2478460014099255
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_preflight_started_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 2.223960000264924,
+      "p95": 2.2478460014099255,
+      "p99": 2.2478460014099255
+    },
+    "PAPER.signal_to_last_activity_checked_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 217.15646300435765,
+      "p95": 225.48332500446122,
+      "p99": 225.48332500446122
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_activity_checked_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 217.15646300435765,
+      "p95": 225.48332500446122,
+      "p99": 225.48332500446122
+    },
+    "PAPER.signal_to_last_quote_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 638.1698729965137,
+      "p95": 1149.0442220019759,
+      "p99": 1149.0442220019759
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1101.025338000909,
+      "p95": 1149.0442220019759,
+      "p99": 1149.0442220019759
+    },
+    "PAPER.signal_to_last_entry_screened_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 502.15050599945243,
+      "p95": 539.4959870027378,
+      "p99": 539.4959870027378
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_entry_screened_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 502.15050599945243,
+      "p95": 539.4959870027378,
+      "p99": 539.4959870027378
+    },
+    "PAPER.signal_to_last_paper_delay_finished_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 255.32297100289725,
+      "p95": 794.2443100037053,
+      "p99": 794.2443100037053
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 755.1511400015443,
+      "p95": 794.2443100037053,
+      "p99": 794.2443100037053
+    },
+    "PAPER.signal_to_last_fill_price_read_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 486.32570799964014,
+      "p95": 1002.0488000009209,
+      "p99": 1002.0488000009209
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_fill_price_read_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 964.4403740021517,
+      "p95": 1002.0488000009209,
+      "p99": 1002.0488000009209
+    },
+    "PAPER.signal_to_last_fill_quote_received_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 638.1401239996194,
+      "p95": 1149.036712005909,
+      "p99": 1149.036712005909
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_fill_quote_received_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1101.0180369994487,
+      "p95": 1149.036712005909,
+      "p99": 1149.036712005909
+    },
+    "PAPER.signal_to_last_execution_applied_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 638.2398069981718,
+      "p95": 1149.1830279992428,
+      "p99": 1149.1830279992428
+    },
+    "PAPER.CONTROLLED_BUY.signal_to_last_execution_applied_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1101.1648700005026,
+      "p95": 1149.1830279992428,
+      "p99": 1149.1830279992428
+    },
+    "PAPER.phase_signal_to_preflight_started_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 2.211075996456202,
+      "p95": 2.24176500341855,
+      "p99": 2.24176500341855
+    },
+    "PAPER.CONTROLLED_BUY.phase_signal_to_preflight_started_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 2.211075996456202,
+      "p95": 2.24176500341855,
+      "p99": 2.24176500341855
+    },
+    "PAPER.phase_preflight_started_to_activity_checked_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 215.2368130045943,
+      "p95": 223.2593650041963,
+      "p99": 223.2593650041963
+    },
+    "PAPER.CONTROLLED_BUY.phase_preflight_started_to_activity_checked_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 215.2368130045943,
+      "p95": 223.2593650041963,
+      "p99": 223.2593650041963
+    },
+    "PAPER.phase_activity_checked_to_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 284.6377880050568,
+      "p95": 322.2725309969974,
+      "p99": 322.2725309969974
+    },
+    "PAPER.CONTROLLED_BUY.phase_activity_checked_to_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 284.6377880050568,
+      "p95": 322.2725309969974,
+      "p99": 322.2725309969974
+    },
+    "PAPER.phase_quote_to_entry_screened_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.11916199582628906,
+      "p95": 0.16156899800989777,
+      "p99": 0.16156899800989777
+    },
+    "PAPER.CONTROLLED_BUY.phase_quote_to_entry_screened_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.11916199582628906,
+      "p95": 0.16156899800989777,
+      "p99": 0.16156899800989777
+    },
+    "PAPER.phase_entry_screened_to_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 253.94044000131544,
+      "p95": 254.7483230009675,
+      "p99": 254.7483230009675
+    },
+    "PAPER.CONTROLLED_BUY.phase_entry_screened_to_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 253.94044000131544,
+      "p95": 254.7483230009675,
+      "p99": 254.7483230009675
+    },
+    "PAPER.phase_paper_delay_finished_to_fill_price_read_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 207.89630199578824,
+      "p95": 231.63415399903897,
+      "p99": 231.63415399903897
+    },
+    "PAPER.CONTROLLED_BUY.phase_paper_delay_finished_to_fill_price_read_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 207.80448999721557,
+      "p95": 209.2892340006074,
+      "p99": 209.2892340006074
+    },
+    "PAPER.phase_fill_price_read_to_fill_quote_received_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 136.577662997297,
+      "p95": 151.81441599997925,
+      "p99": 151.81441599997925
+    },
+    "PAPER.CONTROLLED_BUY.phase_fill_price_read_to_fill_quote_received_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 136.577662997297,
+      "p95": 146.98791200498817,
+      "p99": 146.98791200498817
+    },
+    "PAPER.phase_fill_quote_received_to_quote_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 0.00750999606680125,
+      "p95": 0.04122500104131177,
+      "p99": 0.04122500104131177
+    },
+    "PAPER.CONTROLLED_BUY.phase_fill_quote_received_to_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.007301001460291445,
+      "p95": 0.00750999606680125,
+      "p99": 0.00750999606680125
+    },
+    "PAPER.phase_quote_to_execution_applied_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 0.09426900214748457,
+      "p95": 0.13953199959360063,
+      "p99": 0.13953199959360063
+    },
+    "PAPER.CONTROLLED_BUY.phase_quote_to_execution_applied_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.1388059972668998,
+      "p95": 0.13953199959360063,
+      "p99": 0.13953199959360063
+    },
+    "PAPER.phase_execution_applied_to_completed_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 17.705573001876473,
+      "p95": 69.5720319999964,
+      "p99": 69.5720319999964
+    },
+    "PAPER.CONTROLLED_BUY.phase_execution_applied_to_completed_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 17.705573001876473,
+      "p95": 42.819913003768306,
+      "p99": 42.819913003768306
+    },
+    "PAPER.approx_block_timestamp_to_signal_ms": {
+      "count": 6,
+      "window": 6,
+      "p50": 1056.5738677978516,
+      "p95": 1174.6528148651123,
+      "p99": 1174.6528148651123
+    },
+    "PAPER.CONTROLLED_BUY.approx_block_timestamp_to_signal_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1011.5489959716797,
+      "p95": 1056.5738677978516,
+      "p99": 1056.5738677978516
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_application_complete_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 630.4217029974097,
+      "p95": 707.8118389981682,
+      "p99": 707.8118389981682
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_last_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 254.69155400060117,
+      "p95": 255.32297100289725,
+      "p99": 255.32297100289725
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_last_fill_price_read_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 468.61661699949764,
+      "p95": 486.32570799964014,
+      "p99": 486.32570799964014
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_last_fill_quote_received_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 614.276289998088,
+      "p95": 638.1401239996194,
+      "p99": 638.1401239996194
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_last_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 614.3175149991293,
+      "p95": 638.1698729965137,
+      "p99": 638.1698729965137
+    },
+    "PAPER.CONTROLLED_SELL.signal_to_last_execution_applied_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 614.392166993639,
+      "p95": 638.2398069981718,
+      "p99": 638.2398069981718
+    },
+    "PAPER.phase_signal_to_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 254.68453200301155,
+      "p95": 255.31698800477898,
+      "p99": 255.31698800477898
+    },
+    "PAPER.CONTROLLED_SELL.phase_signal_to_paper_delay_finished_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 254.68453200301155,
+      "p95": 255.31698800477898,
+      "p99": 255.31698800477898
+    },
+    "PAPER.CONTROLLED_SELL.phase_paper_delay_finished_to_fill_price_read_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 214.06212500005495,
+      "p95": 231.63415399903897,
+      "p99": 231.63415399903897
+    },
+    "PAPER.CONTROLLED_SELL.phase_fill_price_read_to_fill_quote_received_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 145.6596729985904,
+      "p95": 151.81441599997925,
+      "p99": 151.81441599997925
+    },
+    "PAPER.CONTROLLED_SELL.phase_fill_quote_received_to_quote_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.03418800042709336,
+      "p95": 0.04122500104131177,
+      "p99": 0.04122500104131177
+    },
+    "PAPER.CONTROLLED_SELL.phase_quote_to_execution_applied_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 0.07465199450962245,
+      "p95": 0.09426900214748457,
+      "p99": 0.09426900214748457
+    },
+    "PAPER.CONTROLLED_SELL.phase_execution_applied_to_completed_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 31.51889499713434,
+      "p95": 69.5720319999964,
+      "p99": 69.5720319999964
+    },
+    "PAPER.CONTROLLED_SELL.approx_block_timestamp_to_signal_ms": {
+      "count": 3,
+      "window": 3,
+      "p50": 1167.9461002349854,
+      "p95": 1174.6528148651123,
+      "p99": 1174.6528148651123
+    }
+  },
+  "incomplete_recordings": [],
+  "limits": "Receipt validation is local observation, not exact block inclusion time. Block timestamp comparison depends on local wall clock. PAPER has no signature or inclusion.",
+  "source": "Controlled PAPER calls on real RPC, not natural DIP signals",
+  "attempts": [
+    {
+      "completed": true
+    },
+    {
+      "completed": true
+    },
+    {
+      "completed": true
+    }
+  ],
+  "transactions_sent": 0,
+  "open_virtual_position": false
+}

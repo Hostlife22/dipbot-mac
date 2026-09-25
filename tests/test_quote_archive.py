@@ -46,3 +46,45 @@ def test_zero_paper_quote_reaches_existing_minout_policy():
     chain = fake_chain()
     chain.quote = lambda *args, **kwargs: 0
     assert chain.paper_quote(POOL, 100, True) == 0
+
+
+def test_fresh_price_snapshot_saves_head_read_but_keeps_canonical_check():
+    import time
+    chain = fake_chain()
+    chain.checked_header['timestamp'] = time.time()
+    chain._paper_price_snapshot = (POOL, dict(chain.checked_header), time.monotonic())
+    calls = []
+    chain.check = lambda **kw: calls.append('head') or 42
+    chain.canonical_receipt = lambda receipt: calls.append(('canonical', receipt['blockHash']))
+    assert chain.paper_quote(POOL, 100, True) == 123
+    assert calls == [('canonical', b'a'*32)]
+    chain.paper_quote(POOL, 100, True)
+    assert calls[-2:] == ['head', ('canonical', b'a'*32)]
+
+
+@pytest.mark.parametrize('invalid', ['age', 'pool', 'block_age', 'disabled', 'future'])
+def test_paper_snapshot_falls_back_when_not_reusable(invalid):
+    import time
+    from dataclasses import replace
+    chain = fake_chain()
+    header = dict(chain.checked_header, timestamp=time.time())
+    pool, when = POOL, time.monotonic()
+    if invalid == 'age': when -= 1
+    if invalid == 'future': when += 1
+    if invalid == 'pool': pool = replace(POOL, token_is_0=not POOL.token_is_0)
+    if invalid == 'block_age': header['timestamp'] -= 60
+    if invalid == 'disabled': chain.paper_price_reuse_enabled = False
+    chain._paper_price_snapshot = (pool, header, when)
+    heads = []
+    chain.check = lambda **kw: heads.append(42) or 42
+    chain.paper_quote(POOL, 100, True)
+    assert heads == [42]
+
+
+def test_reused_snapshot_cannot_bypass_reorg_rejection():
+    import time
+    chain = fake_chain(True)
+    chain._paper_price_snapshot = (POOL, dict(chain.checked_header, timestamp=time.time()), time.monotonic())
+    with pytest.raises(ValueError, match='Reorg'):
+        chain.paper_quote(POOL, 100, True)
+    assert chain._paper_price_snapshot is None

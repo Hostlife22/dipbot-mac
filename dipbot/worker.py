@@ -882,6 +882,7 @@ class Worker(QThread):
     @monitor_execution
     @timed("worker.open_position")
     def open_position(self):
+        mark(self, 'preflight_started')
         if self.stop_event.is_set():
             raise EntryRejected('STOP: вход отменён до проверки и исполнения')
         if self.strategy.entry is not None:
@@ -907,6 +908,9 @@ class Worker(QThread):
             self.log.emit(f"Активность пула: {activity['count']} Swap за блоки {activity['from_block']}–{activity['to_block']}")
             if activity['count'] < settings.min_swaps:
                 raise EntryRejected(f"Недостаточная активность: {activity['count']} Swap, нужно минимум {settings.min_swaps:g}")
+            mark(self, 'activity_checked')
+        else:
+            mark(self, 'activity_skipped')
         if self.mode in ('LIVE', 'PAPER') and callable(getattr(self.chain, 'entry_quote', None)):
             if self.mode == 'LIVE':
                 self.require_live()
@@ -921,6 +925,7 @@ class Worker(QThread):
                 'roundtrip_loss_pct': str(check.roundtrip_loss_pct)})
             if self.stop_event.is_set():
                 raise ValueError('STOP запрошен во время проверки входа')
+        mark(self, 'entry_screened')
         if self.mode == "LIVE":
             self.require_live()
             if self.stop_event.is_set():
@@ -959,12 +964,15 @@ class Worker(QThread):
             entry = self.current_price
             if self.mode == 'PAPER' and self.stop_event.wait(self.paper_policy.latency_seconds):
                 raise EntryRejected('STOP во время ожидания PAPER; виртуальный вход отменён')
+            mark(self, 'paper_delay_finished')
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 raw = raw_amount(settings.amount, self.pool.quote_decimals)
                 if callable(getattr(self.chain, 'price', None)):
                     entry = self.read_price()
+                mark(self, 'fill_price_read')
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 quoted = quote(self.pool, raw, True)
+                mark(self, 'fill_quote_received')
                 self.record_quote(self.chain, 'paper_fill', 'BUY', raw, quoted)
                 if self.stop_event.is_set():
                     raise EntryRejected('STOP во время котировки PAPER; виртуальный вход отменён')
@@ -985,6 +993,7 @@ class Worker(QThread):
             self.paper_usd['entry'] = marked_value(self.paper.cost,
                 self.rates.snapshot(self.pool.quote)) if self.mode == 'PAPER' and self.pool else None
         self.strategy.bought(entry, now=time.monotonic())
+        mark(self, 'execution_applied')
         self.record_market("execution", side="BUY", price=str(entry))
         self.exit_return = None
         # Publish settled holdings before the chart marker. Monitor shutdown and
@@ -1024,12 +1033,15 @@ class Worker(QThread):
                 return
             if self.mode == 'PAPER' and reason != 'STOP':
                 self.stop_event.wait(self.paper_policy.latency_seconds)
+            mark(self, 'paper_delay_finished')
             price = self.read_price()
+            mark(self, 'fill_price_read')
             paper_cost = self.paper.cost
             if self.mode == 'PAPER' and callable(getattr(self.chain, 'quote', None)):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 output = quote(self.pool, amount, False)
+                mark(self, 'fill_quote_received')
                 paper_fee = self.paper_operation_cost()
                 self.record_quote(self.chain, 'paper_fill', 'SELL', amount, output)
                 pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, paper_fee)
@@ -1045,6 +1057,7 @@ class Worker(QThread):
             self.paper_usd['entry'] = None
             self.log.emit(f"PAPER P&L: {pnl:+.8g} базового актива (стоимость операции по модели; token tax не учтён)")
         self.strategy.sold(price, reason, now=time.monotonic())
+        mark(self, 'execution_applied')
         self.record_market("execution", side="SELL", price=str(price), reason=reason)
         self.exit_return = None
         self.status()

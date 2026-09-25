@@ -1,0 +1,138 @@
+{
+  "transactions_sent": 0,
+  "scope": "read-only cold price + executable-size PAPER quote; price cache disabled in both arms, interleaved calls, no fills",
+  "rows": [
+    {
+      "reuse": false,
+      "ms": 466.8937949973042,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 384.69144200644223,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 456.4933159999782,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 379.50323399854824,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 451.6873199972906,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 372.6895450017764,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 451.0959979961626,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 397.2739920063759,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 454.235074997996,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 375.35777399898507,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 438.90076800016686,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 407.74322299694177,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 486.0227359968121,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 401.9550919983885,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": false,
+      "ms": 454.25300899660215,
+      "wire": {
+        "eth_getBlockByNumber": 4,
+        "eth_call": 2
+      }
+    },
+    {
+      "reuse": true,
+      "ms": 371.8188399943756,
+      "wire": {
+        "eth_getBlockByNumber": 3,
+        "eth_call": 2
+      }
+    }
+  ],
+  "medians_ms": {
+    "False": 454.24404199729906,
+    "True": 382.09733800249523
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "cycles": 3,
+  "failed_cycles": {
+    "PAPER": 3
+  },
+  "metrics": {},
+  "incomplete_recordings": [],
+  "limits": "Receipt validation is local observation, not exact block inclusion time. Block timestamp comparison depends on local wall clock. PAPER has no signature or inclusion.",
+  "source": "Controlled PAPER calls on real RPC, not natural DIP signals",
+  "attempts": [
+    {
+      "completed": false,
+      "error_type": "EntryRejected"
+    },
+    {
+      "completed": false,
+      "error_type": "EntryRejected"
+    },
+    {
+      "completed": false,
+      "error_type": "EntryRejected"
+    }
+  ],
+  "transactions_sent": 0,
+  "open_virtual_position": false
+}

@@ -40,6 +40,7 @@ def test_old_head_never_serves_cache():
     c.check=stale
     with pytest.raises(StaleBlock):c.price(POOL)
     assert reads==[100]
+    assert c._paper_price_snapshot is None
 
 
 def test_reorg_during_pool_read_does_not_cache():
