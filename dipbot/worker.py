@@ -234,6 +234,13 @@ class Worker(QThread):
                 self.recorder_notice = True
                 self.log.emit('Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут')
 
+    def record_quote(self, source, purpose, side, amount, output, reverse=None):
+        context = getattr(source, 'quote_context', None) or {}
+        self.record_market('quote', purpose=purpose, side=side, amount_in_raw=amount,
+            amount_out_raw=output, reverse_out_raw=reverse,
+            block=context.get('block'), block_hash=context.get('block_hash'),
+            pool=self.pool.address if self.pool else None)
+
     def status(self):
         settings = self.strategy.settings
         realized = str(self.paper.realized) if self.mode != 'LIVE' else '—'
@@ -798,7 +805,9 @@ class Worker(QThread):
                     proceeds = self.paper.position*price
                 else:
                     source = self.backup_chain if self.market_source != 'BSC' else self.chain
-                    proceeds = D(source.exit_quote(self.pool, amount))/D(10)**self.pool.quote_decimals
+                    exit_raw = source.exit_quote(self.pool, amount)
+                    self.record_quote(source, 'exit_signal', 'SELL', amount, exit_raw)
+                    proceeds = D(exit_raw)/D(10)**self.pool.quote_decimals
                 if time.monotonic()-self.price_time > self.strategy.settings.max_gap:
                     raise TimeoutError("Снимок цены устарел во время котировки выхода")
                 if self.mode == 'PAPER':
@@ -886,6 +895,7 @@ class Worker(QThread):
                 except (Web3RPCError, RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as second:
                     raise EntryRejected('Активность недоступна на обоих RPC; вход запрещён') from second
                 self.log.emit('Активность проверена через резервный RPC')
+            self.record_market('activity', count=activity['count'], from_block=activity['from_block'], to_block=activity['to_block'], pool=self.pool.address)
             self.log.emit(f"Активность пула: {activity['count']} Swap за блоки {activity['from_block']}–{activity['to_block']}")
             if activity['count'] < settings.min_swaps:
                 raise EntryRejected('Вход пропущен: недостаточно Swap в выбранном пуле')
@@ -894,6 +904,7 @@ class Worker(QThread):
                 self.require_live()
             raw = raw_amount(settings.amount, self.pool.quote_decimals)
             check = self.chain.entry_quote(self.pool, raw, settings.max_roundtrip_loss)
+            self.record_quote(self.chain, 'entry_screen', 'BUY', check.amount_in, check.target_out, check.reverse_out)
             estimated_cost = self.cost_policy.assess(check, self.pool, self.gas_gwei, self.rates)
             if estimated_cost is not None:
                 self.log.emit(f'Расчётные расходы цикла: {estimated_cost:.2f}% (модель газа, без token tax)')
@@ -942,6 +953,7 @@ class Worker(QThread):
                     entry = self.read_price()
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 quoted = quote(self.pool, raw, True)
+                self.record_quote(self.chain, 'paper_fill', 'BUY', raw, quoted)
                 if self.stop_event.is_set():
                     raise EntryRejected('STOP во время котировки PAPER; виртуальный вход отменён')
                 bound = snapshot_minimum(raw, signal_price, self.pool.quote_decimals,
@@ -998,6 +1010,7 @@ class Worker(QThread):
                 amount = raw_amount(self.paper.position, self.pool.token_decimals)
                 quote = getattr(self.chain, 'paper_quote', self.chain.quote)
                 output = quote(self.pool, amount, False)
+                self.record_quote(self.chain, 'paper_fill', 'SELL', amount, output)
                 pnl = self.paper.sell_quoted(D(output)/D(10)**self.pool.quote_decimals, self.paper_policy.fee_quote)
             else:
                 pnl = self.paper.sell(price)

@@ -8,6 +8,8 @@ import time
 import uuid
 
 FIELDS = {
+    'quote': {'purpose','side','amount_in_raw','amount_out_raw','reverse_out_raw','block','block_hash','pool'},
+    'activity': {'count','from_block','to_block','pool'},
     'stream_gap': {'previous_block','new_block','discontinuity'},
     'backfill': {'pool','from_block','to_block','truncated','events','count','error_type'},
     'price': {'price', 'block', 'block_hash', 'block_timestamp', 'source'},

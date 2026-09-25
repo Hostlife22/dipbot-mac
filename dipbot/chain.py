@@ -400,6 +400,7 @@ class Chain:
         reverse = self.quote(pool, target, False, block=block)
         # A numbered block can change during a reorg. Revalidate before accepting.
         self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
+        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
         return assess(amount, target, reverse, block, maximum)
 
     @timed("chain.exit_quote")
@@ -410,11 +411,19 @@ class Chain:
         if type(output) is not int or not 0 <= output < 2**256:
             raise ValueError('Некорректная котировка выхода')
         self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
+        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
         return output
 
     def paper_quote(self, pool, amount, buy):
         # One immutable block for this simulated fill; no approval or signature.
-        return self.quote(pool, amount, buy, block=self.check(force_network=False))
+        block = self.check(force_network=False)
+        header = dict(self.checked_header)
+        output = self.quote(pool, amount, buy, block=block)
+        if type(output) is not int or not 0 < output < 2**256:
+            raise ValueError('Некорректная котировка PAPER')
+        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
+        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
+        return output
 
     def quote_route(self, route, amount, reverse=False):
         if not 0 < amount < 2**256:
