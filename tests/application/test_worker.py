@@ -1,14 +1,14 @@
-from tests.support.worker import config
-from dataclasses import asdict
 from types import SimpleNamespace
+
 import pytest
 
-from dipbot.application.worker import Worker, safe_error
-from dipbot.persistence.storage import Store
+from dipbot.application.errors import safe_error
+from dipbot.application.worker import Worker
+from dipbot.domain.assets import USDT, WBNB
 from dipbot.domain.strategy import D
-from dipbot.market.chain import Pool, WBNB, USDT, address
-
-
+from dipbot.market.chain import Pool, address
+from dipbot.persistence.storage import Store
+from tests.support.worker import config
 
 
 def test_demo_full_cycle_offline(tmp_path):
@@ -44,7 +44,7 @@ def test_cannot_change_connection_with_open_position(tmp_path):
 def test_changed_target_cannot_trade_old_pool(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))
     worker.chain = SimpleNamespace()
-    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.pool = Pool(address("0x" + "12" * 20), "V2", address(USDT), address(WBNB), 18, 18, False)
     data = config("PAPER") | {"token": WBNB, "pool": worker.pool.address}
     with pytest.raises(ValueError, match="изменились"):
         worker.configure(data)
@@ -53,10 +53,14 @@ def test_changed_target_cannot_trade_old_pool(tmp_path):
 def test_live_sell_uses_only_tracked_amount(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))
     worker.mode = "LIVE"
-    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.pool = Pool(address("0x" + "12" * 20), "V2", address(USDT), address(WBNB), 18, 18, False)
     sold = []
-    worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
-        finish=lambda: None, swap=lambda pool, amount, buy, tolerance, **kwargs: sold.append(amount))
+    worker.live = SimpleNamespace(
+        owner=address("0x" + "34" * 20),
+        begin=lambda _: None,
+        finish=lambda: None,
+        swap=lambda pool, amount, buy, tolerance, **kwargs: sold.append(amount),
+    )
     worker.chain = SimpleNamespace(balance=lambda *args: 1000, price=lambda _: D("1.2"))
     worker.set_position(200, D(1))
     worker.strategy.bought(D(1))
@@ -69,45 +73,51 @@ def test_live_sell_uses_only_tracked_amount(tmp_path):
 
 def test_error_redaction():
     assert "https" not in safe_error(ValueError("https://node/private-api-key"))
-    assert "11"*32 not in safe_error(ValueError("bad key " + "11"*32))
+    assert "11" * 32 not in safe_error(ValueError("bad key " + "11" * 32))
 
 
 def test_http_error_keeps_status_without_provider_credentials():
     from requests import Response
     from requests.exceptions import HTTPError
+
     response = Response()
     response.status_code = 429
-    response.url = 'https://node/private-api-key'
+    response.url = "https://node/private-api-key"
     message = safe_error(HTTPError(response.url, response=response))
-    assert 'HTTP 429' in message and 'лимит запросов' in message
-    assert 'private-api-key' not in message and 'https' not in message
+    assert "HTTP 429" in message and "лимит запросов" in message
+    assert "private-api-key" not in message and "https" not in message
     response.status_code = 503
-    assert 'HTTP 503' in safe_error(HTTPError(response.url, response=response))
-    assert 'private-api-key' not in safe_error(HTTPError(response.url))
+    assert "HTTP 503" in safe_error(HTTPError(response.url, response=response))
+    assert "private-api-key" not in safe_error(HTTPError(response.url))
 
 
 def test_rpc_error_keeps_code_without_provider_message():
     from web3.exceptions import Web3RPCError
-    error = Web3RPCError('https://node/private-api-key', rpc_response={
-        'error': {'code': -32005, 'message': 'https://node/private-api-key'}})
-    message = safe_error(error)
-    assert 'RPC -32005' in message
-    assert 'private-api-key' not in message
 
+    error = Web3RPCError(
+        "https://node/private-api-key",
+        rpc_response={"error": {"code": -32005, "message": "https://node/private-api-key"}},
+    )
+    message = safe_error(error)
+    assert "RPC -32005" in message
+    assert "private-api-key" not in message
 
 
 def test_live_buy_uses_signal_guard_and_post_receipt_reference(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))
     worker.mode = "LIVE"
-    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.pool = Pool(address("0x" + "12" * 20), "V2", address(USDT), address(WBNB), 18, 18, False)
     worker.current_price = D(2)
     worker.chain = SimpleNamespace(price=lambda _: D("2.1"))
     guards = []
+
     def swap(pool, amount, buy, tolerance, *, signal_minimum):
         guards.append(signal_minimum)
         return 10**16
-    worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
-        finish=lambda: None, swap=swap)
+
+    worker.live = SimpleNamespace(
+        owner=address("0x" + "34" * 20), begin=lambda _: None, finish=lambda: None, swap=swap
+    )
     worker.open_position()
     assert guards == [9_620_000_000_000_000]  # Default BUY tolerance: 5 - 120/100 = 3.8%.
     assert worker.strategy.entry == D("2.1")
@@ -124,17 +134,23 @@ def test_slow_poll_setting_rejected(tmp_path):
 def test_confirmed_buy_price_read_failure_keeps_holdings_and_latch(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))
     worker.mode = "LIVE"
-    worker.pool = Pool(address("0x"+"12"*20), "V2", address(USDT), address(WBNB), 18, 18, False)
+    worker.pool = Pool(address("0x" + "12" * 20), "V2", address(USDT), address(WBNB), 18, 18, False)
     worker.current_price = D(2)
+
     def failed_price(_):
         raise TimeoutError()
+
     worker.chain = SimpleNamespace(price=failed_price)
+
     def begin(_):
         worker.store.data["operation"] = {"description": "BUY"}
+
     def finish():
         pytest.fail("Failed post-receipt read must not clear operation")
-    worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=begin,
-        finish=finish, swap=lambda *args, **kwargs: 10**16)
+
+    worker.live = SimpleNamespace(
+        owner=address("0x" + "34" * 20), begin=begin, finish=finish, swap=lambda *args, **kwargs: 10**16
+    )
     with pytest.raises(TimeoutError):
         worker.open_position()
     reloaded = Store(worker.store.path)

@@ -1,16 +1,17 @@
 """Shared execution fixtures/builders."""
-from types import SimpleNamespace
-from dataclasses import asdict
+
 import json
+from types import SimpleNamespace
+
 import pytest
 from eth_account import Account
 from web3 import Web3
-from web3.exceptions import TransactionNotFound
-from dipbot.market.chain import WBNB, USDT, Pool, address
-from dipbot.persistence.storage import Store
-from dipbot.execution.trader import LiveTrader
-from dipbot.execution.errors import UncertainTransaction
+
+from dipbot.domain.assets import WBNB
 from dipbot.domain.strategy import D
+from dipbot.execution.trader import LiveTrader
+from dipbot.market.chain import address
+from dipbot.persistence.storage import Store
 
 
 class Function:
@@ -24,13 +25,18 @@ class Function:
 @pytest.fixture
 def trader(tmp_path):
     store = Store(tmp_path / "state.json")
+
     class Eth:
         fail_send = False
         status = 1
         pending = False
+
         def get_transaction_count(self, owner, kind):
             return 1 if self.pending and kind == "pending" else 0
-        def get_balance(self, owner): return 10**18
+
+        def get_balance(self, owner):
+            return 10**18
+
         def send_raw_transaction(self, raw):
             # Actual broadcast is replaced by this offline fake.
             persisted = json.loads(store.path.read_text())
@@ -38,8 +44,10 @@ def trader(tmp_path):
             if self.fail_send:
                 raise TimeoutError("private RPC url must not leak")
             return Web3.keccak(raw)
+
         def wait_for_transaction_receipt(self, tx_hash, **kwargs):
             return {"status": self.status, "blockNumber": 123, "transactionHash": tx_hash}
+
     chain = SimpleNamespace(w3=SimpleNamespace(eth=Eth()), check=lambda: 123)
     # Ephemeral, unfunded key; never leaves local test process.
     key = Account.create().key

@@ -1,10 +1,12 @@
 """Explicit reconstruction, not a claim of original algorithm equivalence."""
-from dataclasses import dataclass
-from decimal import Decimal, ROUND_DOWN
+
 import math
 from collections import deque
-from dipbot.domain.signal_policy import SignalPolicy
+from dataclasses import dataclass
+from decimal import ROUND_DOWN, Decimal
+
 from dipbot.domain.exit_policy import ExitPolicy
+from dipbot.domain.signal_policy import SignalPolicy
 from dipbot.domain.volatility import RollingVolatility
 
 D = Decimal
@@ -23,8 +25,12 @@ class Settings:
     min_swaps: D = D(0)
 
     def __post_init__(self):
-        if not self.min_swaps.is_finite() or not 0 <= self.min_swaps <= 10000 or self.min_swaps != self.min_swaps.to_integral_value():
-            raise ValueError('Минимум Swap должен быть целым числом от 0 до 10000')
+        if (
+            not self.min_swaps.is_finite()
+            or not 0 <= self.min_swaps <= 10000
+            or self.min_swaps != self.min_swaps.to_integral_value()
+        ):
+            raise ValueError("Минимум Swap должен быть целым числом от 0 до 10000")
         values = (self.amount, self.dip, self.take_profit, self.stop_loss, self.slippage, self.dynamic)
         if any(not x.is_finite() for x in values):
             raise ValueError("Параметры должны быть конечными числами")
@@ -64,8 +70,7 @@ def minimum_out(quoted: int, tolerance: D) -> int:
     return result
 
 
-def snapshot_minimum(amount: int, price: D, quote_decimals: int,
-                     token_decimals: int, tolerance: D) -> int:
+def snapshot_minimum(amount: int, price: D, quote_decimals: int, token_decimals: int, tolerance: D) -> int:
     """BUY guard from the signal's spot price, before pool fees/price impact.
 
     Reconstructed from Trader.buy_min_out_from_snapshot at VA 0x141e63dc0.
@@ -117,20 +122,20 @@ class Strategy:
             self.cooldown_until = None
         gap = self.last_time is not None and now - self.last_time > self.settings.max_gap
         previous = self.last_price
-        if self.policy.mode == 'volatility' and observation_id is None:
+        if self.policy.mode == "volatility" and observation_id is None:
             observation_id = int(now)  # Explicit fallback for DEMO/price-only tapes.
         duplicate = observation_id is not None and observation_id == self.last_observation_id
         self.last_observation_id = observation_id
         self.last_time, self.last_price = now, price
-        if self.entry is None and self.policy.mode in ('window','volatility') and duplicate and not gap:
+        if self.entry is None and self.policy.mode in ("window", "volatility") and duplicate and not gap:
             return None
         if self.entry is not None:
             if self.entry_time is None:
                 self.entry_time = now
             self.peak_price = max(self.peak_price or self.entry, price)
-            if self.exit_policy.tp_sl_basis == 'quote':
+            if self.exit_policy.tp_sl_basis == "quote":
                 if exit_return is None or not exit_return.is_finite():
-                    raise ValueError('Для TP/SL нет свежей котировки выхода')
+                    raise ValueError("Для TP/SL нет свежей котировки выхода")
                 change = exit_return
             else:
                 change = (price / self.entry - 1) * 100
@@ -138,16 +143,22 @@ class Strategy:
                 return "TAKE_PROFIT"
             if change <= -self.settings.stop_loss:
                 return "STOP_LOSS"
-            if self.exit_policy.trailing_pct and (1-price/self.peak_price)*100 >= self.exit_policy.trailing_pct:
-                return 'TRAILING_STOP'
-            if self.exit_policy.max_hold_seconds and now-self.entry_time >= self.exit_policy.max_hold_seconds:
-                return 'TIME_EXIT'
+            if (
+                self.exit_policy.trailing_pct
+                and (1 - price / self.peak_price) * 100 >= self.exit_policy.trailing_pct
+            ):
+                return "TRAILING_STOP"
+            if (
+                self.exit_policy.max_hold_seconds
+                and now - self.entry_time >= self.exit_policy.max_hold_seconds
+            ):
+                return "TIME_EXIT"
             return None
-        if self.policy.mode in ('window','volatility'):
+        if self.policy.mode in ("window", "volatility"):
             return self.observe_window(price, now, gap)
         if self.base is None or gap:
             self.base_time = now
-            self.base_reason = 'Разрыв наблюдений' if gap else 'Первое наблюдение'
+            self.base_reason = "Разрыв наблюдений" if gap else "Первое наблюдение"
             self.base = price
             self.down_streak = 0
             return None
@@ -172,19 +183,22 @@ class Strategy:
     def entry_wait(self, now):
         """Read-only explanation of signal state; never advances the strategy."""
         if self.entry is not None or self.stopped:
-            return '', ''
+            return "", ""
         if self.cooldown_until is not None and now < self.cooldown_until:
-            return 'cooldown', f'Пауза после выхода: {self.cooldown_until-now:.1f} с · затем новый DIP'
+            return "cooldown", f"Пауза после выхода: {self.cooldown_until - now:.1f} с · затем новый DIP"
         if self.base is None:
-            return 'baseline', 'Получает котировки · формирует базу DIP'
-        if self.policy.mode == 'volatility' and len(self.volatility.rows) < 10:
-            return 'warmup', f'Прогрев волатильности: {len(self.volatility.rows)}/10 изменений'
+            return "baseline", "Получает котировки · формирует базу DIP"
+        if self.policy.mode == "volatility" and len(self.volatility.rows) < 10:
+            return "warmup", f"Прогрев волатильности: {len(self.volatility.rows)}/10 изменений"
         if self.trough is not None and self.policy.rebound_pct and self.last_price is not None:
-            rebound = (self.last_price/self.trough-1)*100
+            rebound = (self.last_price / self.trough - 1) * 100
             if rebound < self.policy.rebound_pct:
-                shown = rebound.quantize(D('.0001'), rounding=ROUND_DOWN)
-                return 'rebound', f'DIP достигнут · ждёт отскок {self.policy.rebound_pct:g}% от минимума; сейчас ≈{shown:.4f}%'
-        return 'dip', 'Ждёт падения до DIP'
+                shown = rebound.quantize(D(".0001"), rounding=ROUND_DOWN)
+                return (
+                    "rebound",
+                    f"DIP достигнут · ждёт отскок {self.policy.rebound_pct:g}% от минимума; сейчас ≈{shown:.4f}%",
+                )
+        return "dip", "Ждёт падения до DIP"
 
     def reset_anchor(self):
         self.base = self.last_time = self.last_price = self.base_time = None
@@ -192,7 +206,7 @@ class Strategy:
         self.highs.clear()
         self.trough = None
         self.last_observation_id = None
-        self.base_reason = 'Ожидание нового сигнала'
+        self.base_reason = "Ожидание нового сигнала"
         self.volatility.clear()
         self.effective_dip = self.settings.dip
 
@@ -201,20 +215,20 @@ class Strategy:
             self.volatility.clear()
             self.highs.clear()
             self.trough = None
-        if self.policy.mode == 'volatility':
+        if self.policy.mode == "volatility":
             sigma = self.volatility.add(price, now, self.policy.window_seconds)
-            self.effective_dip = max(self.settings.dip, min(D(20), sigma*self.policy.volatility_multiplier))
+            self.effective_dip = max(self.settings.dip, min(D(20), sigma * self.policy.volatility_multiplier))
         cutoff = now - self.policy.window_seconds
         while self.highs and self.highs[0][0] < cutoff:
             self.highs.popleft()
         while self.highs and self.highs[-1][1] <= price:
             self.highs.pop()
         if len(self.highs) >= 10000:
-            raise ValueError('Слишком много событий в окне DIP; вход остановлен')
+            raise ValueError("Слишком много событий в окне DIP; вход остановлен")
         self.highs.append((now, price))
         self.base_time, self.base = self.highs[0]
-        self.base_reason = 'Разрыв наблюдений' if gap else 'Максимум временного окна'
-        if gap or (self.policy.mode == 'volatility' and len(self.volatility.rows) < 10):
+        self.base_reason = "Разрыв наблюдений" if gap else "Максимум временного окна"
+        if gap or (self.policy.mode == "volatility" and len(self.volatility.rows) < 10):
             self.trough = None
             return None
         dip = (1 - price / self.base) * 100
@@ -224,7 +238,7 @@ class Strategy:
         self.trough = min(self.trough, price) if self.trough is not None else price
         rebound = (price / self.trough - 1) * 100
         if rebound >= self.policy.rebound_pct:
-            return 'BUY'
+            return "BUY"
         return None
 
     def bought(self, execution_price: D, now=None):
@@ -240,7 +254,9 @@ class Strategy:
         self.volatility.clear()
         self.effective_dip = self.settings.dip
         now = (self.last_time or 0) if now is None else now
-        self.cooldown_until = now+self.exit_policy.cooldown_seconds if self.exit_policy.cooldown_seconds else None
+        self.cooldown_until = (
+            now + self.exit_policy.cooldown_seconds if self.exit_policy.cooldown_seconds else None
+        )
         self.highs.clear()
         self.trough = None
         self.base_time = self.last_time
@@ -248,6 +264,7 @@ class Strategy:
         self.base = price
         self.last_price = price
         self.down_streak = 0
-        if reason == "STOP" or (reason in ("STOP_LOSS", "TRAILING_STOP")
-                                and not self.exit_policy.continue_after_risk_exit):
+        if reason == "STOP" or (
+            reason in ("STOP_LOSS", "TRAILING_STOP") and not self.exit_policy.continue_after_risk_exit
+        ):
             self.stopped = True

@@ -1,5 +1,7 @@
 """Virtual execution and position accounting, with no RPC or signing."""
+
 from decimal import Decimal as D
+
 
 class PaperTrader:
     def __init__(self, slippage: D):
@@ -24,13 +26,13 @@ class PaperTrader:
 
     def buy_quoted(self, cost: D, received: D):
         if self.position or cost <= 0 or received <= 0:
-            raise ValueError('Некорректная PAPER-покупка')
+            raise ValueError("Некорректная PAPER-покупка")
         self.cost, self.position = cost, received
         return cost / received
 
     def sell_quoted(self, proceeds: D, fee: D = D(0)):
         if not self.position or proceeds <= 0 or not fee.is_finite() or fee < 0:
-            raise ValueError('Некорректная PAPER-продажа')
+            raise ValueError("Некорректная PAPER-продажа")
         pnl = proceeds - self.cost - fee
         self.realized += pnl
         self.position = self.cost = D(0)

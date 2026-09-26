@@ -1,12 +1,21 @@
 """Shared desktop palette and control states."""
+
 from pathlib import Path
 
 # Semantic tokens shared by Qt styles and custom painting.
 COLORS = {
-    "background": "#101419", "surface": "#171d25", "raised": "#202936",
-    "border": "#344252", "text": "#e8edf3", "muted": "#adbacb",
-    "accent": "#8bc4ff", "positive": "#71e0bc", "danger": "#ffabb5",
-    "warning": "#f4c76b", "entry": "#b8b2ff", "grid": "#293441",
+    "background": "#101419",
+    "surface": "#171d25",
+    "raised": "#202936",
+    "border": "#344252",
+    "text": "#e8edf3",
+    "muted": "#adbacb",
+    "accent": "#8bc4ff",
+    "positive": "#71e0bc",
+    "danger": "#ffabb5",
+    "warning": "#f4c76b",
+    "entry": "#b8b2ff",
+    "grid": "#293441",
 }
 METRICS = {"page": 12, "gap": 8, "control_height": 18, "chart_height": 200}
 

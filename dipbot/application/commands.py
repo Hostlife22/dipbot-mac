@@ -1,36 +1,35 @@
 from __future__ import annotations
-from dipbot.application.messages import CommandKind, EventKind
-from dataclasses import asdict, replace
+
 import time
+from dataclasses import asdict, replace
+from typing import TYPE_CHECKING
 
 from eth_account import Account
 
-from dipbot.market.chain import Chain, WBNB, address, profiles
-from dipbot.persistence.vault import Vault
-from dipbot.persistence import dynamic
-from dipbot.persistence import wallet_registry
-from dipbot.market.routes import seed_preference
-from dipbot.domain.strategy import D, Settings, Strategy, raw_amount, minimum_out
-from dipbot.execution.trader import LiveTrader
-from dipbot.execution.paper import PaperTrader
-from dipbot.execution.errors import UncertainTransaction
-from dipbot.execution.reconciliation import reconcile_receipts
-
-
-from dipbot.domain.signal_policy import SignalPolicy
-from dipbot.market.head_feed import HeadFeed, HeadSchedule
-from dipbot.research.market_tape import MarketTape
-from dipbot.domain.sizing import SizingPolicy
-from dipbot.domain.exit_policy import ExitPolicy
-from dipbot.market.rpc_health import RpcHealth
+from dipbot.application.messages import CommandKind, EventKind
+from dipbot.domain.assets import WBNB
 from dipbot.domain.cost_policy import CostPolicy
+from dipbot.domain.exit_policy import ExitPolicy
 from dipbot.domain.paper_policy import PaperPolicy
+from dipbot.domain.signal_policy import SignalPolicy
+from dipbot.domain.sizing import SizingPolicy
+from dipbot.domain.strategy import D, Settings, Strategy, minimum_out, raw_amount
 from dipbot.execution.accounting import accounting_report
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.execution.paper import PaperTrader
+from dipbot.execution.reconciliation import reconcile_receipts
+from dipbot.execution.trader import LiveTrader
+from dipbot.market.chain import Chain, address, profiles
+from dipbot.market.head_feed import HeadFeed, HeadSchedule
+from dipbot.market.routes import seed_preference
+from dipbot.market.rpc_health import RpcHealth
+from dipbot.persistence import dynamic, wallet_registry
+from dipbot.persistence.vault import Vault
+from dipbot.research.market_tape import MarketTape
 
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dipbot.application.worker import Worker
+
 
 def configure(runtime: Worker, data):
     mode = data["mode"]
@@ -41,10 +40,12 @@ def configure(runtime: Worker, data):
     exit_policy = ExitPolicy.parse(data.get("exit_policy", {}))
     settings = Settings(**{k: D(v) for k, v in data["settings"].items()})
     requested_amount = settings.amount
-    if sizing.unit == 'usd':
-        if mode == 'DEMO' or runtime.pool is None:
-            raise ValueError('AMOUNT в USD требует PAPER/LIVE и выбранный пул')
-        settings = replace(settings, amount=sizing.amount_quote(requested_amount, runtime.pool.quote, runtime.rates))
+    if sizing.unit == "usd":
+        if mode == "DEMO" or runtime.pool is None:
+            raise ValueError("AMOUNT в USD требует PAPER/LIVE и выбранный пул")
+        settings = replace(
+            settings, amount=sizing.amount_quote(requested_amount, runtime.pool.quote, runtime.rates)
+        )
     interval = float(data["interval"])
     if not 0.1 <= interval <= 0.5:
         raise ValueError("Интервал от 0.1 до 0.5 секунд (защита разрыва: 0.55 с)")
@@ -82,13 +83,21 @@ def configure(runtime: Worker, data):
         live.reserve_wei = raw_amount(sizing.reserve_bnb, 18) if sizing.reserve_bnb else 0
         if runtime.store.data.get("operation"):
             raise UncertainTransaction("Есть незавершённая операция: используйте сверку в настройках")
-        pair_name = next((n for n,t in dynamic.catalog(runtime.store,runtime.pool.router).items()
-                          if address(t) == runtime.pool.quote), runtime.pool.quote)
+        pair_name = next(
+            (
+                n
+                for n, t in dynamic.catalog(runtime.store, runtime.pool.router).items()
+                if address(t) == runtime.pool.quote
+            ),
+            runtime.pool.quote,
+        )
         wallet_registry.register(runtime.store, live.owner, runtime.pool, pair_name)
     if runtime.pool and runtime.pool.router == "V3":
         interval = max(interval, 0.103)
     if mode != "LIVE":
-        context = (mode,) if mode == "DEMO" else (mode, runtime.pool.token.lower(), runtime.pool.quote.lower())
+        context = (
+            (mode,) if mode == "DEMO" else (mode, runtime.pool.token.lower(), runtime.pool.quote.lower())
+        )
         if runtime.paper_context != context:
             if runtime.paper.position and runtime.paper_context is not None:
                 raise ValueError("Сначала закройте позицию предыдущего PAPER-рынка")
@@ -107,11 +116,15 @@ def configure(runtime: Worker, data):
     runtime.strategy.cooldown_until = old_cooldown
     if mode == "LIVE" and runtime.position():
         runtime.strategy.entry = D(runtime.position()["entry"])
-        runtime.strategy.peak_price = D(runtime.position().get('peak_price', runtime.position()['entry']))
-        started = runtime.position().get('opened_at')
+        runtime.strategy.peak_price = D(runtime.position().get("peak_price", runtime.position()["entry"]))
+        started = runtime.position().get("opened_at")
         if exit_policy.max_hold_seconds and started is None:
-            raise ValueError('В старой позиции нет времени входа; отключите выход по времени или выполните ручной SELL')
-        runtime.strategy.entry_time = time.monotonic()-max(0,time.time()-started) if started is not None else None
+            raise ValueError(
+                "В старой позиции нет времени входа; отключите выход по времени или выполните ручной SELL"
+            )
+        runtime.strategy.entry_time = (
+            time.monotonic() - max(0, time.time() - started) if started is not None else None
+        )
     elif mode != "LIVE" and runtime.paper.position:
         runtime.strategy.entry = old_entry
         runtime.strategy.entry_time, runtime.strategy.peak_price = old_entry_time, old_peak
@@ -124,16 +137,28 @@ def configure(runtime: Worker, data):
     previous_closed = runtime.recorder is None or runtime.recorder.close()
     runtime.recorder = None
     runtime.recorder_notice = False
-    if data.get('record_market', False) and previous_closed:
+    if data.get("record_market", False) and previous_closed:
         try:
-            runtime.recorder = MarketTape(runtime.store.path.parent / 'market-recordings', {
-                'mode': runtime.mode, 'pool': asdict(runtime.pool) if runtime.pool else None,
-                'settings': asdict(settings), 'signal_policy': policy.export(), 'sizing':sizing.export(),
-                'requested_amount':str(requested_amount), 'exit_policy':exit_policy.export(), 'entry_cost_policy':cost_policy.export(), 'paper_policy':paper_policy.export(),
-                'starts_with_position': runtime.strategy.entry is not None})
-            runtime.log.emit('Запись рынка включена: локальный архив market-recordings (части до 10 MiB, архив до 200 MiB)')
+            runtime.recorder = MarketTape(
+                runtime.store.path.parent / "market-recordings",
+                {
+                    "mode": runtime.mode,
+                    "pool": asdict(runtime.pool) if runtime.pool else None,
+                    "settings": asdict(settings),
+                    "signal_policy": policy.export(),
+                    "sizing": sizing.export(),
+                    "requested_amount": str(requested_amount),
+                    "exit_policy": exit_policy.export(),
+                    "entry_cost_policy": cost_policy.export(),
+                    "paper_policy": paper_policy.export(),
+                    "starts_with_position": runtime.strategy.entry is not None,
+                },
+            )
+            runtime.log.emit(
+                "Запись рынка включена: локальный архив market-recordings (части до 10 MiB, архив до 200 MiB)"
+            )
         except OSError:
-            runtime.log.emit('Запись рынка недоступна: проверьте свободное место и лимит архива')
+            runtime.log.emit("Запись рынка недоступна: проверьте свободное место и лимит архива")
 
 
 def command(runtime: Worker, name, data):
@@ -141,21 +166,23 @@ def command(runtime: Worker, name, data):
         raise ValueError("STOP запрошен: новая торговая операция отменена")
     if runtime.running and name not in ("sell", "accounting_report"):
         raise ValueError("Сначала остановите BOT")
-    if name in ("connect", "discover", "verify", "select", "wallet", "remove_profile") and (runtime.paper.position or runtime.position()):
+    if name in ("connect", "discover", "verify", "select", "wallet", "remove_profile") and (
+        runtime.paper.position or runtime.position()
+    ):
         raise ValueError("Сначала закройте текущую позицию")
     if name == CommandKind.CONNECT:
         chain = Chain(data["rpc"])
         block = chain.check()
         backup = None
-        if data.get('backup_rpc', '').strip():
-            backup = Chain(data['backup_rpc'].strip())
+        if data.get("backup_rpc", "").strip():
+            backup = Chain(data["backup_rpc"].strip())
             backup.restrict_to_reads()
             backup.check()
         broadcaster = None
-        if data.get('send_rpc','').strip():
-            broadcaster = Chain(data['send_rpc'].strip())
+        if data.get("send_rpc", "").strip():
+            broadcaster = Chain(data["send_rpc"].strip())
             broadcaster.check()
-        feed = HeadFeed(data['ws_rpc'].strip()) if data.get('ws_rpc', '').strip() else None
+        feed = HeadFeed(data["ws_rpc"].strip()) if data.get("ws_rpc", "").strip() else None
         if runtime.gap_recovery is not None:
             runtime.gap_recovery.stop()
             runtime.gap_recovery = None
@@ -170,7 +197,7 @@ def command(runtime: Worker, name, data):
             runtime.log.emit("Отправка через отдельный RPC; чтение receipts через основной")
         runtime.backup_until = 0.0
         runtime.rpc_health = RpcHealth()
-        runtime.adaptive_rpc = bool(data.get('adaptive_rpc', False))
+        runtime.adaptive_rpc = bool(data.get("adaptive_rpc", False))
         runtime.last_market_header = None
         runtime.backup_verified_pool = None
         runtime.pool = None
@@ -178,9 +205,9 @@ def command(runtime: Worker, name, data):
         runtime.log.emit(f"BSC подключена, chainId 56, блок {block}")
         if data.get("save"):
             Vault().save("rpc", data["rpc"])
-            Vault().save('backup_rpc', data.get('backup_rpc', '').strip())
-            Vault().save('ws_rpc', data.get('ws_rpc', '').strip())
-            Vault().save('send_rpc', data.get('send_rpc', '').strip())
+            Vault().save("backup_rpc", data.get("backup_rpc", "").strip())
+            Vault().save("ws_rpc", data.get("ws_rpc", "").strip())
+            Vault().save("send_rpc", data.get("send_rpc", "").strip())
     elif name == CommandKind.WALLET:
         account = Account.from_key(data["key"])
         Vault().save("wallet", data["key"])
@@ -200,8 +227,11 @@ def command(runtime: Worker, name, data):
         routers = ("V2", "V3") if data["router"] == "AUTO" else (data["router"],)
         for router in routers:
             catalog = dynamic.catalog(runtime.store, router)
-            catalogs[router] = catalog if data["quote"] == "ALL" else {
-                name: token for name, token in catalog.items() if name == data["quote"]}
+            catalogs[router] = (
+                catalog
+                if data["quote"] == "ALL"
+                else {name: token for name, token in catalog.items() if name == data["quote"]}
+            )
         result = runtime.chain.resolve_address(data["token"], catalogs)
         if not runtime.discovery_current(generation):
             return
@@ -212,16 +242,27 @@ def command(runtime: Worker, name, data):
         runtime.discovery_emit(generation, "autopair", result.state)
     elif name == CommandKind.COMPARE_ROUTES:
         runtime.require_chain()
-        generation = data.get('generation')
+        generation = data.get("generation")
         if not runtime.discovery_current(generation):
             return
         from dipbot.market.route_comparison import compare
-        reference = data['reference']
-        amount = SizingPolicy.parse(data['sizing']).amount_quote(D(data['amount']), reference.quote, runtime.rates)
-        report = compare(runtime.chain, data['pools'], reference, amount,
-            D(data['maximum']), CostPolicy.parse(data['cost_policy']), D(data['gas']), runtime.rates,
-            cancelled=lambda: not runtime.discovery_current(generation))
-        runtime.discovery_emit(generation, 'route_comparison', report)
+
+        reference = data["reference"]
+        amount = SizingPolicy.parse(data["sizing"]).amount_quote(
+            D(data["amount"]), reference.quote, runtime.rates
+        )
+        report = compare(
+            runtime.chain,
+            data["pools"],
+            reference,
+            amount,
+            D(data["maximum"]),
+            CostPolicy.parse(data["cost_policy"]),
+            D(data["gas"]),
+            runtime.rates,
+            cancelled=lambda: not runtime.discovery_current(generation),
+        )
+        runtime.discovery_emit(generation, "route_comparison", report)
     elif name == CommandKind.VERIFY:
         runtime.require_chain()
         pool = runtime.chain.verify_pool(data["pool"], data["token"])
@@ -247,7 +288,9 @@ def command(runtime: Worker, name, data):
         helper.trade_router = runtime.pool.router
         sample = 10**15  # Native LIVE_PAIR_SAMPLE_BNB_WEI: 0.001 BNB.
         if runtime.pool.quote != address(WBNB):
-            helper.converter_preference = dynamic.preference(runtime.store, runtime.pool.quote, runtime.pool.router) or seed_preference(runtime.pool.quote)
+            helper.converter_preference = dynamic.preference(
+                runtime.store, runtime.pool.quote, runtime.pool.router
+            ) or seed_preference(runtime.pool.quote)
             try:
                 buy_route = helper.conversion_route(WBNB, runtime.pool.quote, sample)
             except ValueError:
@@ -262,13 +305,23 @@ def command(runtime: Worker, name, data):
             if returned * 10000 < sample * 8500:
                 raise ValueError("Round-trip loss превышает 15%")
             if runtime.pool.quote not in profiles().values():
-                symbol = runtime.chain.symbol(runtime.pool.quote) if hasattr(runtime.chain, "symbol") else None
+                symbol = (
+                    runtime.chain.symbol(runtime.pool.quote) if hasattr(runtime.chain, "symbol") else None
+                )
                 try:
-                    dynamic.upsert(runtime.store, runtime.pool, buy_route, max(0, (sample-returned)*10000//sample), symbol=symbol)
+                    dynamic.upsert(
+                        runtime.store,
+                        runtime.pool,
+                        buy_route,
+                        max(0, (sample - returned) * 10000 // sample),
+                        symbol=symbol,
+                    )
                 finally:
                     runtime.emit_event(EventKind.PROFILES, runtime.store.data.get("dynamic_profiles", {}))
                 runtime.emit_event(EventKind.SELECTED, runtime.pool)
-        runtime.log.emit("ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist")
+        runtime.log.emit(
+            "ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist"
+        )
     elif name == CommandKind.REMOVE_PROFILE:
         if runtime.store.data.get("operation"):
             raise UncertainTransaction("Сначала выполните сверку незавершённой операции")
@@ -299,16 +352,22 @@ def command(runtime: Worker, name, data):
     elif name in ("start", "buy"):
         runtime.configure(data)
         if runtime.mode == "LIVE":
-            other_positions = [key for key in runtime.store.data.get("positions", {})
-                               if key.startswith(runtime.live.owner.lower() + ":")
-                               and key != runtime.position_key()]
+            other_positions = [
+                key
+                for key in runtime.store.data.get("positions", {})
+                if key.startswith(runtime.live.owner.lower() + ":") and key != runtime.position_key()
+            ]
             if other_positions:
-                raise ValueError("Есть сохранённая позиция другого пула: выберите её пул или используйте SELL WALLET → BNB")
+                raise ValueError(
+                    "Есть сохранённая позиция другого пула: выберите её пул или используйте SELL WALLET → BNB"
+                )
         if runtime.stop_event.is_set():
             raise ValueError("STOP запрошен во время подготовки")
         if name == CommandKind.START:
             runtime.running = True
-            runtime.log.emit(f"START {runtime.mode}: DIP {runtime.strategy.settings.dip}% / TP {runtime.strategy.settings.take_profit}% / SL {runtime.strategy.settings.stop_loss}%")
+            runtime.log.emit(
+                f"START {runtime.mode}: DIP {runtime.strategy.settings.dip}% / TP {runtime.strategy.settings.take_profit}% / SL {runtime.strategy.settings.stop_loss}%"
+            )
         else:
             runtime.read_price()
             if runtime.stop_event.is_set():
@@ -317,28 +376,38 @@ def command(runtime: Worker, name, data):
     elif name == CommandKind.SELL:
         runtime.close_position("MANUAL")
     elif name == CommandKind.ACCOUNTING_REPORT:
-        owner = runtime.live.owner if runtime.live else runtime.store.data.get('wallet_address', '')
+        owner = runtime.live.owner if runtime.live else runtime.store.data.get("wallet_address", "")
         runtime.emit_event(EventKind.ACCOUNTING_REPORT, accounting_report(runtime.store, owner))
     elif name == CommandKind.BALANCE:
         runtime.require_chain()
         owner = address(data["wallet"])
         balances = {"BNB": str(D(runtime.chain.w3.eth.get_balance(owner)) / 10**18)}
-        for index, (symbol, token) in enumerate((profiles() | runtime.store.data.get("dynamic_profiles", {})).items()):
+        for index, (symbol, token) in enumerate(
+            (profiles() | runtime.store.data.get("dynamic_profiles", {})).items()
+        ):
             if index % 10 == 0:
-                runtime.log.emit(f"Чтение балансов: {index+1}…")
+                runtime.log.emit(f"Чтение балансов: {index + 1}…")
             try:
-                balances[symbol] = str(D(runtime.chain.balance(token, owner)) / D(10)**runtime.chain.decimals(token))
+                balances[symbol] = str(
+                    D(runtime.chain.balance(token, owner)) / D(10) ** runtime.chain.decimals(token)
+                )
             except Exception:
                 balances[symbol] = "?"
         if runtime.pool:
-            balances["TARGET"] = str(D(runtime.chain.balance(runtime.pool.token, owner)) / D(10)**runtime.pool.token_decimals)
+            balances["TARGET"] = str(
+                D(runtime.chain.balance(runtime.pool.token, owner)) / D(10) ** runtime.pool.token_decimals
+            )
         runtime.emit_event(EventKind.BALANCES, balances)
     elif name == CommandKind.CONVERT:
         runtime.configure(data)
         runtime.require_live()
         if runtime.stop_event.is_set():
             raise ValueError("STOP запрошен во время подготовки")
-        amount = raw_amount(D(data["amount"]), 18) if data["buy"] else runtime.chain.balance(runtime.pool.quote, runtime.live.owner)
+        amount = (
+            raw_amount(D(data["amount"]), 18)
+            if data["buy"]
+            else runtime.chain.balance(runtime.pool.quote, runtime.live.owner)
+        )
         if amount <= 0:
             raise ValueError("Нулевой баланс")
         if runtime.stop_event.is_set():
@@ -353,28 +422,33 @@ def command(runtime: Worker, name, data):
         runtime.sweep()
     elif name == CommandKind.CANCEL_PENDING:
         runtime.require_chain()
-        if data.get('mode') != 'LIVE':
-            raise ValueError('Отмена транзакции доступна только в LIVE')
-        key = Vault().get('wallet')
+        if data.get("mode") != "LIVE":
+            raise ValueError("Отмена транзакции доступна только в LIVE")
+        key = Vault().get("wallet")
         if not key:
-            raise ValueError('Нет кошелька в Keychain')
-        helper = LiveTrader(runtime.chain, key, runtime.store, D(data['gas']), runtime.log.emit)
+            raise ValueError("Нет кошелька в Keychain")
+        helper = LiveTrader(runtime.chain, key, runtime.store, D(data["gas"]), runtime.log.emit)
         helper.broadcast_chain = runtime.broadcast_chain
         helper.rates = runtime.rates
         from dipbot.execution.cancellation import cancel_pending
-        result = cancel_pending(helper, expected_hash=data['expected_hash'],
-                                expected_gas_price=data['expected_gas_price'])
+
+        result = cancel_pending(
+            helper, expected_hash=data["expected_hash"], expected_gas_price=data["expected_gas_price"]
+        )
         runtime.log.emit(result)
         runtime.emit_event(EventKind.RECEIPT_REVIEW, result)
     elif name == CommandKind.COMPARE_POSITIONS:
         runtime.require_chain()
         from dipbot.execution.recovery import compare_positions
+
         runtime.emit_event(EventKind.POSITION_COMPARISON, compare_positions(runtime.chain, runtime.store))
     elif name in ("reconcile", "unlock"):
         runtime.require_chain()
         if name == CommandKind.RECONCILE:
             operation = runtime.store.data.get("operation")
-            result = reconcile_receipts(runtime.chain, runtime.store, operation["wallet"] if operation else "")
+            result = reconcile_receipts(
+                runtime.chain, runtime.store, operation["wallet"] if operation else ""
+            )
             runtime.log.emit(result)
             runtime.emit_event(EventKind.RECEIPT_REVIEW, result)
             return
@@ -394,7 +468,9 @@ def command(runtime: Worker, name, data):
             helper.operation = operation
             helper.finish()
             runtime.strategy.entry = None
-            runtime.log.emit("Блокировка снята. Кэш позиций сброшен; остатки продавайте через SELL WALLET → BNB")
+            runtime.log.emit(
+                "Блокировка снята. Кэш позиций сброшен; остатки продавайте через SELL WALLET → BNB"
+            )
     else:
         raise ValueError("Неизвестная команда")
 
@@ -406,7 +482,10 @@ def select_pool(runtime: Worker, pool, *, generation=None):
     if not runtime.discovery_current(generation):
         return
     if runtime.paper_context is not None and runtime.paper_context != (
-            runtime.mode, verified.token.lower(), verified.quote.lower()):
+        runtime.mode,
+        verified.token.lower(),
+        verified.quote.lower(),
+    ):
         runtime.paper = PaperTrader(runtime.paper.slippage)
         runtime.paper_context = None
     runtime.trade_detail = None

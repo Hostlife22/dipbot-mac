@@ -1,21 +1,23 @@
-from tests.support.ui_status import status
 from dataclasses import replace
 from decimal import Decimal as D
 from types import SimpleNamespace
+
 import pytest
-from tests.support.markets import POOL
-from dipbot.ui.window import QMessageBox
+from PySide6.QtWidgets import QMessageBox
+
 from dipbot.application.worker import Worker
 from dipbot.persistence.storage import Store
+from tests.support.markets import POOL
+from tests.support.ui_status import status
 from tests.support.worker import config
 
 
-
-
-@pytest.mark.parametrize('mode', ['DEMO', 'PAPER', 'LIVE'])
+@pytest.mark.parametrize("mode", ["DEMO", "PAPER", "LIVE"])
 def test_open_position_locks_market_but_allows_resume_and_exit(window, mode):
-    w = window; w.mode.setCurrentText(mode);w.on_event('selected', POOL)
-    status(w, position='10', levels={'ENTRY':'1','TP':'1.02','SL':'.98'})
+    w = window
+    w.mode.setCurrentText(mode)
+    w.on_event("selected", POOL)
+    status(w, position="10", levels={"ENTRY": "1", "TP": "1.02", "SL": ".98"})
     assert not w.mode.isEnabled() and not w.router.isEnabled()
     assert not w.token.isEnabled() and not w.quote.isEnabled()
     assert not w.buy.isEnabled()
@@ -28,7 +30,7 @@ def test_stop_feedback_waits_for_worker_confirmation(window):
     w = window
     status(w, running=True)
     w.stop.click()
-    assert w.stop_pending and 'Останавливается' in w.strategy_status.text()
+    assert w.stop_pending and "Останавливается" in w.strategy_status.text()
     assert not w.start.isEnabled() and not w.buy.isEnabled()
     status(w, running=False)  # The stop flag is still pending.
     assert w.stop_pending
@@ -38,32 +40,42 @@ def test_stop_feedback_waits_for_worker_confirmation(window):
 
 
 def test_live_lock_blocks_new_start_and_buy(window):
-    w=window;w.mode.setCurrentText('LIVE');w.on_event('selected',POOL)
-    status(w,locked=True)
+    w = window
+    w.mode.setCurrentText("LIVE")
+    w.on_event("selected", POOL)
+    status(w, locked=True)
     assert not w.start.isEnabled() and not w.buy.isEnabled()
     assert w.stop.isEnabled()
 
 
-@pytest.mark.parametrize('command', ['start','buy','convert','sweep'])
+@pytest.mark.parametrize("command", ["start", "buy", "convert", "sweep"])
 def test_live_confirmation_cancel_never_submits(window, monkeypatch, command):
-    w=window;w.mode.setCurrentText('LIVE');w.on_event('selected',POOL)
-    monkeypatch.setattr(QMessageBox,'question',lambda *a:QMessageBox.No)
-    submitted=[];monkeypatch.setattr(w.worker,'submit',lambda *a,**kw:submitted.append((a,kw)))
-    w.trade(command, **({"buy":True,"amount":"0.00003"} if command == "convert" else {}))
+    w = window
+    w.mode.setCurrentText("LIVE")
+    w.on_event("selected", POOL)
+    monkeypatch.setattr(QMessageBox, "question", lambda *a: QMessageBox.No)
+    submitted = []
+    monkeypatch.setattr(w.worker, "submit", lambda *a, **kw: submitted.append((a, kw)))
+    w.trade(command, **({"buy": True, "amount": "0.00003"} if command == "convert" else {}))
     assert submitted == []
 
 
 def test_paper_ledger_separates_modes_and_markets(tmp_path):
-    w=Worker(Store(tmp_path/'state.json'))
-    demo=config();w.configure(demo);w.paper.realized=D(12)
-    w.pool=POOL;w.chain=SimpleNamespace(verify_pool=lambda *a:POOL)
-    paper=demo|{'mode':'PAPER','token':POOL.token,'pool':POOL.address,'router':POOL.router}
+    w = Worker(Store(tmp_path / "state.json"))
+    demo = config()
+    w.configure(demo)
+    w.paper.realized = D(12)
+    w.pool = POOL
+    w.chain = SimpleNamespace(verify_pool=lambda *a: POOL)
+    paper = demo | {"mode": "PAPER", "token": POOL.token, "pool": POOL.address, "router": POOL.router}
     w.configure(paper)
     assert w.paper.realized == 0
-    w.paper.realized=D(3);w.configure(paper)
+    w.paper.realized = D(3)
+    w.configure(paper)
     assert w.paper.realized == 3  # STOP/START on the same market keeps its ledger.
-    w.pool=replace(POOL,quote='0x'+'77'*20)
+    w.pool = replace(POOL, quote="0x" + "77" * 20)
     w.configure(paper)
     assert w.paper.realized == 0
-    w.paper.realized=D(4);w.configure(demo)
+    w.paper.realized = D(4)
+    w.configure(demo)
     assert w.paper.realized == 0

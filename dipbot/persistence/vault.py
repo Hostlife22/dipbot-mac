@@ -1,4 +1,5 @@
 """macOS Keychain adapter; no plaintext credential fallback."""
+
 import sys
 
 
@@ -10,6 +11,7 @@ class Vault:
         if sys.platform != "darwin":
             raise RuntimeError("LIVE-кошелёк доступен только через macOS Keychain")
         from keyring.backends.macOS import Keyring
+
         return Keyring()
 
     def save(self, name: str, value: str):

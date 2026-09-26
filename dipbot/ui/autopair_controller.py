@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QTableWidgetItem
 
 from dipbot.market.chain import profiles
 from dipbot.persistence import preferences
 
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dipbot.ui.window import Window
+
 
 def market_changed(view: Window, *_):
     if not view.quote.currentText():
@@ -46,21 +47,30 @@ def auto_discover(view: Window):
     if view.busy:
         view.autopair_timer.start()
         return
-    view.send("discover", token=view.token.text().strip(), quote=view.quote.currentText(),
-              router=view.router.currentText())
+    view.send(
+        "discover",
+        token=view.token.text().strip(),
+        quote=view.quote.currentText(),
+        router=view.router.currentText(),
+    )
 
 
 def compare_routes(view: Window):
     reference = view.candidates.currentData()
     if reference is None:
-        view.route_comparison.setText('Сначала найдите пулы через AutoPair')
+        view.route_comparison.setText("Сначала найдите пулы через AutoPair")
         return
-    view.route_comparison.setText('Сравнение на заданную сумму…')
-    view.send('compare_routes', reference=reference,
+    view.route_comparison.setText("Сравнение на заданную сумму…")
+    view.send(
+        "compare_routes",
+        reference=reference,
         pools=[view.candidates.itemData(i) for i in range(view.candidates.count())],
-        amount=view.params['amount'].text().strip(), sizing=view.sizing_policy(),
-        maximum=view.params['max_roundtrip_loss'].text().strip(),
-        cost_policy=view.entry_cost_policy(), gas=view.gas.text().strip())
+        amount=view.params["amount"].text().strip(),
+        sizing=view.sizing_policy(),
+        maximum=view.params["max_roundtrip_loss"].text().strip(),
+        cost_policy=view.entry_cost_policy(),
+        gas=view.gas.text().strip(),
+    )
 
 
 def select_pool(view: Window):

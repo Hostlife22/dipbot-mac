@@ -1,5 +1,6 @@
 import pytest
-from dipbot.domain.strategy import D, Settings, Strategy, raw_amount, minimum_out, snapshot_minimum
+
+from dipbot.domain.strategy import D, Settings, Strategy, minimum_out, raw_amount, snapshot_minimum
 from dipbot.execution.paper import PaperTrader
 
 
@@ -41,8 +42,18 @@ def test_old_observation_ignored():
     assert s.last_price == 100
 
 
-@pytest.mark.parametrize("field,value", [("amount", "0"), ("dip", "100"), ("stop_loss", "0"),
-      ("slippage", "21"), ("amount", "NaN"), ("dip", "Infinity"), ("dynamic", "-1")])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("amount", "0"),
+        ("dip", "100"),
+        ("stop_loss", "0"),
+        ("slippage", "21"),
+        ("amount", "NaN"),
+        ("dip", "Infinity"),
+        ("dynamic", "-1"),
+    ],
+)
 def test_invalid_settings(field, value):
     with pytest.raises(ValueError):
         Settings(**{field: D(value)})
@@ -59,7 +70,9 @@ def test_amounts_round_down_and_never_zero():
     assert Settings().buy_tolerance == D("3.8")
     huge = 10**70 + 123456789
     assert minimum_out(huge, D("0.5")) == huge * 995 // 1000
-    assert raw_amount(D("1.123456789012345678901234567890123456"), 36) == 1123456789012345678901234567890123456
+    assert (
+        raw_amount(D("1.123456789012345678901234567890123456"), 36) == 1123456789012345678901234567890123456
+    )
 
 
 def test_paper_accounts_slippage_both_directions():
@@ -70,13 +83,16 @@ def test_paper_accounts_slippage_both_directions():
     assert broker.position == 0 and broker.realized == -4
 
 
-@pytest.mark.parametrize("prices,base,streak", [
-    ([100, 99, 98], "98", 0),
-    ([100, 99, 99.5], "99.5", 0),
-    ([100, 99, 99, 98], "98", 0),
-    ([100, 99, 99], "100", 1),
-    ([100, 99, 99.5, 99], "99.5", 1),
-])
+@pytest.mark.parametrize(
+    "prices,base,streak",
+    [
+        ([100, 99, 98], "98", 0),
+        ([100, 99, 99.5], "99.5", 0),
+        ([100, 99, 99, 98], "98", 0),
+        ([100, 99, 99], "100", 1),
+        ([100, 99, 99.5, 99], "99.5", 1),
+    ],
+)
 def test_original_reanchor_vectors(prices, base, streak):
     strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     for i, price in enumerate(prices):

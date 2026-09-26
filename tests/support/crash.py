@@ -1,14 +1,6 @@
 """Shared crash fixtures/builders."""
-import subprocess
-import sys
-import os
-import pytest
-from dipbot.persistence.storage import Store
-from dipbot.execution.trader import LiveTrader
-from dipbot.execution.errors import UncertainTransaction
 
-
-SCRIPT = r'''
+SCRIPT = r"""
 import os,sys
 from types import SimpleNamespace
 from eth_account import Account
@@ -16,7 +8,8 @@ from web3 import Web3
 from dipbot.persistence.storage import Store
 from dipbot.execution.trader import LiveTrader
 from dipbot.domain.strategy import D
-from dipbot.market.chain import WBNB,address
+from dipbot.domain.assets import WBNB
+from dipbot.market.chain import address
 store=Store(sys.argv[1]);boundary=sys.argv[2]
 class Function:
  def estimate_gas(self,tx):return 21000
@@ -36,4 +29,4 @@ t.begin('synthetic process crash')
 if boundary=='intent':os._exit(70)
 t.send(Function(),'synthetic')
 os._exit(73)
-'''
+"""

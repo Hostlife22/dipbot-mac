@@ -1,21 +1,23 @@
+from typing import Any
+
 from dipbot.execution.errors import UncertainTransaction
-from dipbot.observability.telemetry import timed, TIMINGS
 from dipbot.observability.cycle_trace import mark
+from dipbot.observability.telemetry import TIMINGS, timed
+
 """Sequential execution, durable transaction intent, explicit receipt accounting."""
-from dataclasses import asdict
 import time
 
 from eth_account import Account
 from web3 import Web3
-from web3.exceptions import ContractLogicError, TransactionNotFound
+from web3.exceptions import ContractLogicError
 
-from dipbot.market.chain import (Chain, Pool, TOKEN_ABI, V2_ABI, V3_ABI, V2_ROUTER, V3_ROUTER,
-                    V2_FACTORY, V3_FACTORY, WBNB, USDT, ETH, address, route_path)
+from dipbot.domain.assets import V2_FACTORY, V2_ROUTER, V3_FACTORY, V3_ROUTER, WBNB
+from dipbot.domain.strategy import D, minimum_out
+from dipbot.execution.accounting import marked_value, record_gas
+from dipbot.market.chain import TOKEN_ABI, V2_ABI, V3_ABI, Chain, Pool, address, route_path
 from dipbot.market.routes import conversion_specs
 from dipbot.persistence.dynamic import preference
 from dipbot.persistence.storage import Store
-from dipbot.domain.strategy import D, minimum_out
-from dipbot.execution.accounting import marked_value, record_gas
 
 
 class LiveTrader:
@@ -29,17 +31,21 @@ class LiveTrader:
         self.owner = self.account.address
         self.gas_price = int(gas_gwei * 10**9)
         self.max_fee = int(max_fee * 10**18)
-        self.operation = None
+        self.operation: dict[str, Any] | None = None
         self.chain.check()
-        receipt_check = getattr(self.chain, 'check_receipt_access', None)
+        receipt_check = getattr(self.chain, "check_receipt_access", None)
         if receipt_check is not None:
             receipt_check()
 
     def begin(self, description):
         if self.store.data.get("operation"):
             raise UncertainTransaction("Есть незавершённая LIVE-операция. Нужна сверка транзакций и балансов")
-        self.operation = {"wallet": self.owner, "description": description,
-                          "started": int(time.time()), "transactions": []}
+        self.operation = {
+            "wallet": self.owner,
+            "description": description,
+            "started": int(time.time()),
+            "transactions": [],
+        }
         self.store.data["operation"] = self.operation
         self.store.save()
 
@@ -59,17 +65,21 @@ class LiveTrader:
 
     def abort_entry_if_stopped(self, label):
         operation = self.operation
-        entry = label == 'BUY' or (label.startswith('APPROVE') and
-                operation and operation.get('description','').split(' ',1)[0].upper() == 'BUY')
-        stopped = getattr(self,'stop_requested',None)
+        entry = label == "BUY" or (
+            label.startswith("APPROVE")
+            and operation
+            and operation.get("description", "").split(" ", 1)[0].upper() == "BUY"
+        )
+        stopped = getattr(self, "stop_requested", None)
         if not entry or stopped is None or not stopped():
             return
-        if operation is None or any(r.get('status') != 'confirmed' for r in operation['transactions']):
-            raise UncertainTransaction('STOP: предыдущая транзакция не завершена; нужна сверка')
-        operation['outcome'] = 'stopped_before_buy'
+        if operation is None or any(r.get("status") != "confirmed" for r in operation["transactions"]):
+            raise UncertainTransaction("STOP: предыдущая транзакция не завершена; нужна сверка")
+        operation["outcome"] = "stopped_before_buy"
         self.finish()
         from dipbot.domain.entry_guard import EntryRejected
-        raise EntryRejected('STOP: BUY не подписан; завершённые approve сохранены в журнале')
+
+        raise EntryRejected("STOP: BUY не подписан; завершённые approve сохранены в журнале")
 
     @timed("trader.send")
     def send(self, function, label, value=0):
@@ -78,45 +88,64 @@ class LiveTrader:
         self.abort_entry_if_stopped(label)
         self.chain.check()
         w3 = self.chain.w3
-        broadcaster = getattr(self, 'broadcast_chain', None) or self.chain
+        broadcaster = getattr(self, "broadcast_chain", None) or self.chain
         if broadcaster is not self.chain:
             broadcaster.check()
         nonce = w3.eth.get_transaction_count(self.owner, "pending")
         latest_nonce = w3.eth.get_transaction_count(self.owner, "latest")
         if nonce != latest_nonce:
             raise UncertainTransaction("У кошелька уже есть pending-транзакция. Дождитесь её подтверждения")
-        tx_base = {"from": self.owner, "value": value, "gasPrice": self.gas_price,
-                   "nonce": nonce, "chainId": 56}
+        tx_base = {
+            "from": self.owner,
+            "value": value,
+            "gasPrice": self.gas_price,
+            "nonce": nonce,
+            "chainId": 56,
+        }
         gas = (function.estimate_gas(tx_base) * 120 + 99) // 100
-        mark(self, 'gas_estimated', label=label)
+        mark(self, "gas_estimated", label=label)
         if gas * self.gas_price > self.max_fee:
             raise ValueError("Расчётная комиссия превышает лимит 0.005 BNB на транзакцию")
-        exit_operation = self.operation['description'].upper().startswith(('SELL', 'SWEEP', 'CONVERTER SELL'))
-        reserve = 0 if exit_operation else getattr(self, 'reserve_wei', 0)
+        exit_operation = self.operation["description"].upper().startswith(("SELL", "SWEEP", "CONVERTER SELL"))
+        reserve = 0 if exit_operation else getattr(self, "reserve_wei", 0)
         if w3.eth.get_balance(self.owner) < value + gas * self.gas_price + reserve:
             raise ValueError("Недостаточно BNB для суммы, газа и настроенного резерва выхода")
         tx = function.build_transaction({**tx_base, "gas": gas})
-        if any(type(tx.get(k)) is not int or tx[k] != v for k, v in
-               {'chainId': 56, 'nonce': nonce, 'value': value, 'gas': gas, 'gasPrice': self.gas_price}.items()):
-            raise ValueError('Построенная транзакция изменила сеть, nonce, сумму или газ')
-        if tx.get('from', self.owner).lower() != self.owner.lower():
-            raise ValueError('Построенная транзакция изменила отправителя')
-        mark(self, 'transaction_built', label=label)
+        if any(
+            type(tx.get(k)) is not int or tx[k] != v
+            for k, v in {
+                "chainId": 56,
+                "nonce": nonce,
+                "value": value,
+                "gas": gas,
+                "gasPrice": self.gas_price,
+            }.items()
+        ):
+            raise ValueError("Построенная транзакция изменила сеть, nonce, сумму или газ")
+        if tx.get("from", self.owner).lower() != self.owner.lower():
+            raise ValueError("Построенная транзакция изменила отправителя")
+        mark(self, "transaction_built", label=label)
         self.abort_entry_if_stopped(label)
         with TIMINGS.measure("execution.sign"):
             signed = self.account.sign_transaction(tx)
-        mark(self, 'signed', label=label)
+        mark(self, "signed", label=label)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
-        record = {"hash": local_hash, "label": label, "nonce": nonce, "status": "pending",
-                  "stage": "prepared", "prepared_at": int(time.time()),
-                  "broadcast_route": "custom" if broadcaster is not self.chain else "primary",
-                  "request": {k: tx[k] for k in ('chainId', 'nonce', 'value', 'gas', 'gasPrice', 'to')}}
-        header = getattr(self.chain, 'checked_header', {})
-        if type(header.get('number')) is int:
-            record['prepared_block'] = header['number']
+        record = {
+            "hash": local_hash,
+            "label": label,
+            "nonce": nonce,
+            "status": "pending",
+            "stage": "prepared",
+            "prepared_at": int(time.time()),
+            "broadcast_route": "custom" if broadcaster is not self.chain else "primary",
+            "request": {k: tx[k] for k in ("chainId", "nonce", "value", "gas", "gasPrice", "to")},
+        }
+        header = getattr(self.chain, "checked_header", {})
+        if type(header.get("number")) is int:
+            record["prepared_block"] = header["number"]
         self.operation["transactions"].append(record)
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
-        mark(self, 'intent_persisted', label=label)
+        mark(self, "intent_persisted", label=label)
         self.log(f"{label}: {local_hash}")
         try:
             try:
@@ -131,30 +160,32 @@ class LiveTrader:
                 remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
-            mark(self, 'broadcast_ack', label=label)
-            record['stage'] = 'submitted'
-            record['submitted_at'] = int(time.time())
+            mark(self, "broadcast_ack", label=label)
+            record["stage"] = "submitted"
+            record["submitted_at"] = int(time.time())
             self.store.save()
             with TIMINGS.measure("execution.receipt_wait"):
                 receipt = w3.eth.wait_for_transaction_receipt(local_hash, timeout=120, poll_latency=0.2)
         except Exception:
-            raise UncertainTransaction(f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована") from None
+            raise UncertainTransaction(
+                f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована"
+            ) from None
         self.validate_receipt(receipt, local_hash)
         self.check_canonical(receipt)
-        mark(self, 'receipt_validated', label=label, block=receipt['blockNumber'])
+        mark(self, "receipt_validated", label=label, block=receipt["blockNumber"])
         record["status"] = "confirmed" if receipt["status"] == 1 else "reverted"
         record["block"] = receipt["blockNumber"]
         record["stage"] = "receipt_validated"
         record["receipt_at"] = int(time.time())
         record.pop("receipt_review", None)
-        if 'blockHash' in receipt:
-            record['block_hash'] = Web3.to_hex(receipt['blockHash'])
-        if 'gasUsed' in receipt and 'effectiveGasPrice' in receipt:
-            record['gas_fee_wei'] = receipt['gasUsed'] * receipt['effectiveGasPrice']
-            rates = getattr(self, 'rates', None)
+        if "blockHash" in receipt:
+            record["block_hash"] = Web3.to_hex(receipt["blockHash"])
+        if "gasUsed" in receipt and "effectiveGasPrice" in receipt:
+            record["gas_fee_wei"] = receipt["gasUsed"] * receipt["effectiveGasPrice"]
+            rates = getattr(self, "rates", None)
             rate = rates.snapshot(WBNB) if rates is not None else None
-            record['gas_usd_rate'] = rate
-            record['gas_usd'] = marked_value(D(record['gas_fee_wei'])/D(10)**18, rate)
+            record["gas_usd_rate"] = rate
+            record["gas_usd"] = marked_value(D(record["gas_fee_wei"]) / D(10) ** 18, rate)
             record_gas(self.store, self.owner, record)
         self.store.save()
         if receipt["status"] != 1:
@@ -184,10 +215,21 @@ class LiveTrader:
             raise ValueError("WBNB router не совпадает")
         return address(router), abi
 
-    def swap(self, pool: Pool, amount: int, buy: bool, tolerance: D, *, signal_minimum=None,
-             simulate=False, deadline_seconds=30, quote_reader=None):
-        if signal_minimum is not None and (not buy or not isinstance(signal_minimum, int)
-                                          or not 0 < signal_minimum < 2**256):
+    def swap(
+        self,
+        pool: Pool,
+        amount: int,
+        buy: bool,
+        tolerance: D,
+        *,
+        signal_minimum=None,
+        simulate=False,
+        deadline_seconds=30,
+        quote_reader=None,
+    ):
+        if signal_minimum is not None and (
+            not buy or not isinstance(signal_minimum, int) or not 0 < signal_minimum < 2**256
+        ):
             raise ValueError("Некорректный BUY minOut снимка")
         pool = self.chain.verify_pool(pool.address, pool.token)
         router, abi = self.verify_router(pool)
@@ -201,37 +243,50 @@ class LiveTrader:
         self.approve(src, router, amount)
         # Approval may take time; preserve the original bound and also quote again.
         min_out = max(initial_min, minimum_out(read_quote(pool, amount, buy), tolerance))
-        mark(self, 'quote', label='BUY' if buy else 'SELL')
+        mark(self, "quote", label="BUY" if buy else "SELL")
         before, snapshot = self.balance_snapshot(dest)
-        source_before = (self.chain.balance_at(src, self.owner, snapshot['blockNumber'])
-                         if snapshot is not None else self.chain.balance(src, self.owner))
+        source_before = (
+            self.chain.balance_at(src, self.owner, snapshot["blockNumber"])
+            if snapshot is not None
+            else self.chain.balance(src, self.owner)
+        )
         deadline = int(time.time()) + deadline_seconds
         contract = self.chain.contract(router, abi)
         if pool.router == "V2":
             function = contract.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                amount, min_out, [src, dest], self.owner, deadline)
+                amount, min_out, [src, dest], self.owner, deadline
+            )
         else:
             function = contract.functions.exactInputSingle(
-                (src, dest, pool.fee, self.owner, deadline, amount, min_out, 0))
+                (src, dest, pool.fee, self.owner, deadline, amount, min_out, 0)
+            )
         if simulate:
             function.call({"from": self.owner})
         receipt = self.send(function, "BUY" if buy else "SELL")
         received = self.balance_after(dest, receipt, snapshot) - before
         spent = source_before - self.balance_after(src, receipt, snapshot)
-        operation = getattr(self, 'operation', None)
+        operation = getattr(self, "operation", None)
         if operation is not None:
-            operation.setdefault('asset_flows', []).append({
-                'source': src, 'destination': dest, 'requested': amount,
-                'source_debit': spent, 'destination_credit': received,
-                'source_matches': spent == amount,
-                'snapshot_block': snapshot['blockNumber'] if snapshot else None,
-                'receipt_block': receipt['blockNumber'],
-                'transaction_hash': Web3.to_hex(receipt['transactionHash']),
-                'basis': 'canonical_balance_interval'})
+            operation.setdefault("asset_flows", []).append(
+                {
+                    "source": src,
+                    "destination": dest,
+                    "requested": amount,
+                    "source_debit": spent,
+                    "destination_credit": received,
+                    "source_matches": spent == amount,
+                    "snapshot_block": snapshot["blockNumber"] if snapshot else None,
+                    "receipt_block": receipt["blockNumber"],
+                    "transaction_hash": Web3.to_hex(receipt["transactionHash"]),
+                    "basis": "canonical_balance_interval",
+                }
+            )
             self.store.save()
         if spent != amount:
-            raise UncertainTransaction('Списание исходного актива отличается от суммы сделки; '
-                'возможны tax/rebase или внешние переводы. Нужна сверка, повтор заблокирован')
+            raise UncertainTransaction(
+                "Списание исходного актива отличается от суммы сделки; "
+                "возможны tax/rebase или внешние переводы. Нужна сверка, повтор заблокирован"
+            )
         if received < min_out:
             raise UncertainTransaction("Сделка подтверждена, но изменение баланса ниже minOut. Нужна сверка")
         return received
@@ -261,8 +316,10 @@ class LiveTrader:
                 pair = (left, right)
                 if pair not in cache:
                     cache[pair] = self.chain.find_pools(right, left)
-                match = next((p for p in cache[pair] if p.router == kind
-                              and (kind == "V2" or p.fee == fees[index])), None)
+                match = next(
+                    (p for p in cache[pair] if p.router == kind and (kind == "V2" or p.fee == fees[index])),
+                    None,
+                )
                 if match is None:
                     break
                 path.append(match)
@@ -310,14 +367,20 @@ class LiveTrader:
         deadline = int(time.time()) + 60
         functions = self.chain.contract(router, abi).functions
         if route[0].router == "V2":
-            function = (functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                minimum, tokens, self.owner, deadline) if buy else
-                functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                    amount, minimum, tokens, self.owner, deadline))
+            function = (
+                functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                    minimum, tokens, self.owner, deadline
+                )
+                if buy
+                else functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                    amount, minimum, tokens, self.owner, deadline
+                )
+            )
         else:
             function = functions.exactInput((packed, self.owner, deadline, amount, minimum))
-        receipt = self.send(function, "CONVERTER BUY" if buy else "CONVERTER SELL",
-                            value=amount if buy else 0)
+        receipt = self.send(
+            function, "CONVERTER BUY" if buy else "CONVERTER SELL", value=amount if buy else 0
+        )
         if native_sell:
             received = self.balance_after(None, receipt, snapshot) - before
             received += receipt["gasUsed"] * receipt["effectiveGasPrice"]
@@ -331,7 +394,7 @@ class LiveTrader:
         return received
 
     def check_canonical(self, receipt):
-        if not hasattr(self.chain, 'canonical_receipt'):
+        if not hasattr(self.chain, "canonical_receipt"):
             return  # Small offline test doubles have no block provider.
         self.retry_read(lambda: self.chain.canonical_receipt(receipt))
 
@@ -342,20 +405,28 @@ class LiveTrader:
                 return read()
             except Exception:
                 if attempt == 2:
-                    raise UncertainTransaction('Не удалось согласовать receipt/балансы с блоком. Повторная отправка заблокирована') from None
-                time.sleep(.2)
+                    raise UncertainTransaction(
+                        "Не удалось согласовать receipt/балансы с блоком. Повторная отправка заблокирована"
+                    ) from None
+                time.sleep(0.2)
 
     def balance_snapshot(self, token):
-        if hasattr(self.chain, 'balance_snapshot'):
+        if hasattr(self.chain, "balance_snapshot"):
             return self.chain.balance_snapshot(token, self.owner)
-        return (self.chain.balance(token, self.owner) if token is not None
-                else self.chain.w3.eth.get_balance(self.owner)), None
+        return (
+            self.chain.balance(token, self.owner)
+            if token is not None
+            else self.chain.w3.eth.get_balance(self.owner)
+        ), None
 
     def balance_after(self, token, receipt, snapshot):
         if snapshot is not None:
             return self.retry_read(lambda: self.chain.receipt_balance(token, self.owner, receipt, snapshot))
-        return (self.chain.balance(token, self.owner) if token is not None
-                else self.chain.w3.eth.get_balance(self.owner))
+        return (
+            self.chain.balance(token, self.owner)
+            if token is not None
+            else self.chain.w3.eth.get_balance(self.owner)
+        )
 
     @staticmethod
     def validate_receipt(receipt, tx_hash):
@@ -365,11 +436,19 @@ class LiveTrader:
             if not isinstance(raw_hash, (str, bytes, bytearray)):
                 raise ValueError("receipt hash type")
             actual = Web3.to_bytes(hexstr=raw_hash) if isinstance(raw_hash, str) else bytes(raw_hash)
-            valid = (len(expected) == len(actual) == 32 and actual == expected
-                     and type(receipt["status"]) is int and receipt["status"] in (0, 1)
-                     and type(receipt["blockNumber"]) is int and receipt["blockNumber"] >= 0
-                     and all(type(receipt[k]) is int and 0 <= receipt[k] < 2**256
-                             for k in ("gasUsed", "effectiveGasPrice") if k in receipt))
+            valid = (
+                len(expected) == len(actual) == 32
+                and actual == expected
+                and type(receipt["status"]) is int
+                and receipt["status"] in (0, 1)
+                and type(receipt["blockNumber"]) is int
+                and receipt["blockNumber"] >= 0
+                and all(
+                    type(receipt[k]) is int and 0 <= receipt[k] < 2**256
+                    for k in ("gasUsed", "effectiveGasPrice")
+                    if k in receipt
+                )
+            )
         except (KeyError, TypeError, ValueError):
             valid = False
         if not valid:
@@ -377,4 +456,5 @@ class LiveTrader:
 
     def reconcile(self):
         from dipbot.execution.reconciliation import reconcile_receipts
+
         return reconcile_receipts(self.chain, self.store, self.owner)

@@ -1,69 +1,137 @@
-from dipbot.observability.telemetry import timed, TIMINGS
-from dataclasses import dataclass
-from decimal import Decimal, localcontext
 import json
 import time
+from dataclasses import dataclass
+from decimal import localcontext
 from importlib.resources import files
 from urllib.parse import urlsplit
 
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 
+from dipbot.domain.assets import (
+    FEES,
+    V2_FACTORY,
+    V2_ROUTER,
+    V3_FACTORY,
+    V3_QUOTER,
+    ZERO,
+)
 from dipbot.domain.strategy import D
 from dipbot.market.rpc import BscHTTPProvider
-
-from dipbot.domain.assets import (V2_FACTORY, V3_FACTORY, V2_ROUTER, V3_ROUTER, V3_QUOTER, WBNB, USDT, ETH, ZERO, FEES)
+from dipbot.observability.telemetry import TIMINGS, timed
 
 
 def fn(name, inputs=(), outputs=(), mutability="view"):
-    return {"type": "function", "name": name, "stateMutability": mutability,
-            "inputs": [{"name": f"p{i}", "type": t} for i, t in enumerate(inputs)],
-            "outputs": [{"name": f"r{i}", "type": t} for i, t in enumerate(outputs)]}
+    return {
+        "type": "function",
+        "name": name,
+        "stateMutability": mutability,
+        "inputs": [{"name": f"p{i}", "type": t} for i, t in enumerate(inputs)],
+        "outputs": [{"name": f"r{i}", "type": t} for i, t in enumerate(outputs)],
+    }
 
 
-TOKEN_ABI = [fn("decimals", outputs=("uint8",)), fn("symbol", outputs=("string",)),
-             fn("balanceOf", ("address",), ("uint256",)),
-             fn("allowance", ("address", "address"), ("uint256",)),
-             fn("approve", ("address", "uint256"), ("bool",), "nonpayable"),
-             fn("deposit", mutability="payable"),
-             fn("withdraw", ("uint256",), mutability="nonpayable")]
-POOL_ABI = [fn("factory", outputs=("address",)), fn("token0", outputs=("address",)),
-            fn("token1", outputs=("address",)), fn("fee", outputs=("uint24",)),
-            fn("liquidity", outputs=("uint128",)),
-            fn("getReserves", outputs=("uint112", "uint112", "uint32")),
-            fn("slot0", outputs=("uint160", "int24", "uint16", "uint16", "uint16", "uint32", "bool"))]
-FACTORY_ABI = [fn("getPair", ("address", "address"), ("address",)),
-               fn("getPool", ("address", "address", "uint24"), ("address",))]
-V2_ABI = [fn("factory", outputs=("address",)), fn("WETH", outputs=("address",)),
-          fn("getAmountsOut", ("uint256", "address[]"), ("uint256[]",)),
-          fn("swapExactETHForTokensSupportingFeeOnTransferTokens",
-             ("uint256", "address[]", "address", "uint256"), mutability="payable"),
-          fn("swapExactTokensForETHSupportingFeeOnTransferTokens",
-             ("uint256", "uint256", "address[]", "address", "uint256"), mutability="nonpayable"),
-          fn("swapExactTokensForTokensSupportingFeeOnTransferTokens",
-             ("uint256", "uint256", "address[]", "address", "uint256"), mutability="nonpayable")]
+TOKEN_ABI = [
+    fn("decimals", outputs=("uint8",)),
+    fn("symbol", outputs=("string",)),
+    fn("balanceOf", ("address",), ("uint256",)),
+    fn("allowance", ("address", "address"), ("uint256",)),
+    fn("approve", ("address", "uint256"), ("bool",), "nonpayable"),
+    fn("deposit", mutability="payable"),
+    fn("withdraw", ("uint256",), mutability="nonpayable"),
+]
+POOL_ABI = [
+    fn("factory", outputs=("address",)),
+    fn("token0", outputs=("address",)),
+    fn("token1", outputs=("address",)),
+    fn("fee", outputs=("uint24",)),
+    fn("liquidity", outputs=("uint128",)),
+    fn("getReserves", outputs=("uint112", "uint112", "uint32")),
+    fn("slot0", outputs=("uint160", "int24", "uint16", "uint16", "uint16", "uint32", "bool")),
+]
+FACTORY_ABI = [
+    fn("getPair", ("address", "address"), ("address",)),
+    fn("getPool", ("address", "address", "uint24"), ("address",)),
+]
+V2_ABI = [
+    fn("factory", outputs=("address",)),
+    fn("WETH", outputs=("address",)),
+    fn("getAmountsOut", ("uint256", "address[]"), ("uint256[]",)),
+    fn(
+        "swapExactETHForTokensSupportingFeeOnTransferTokens",
+        ("uint256", "address[]", "address", "uint256"),
+        mutability="payable",
+    ),
+    fn(
+        "swapExactTokensForETHSupportingFeeOnTransferTokens",
+        ("uint256", "uint256", "address[]", "address", "uint256"),
+        mutability="nonpayable",
+    ),
+    fn(
+        "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+        ("uint256", "uint256", "address[]", "address", "uint256"),
+        mutability="nonpayable",
+    ),
+]
 
 
 def tuple_fn(name, components, outputs):
-    result = fn(name, outputs=outputs, mutability="payable" if name in ("exactInputSingle", "exactInput") else "nonpayable")
-    result["inputs"] = [{"name": "params", "type": "tuple",
-                         "components": [{"name": n, "type": t} for n, t in components]}]
+    result = fn(
+        name,
+        outputs=outputs,
+        mutability="payable" if name in ("exactInputSingle", "exactInput") else "nonpayable",
+    )
+    result["inputs"] = [
+        {"name": "params", "type": "tuple", "components": [{"name": n, "type": t} for n, t in components]}
+    ]
     return result
 
 
-V3_ABI = [fn("factory", outputs=("address",)), fn("WETH9", outputs=("address",)),
-          tuple_fn("exactInput", [("path", "bytes"), ("recipient", "address"),
-                   ("deadline", "uint256"), ("amountIn", "uint256"),
-                   ("amountOutMinimum", "uint256")], ("uint256",)),
-          tuple_fn("exactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
-                   ("fee", "uint24"), ("recipient", "address"), ("deadline", "uint256"),
-                   ("amountIn", "uint256"), ("amountOutMinimum", "uint256"),
-                   ("sqrtPriceLimitX96", "uint160")], ("uint256",))]
-QUOTER_ABI = [fn("quoteExactInput", ("bytes", "uint256"),
-                ("uint256", "uint160[]", "uint32[]", "uint256"), "nonpayable"),
-             tuple_fn("quoteExactInputSingle", [("tokenIn", "address"), ("tokenOut", "address"),
-                ("amountIn", "uint256"), ("fee", "uint24"), ("sqrtPriceLimitX96", "uint160")],
-                ("uint256", "uint160", "uint32", "uint256"))]
+V3_ABI = [
+    fn("factory", outputs=("address",)),
+    fn("WETH9", outputs=("address",)),
+    tuple_fn(
+        "exactInput",
+        [
+            ("path", "bytes"),
+            ("recipient", "address"),
+            ("deadline", "uint256"),
+            ("amountIn", "uint256"),
+            ("amountOutMinimum", "uint256"),
+        ],
+        ("uint256",),
+    ),
+    tuple_fn(
+        "exactInputSingle",
+        [
+            ("tokenIn", "address"),
+            ("tokenOut", "address"),
+            ("fee", "uint24"),
+            ("recipient", "address"),
+            ("deadline", "uint256"),
+            ("amountIn", "uint256"),
+            ("amountOutMinimum", "uint256"),
+            ("sqrtPriceLimitX96", "uint160"),
+        ],
+        ("uint256",),
+    ),
+]
+QUOTER_ABI = [
+    fn(
+        "quoteExactInput", ("bytes", "uint256"), ("uint256", "uint160[]", "uint32[]", "uint256"), "nonpayable"
+    ),
+    tuple_fn(
+        "quoteExactInputSingle",
+        [
+            ("tokenIn", "address"),
+            ("tokenOut", "address"),
+            ("amountIn", "uint256"),
+            ("fee", "uint24"),
+            ("sqrtPriceLimitX96", "uint160"),
+        ],
+        ("uint256", "uint160", "uint32", "uint256"),
+    ),
+]
 
 
 def address(value: str) -> str:
@@ -73,7 +141,10 @@ def address(value: str) -> str:
 
 
 def profiles() -> dict[str, str]:
-    return {p["symbol"]: address(p["address"]) for p in json.loads(files("dipbot").joinpath("profiles.json").read_text())}
+    return {
+        p["symbol"]: address(p["address"])
+        for p in json.loads(files("dipbot").joinpath("profiles.json").read_text())
+    }
 
 
 @dataclass(frozen=True)
@@ -131,12 +202,17 @@ class Chain:
             raise ValueError("Недопустимый возраст блока")
         self.max_block_age = max_block_age
         parsed = urlsplit(endpoint)
-        if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")):
+        if parsed.scheme != "https" and not (
+            parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")
+        ):
             raise ValueError("RPC должен быть HTTPS (HTTP допустим для localhost)")
         if not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
             raise ValueError("Некорректный RPC URL")
-        self.w3 = Web3(BscHTTPProvider(endpoint, request_kwargs={"timeout": request_timeout},
-                                       exception_retry_configuration=None))
+        self.w3 = Web3(
+            BscHTTPProvider(
+                endpoint, request_kwargs={"timeout": request_timeout}, exception_retry_configuration=None
+            )
+        )
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         self._decimals = {}
 
@@ -153,8 +229,8 @@ class Chain:
             raise ValueError("RPC подключён не к BSC mainnet (chainId 56)")
         block = self.w3.eth.get_block("latest")
         age = time.time() - block["timestamp"]
-        if age > getattr(self, 'max_block_age', 30):
-            raise StaleBlock('RPC возвращает устаревший блок; новые данные ожидаются')
+        if age > getattr(self, "max_block_age", 30):
+            raise StaleBlock("RPC возвращает устаревший блок; новые данные ожидаются")
         if age < -15:
             raise ValueError("RPC возвращает устаревший блок; проверьте узел и часы Mac")
         self.checked_header = block
@@ -165,58 +241,72 @@ class Chain:
         head = self.check(force_network=False)
         try:
             for offset in (3, 4, 5):
-                block = self.w3.eth.get_block(max(0, head-offset))
-                if not block['transactions']:
+                block = self.w3.eth.get_block(max(0, head - offset))
+                if not block["transactions"]:
                     continue
-                tx_hash = block['transactions'][0]
+                tx_hash = block["transactions"][0]
                 receipt = self.w3.eth.get_transaction_receipt(tx_hash)
-                if (receipt['transactionHash'] != tx_hash or receipt['blockNumber'] != block['number']
-                        or receipt['status'] not in (0, 1)):
-                    raise ValueError('Receipt does not match the probe block')
+                if (
+                    receipt["transactionHash"] != tx_hash
+                    or receipt["blockNumber"] != block["number"]
+                    or receipt["status"] not in (0, 1)
+                ):
+                    raise ValueError("Receipt does not match the probe block")
                 return
-            raise ValueError('No receipt probe transaction')
+            raise ValueError("No receipt probe transaction")
         except Exception:
-            raise ValueError('RPC не подтверждает чтение receipts. Выберите другой RPC перед LIVE; транзакция не отправлена') from None
+            raise ValueError(
+                "RPC не подтверждает чтение receipts. Выберите другой RPC перед LIVE; транзакция не отправлена"
+            ) from None
 
     def canonical_receipt(self, receipt):
-        raw = receipt['blockHash']
+        raw = receipt["blockHash"]
         expected = Web3.to_hex(hexstr=raw) if isinstance(raw, str) else Web3.to_hex(raw)
         if len(Web3.to_bytes(hexstr=expected)) != 32:
-            raise ValueError('Некорректный hash блока receipt')
-        block = self.w3.eth.get_block(receipt['blockNumber'])
-        if Web3.to_hex(block['hash']) != expected or block['number'] != receipt['blockNumber']:
-            raise ValueError('Блок receipt не совпадает с канонической цепочкой')
+            raise ValueError("Некорректный hash блока receipt")
+        block = self.w3.eth.get_block(receipt["blockNumber"])
+        if Web3.to_hex(block["hash"]) != expected or block["number"] != receipt["blockNumber"]:
+            raise ValueError("Блок receipt не совпадает с канонической цепочкой")
         return expected
 
     def balance_snapshot(self, token, owner):
         number = self.check(force_network=False)
         header = self.w3.eth.get_block(number)
         value = self.balance_at(token, owner, number)
-        if self.w3.eth.get_block(number)['hash'] != header['hash']:
-            raise ValueError('Блок баланса изменился во время чтения')
-        return value, {'blockNumber': number, 'blockHash': header['hash']}
+        if self.w3.eth.get_block(number)["hash"] != header["hash"]:
+            raise ValueError("Блок баланса изменился во время чтения")
+        return value, {"blockNumber": number, "blockHash": header["hash"]}
 
     def balance_at(self, token, owner, number):
         if token is None:
             return self.w3.eth.get_balance(owner, block_identifier=number)
-        return self.call(token, TOKEN_ABI, 'balanceOf', owner, block=number)
+        return self.call(token, TOKEN_ABI, "balanceOf", owner, block=number)
 
     def receipt_balance(self, token, owner, receipt, snapshot):
         self.canonical_receipt(snapshot)
-        if receipt['blockNumber'] < snapshot['blockNumber']:
-            raise ValueError('Receipt старше снимка баланса')
+        if receipt["blockNumber"] < snapshot["blockNumber"]:
+            raise ValueError("Receipt старше снимка баланса")
         self.canonical_receipt(receipt)
-        value = self.balance_at(token, owner, receipt['blockNumber'])
+        value = self.balance_at(token, owner, receipt["blockNumber"])
         self.canonical_receipt(receipt)
         return value
 
     def restrict_to_reads(self):
         original = self.w3.provider.make_request
-        allowed = {'eth_chainId', 'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_call', 'eth_getCode', 'eth_getLogs'}
+        allowed = {
+            "eth_chainId",
+            "eth_getBlockByNumber",
+            "eth_getBlockByHash",
+            "eth_call",
+            "eth_getCode",
+            "eth_getLogs",
+        }
+
         def request(method, params):
             if method not in allowed:
-                raise RuntimeError('Резервный RPC разрешает только чтение рынка')
+                raise RuntimeError("Резервный RPC разрешает только чтение рынка")
             return original(method, params)
+
         self.w3.provider.make_request = request
 
     def decimals(self, token):
@@ -231,7 +321,8 @@ class Chain:
         return self._decimals[token]
 
     def symbol(self, token):
-        from web3.exceptions import ContractLogicError, BadFunctionCallOutput
+        from web3.exceptions import BadFunctionCallOutput, ContractLogicError
+
         try:
             return self.call(token, TOKEN_ABI, "symbol")
         except (ContractLogicError, BadFunctionCallOutput):
@@ -267,8 +358,16 @@ class Chain:
         if canonical.lower() != pool_address.lower():
             raise ValueError("Адрес не совпадает с каноническим пулом factory")
         quote = t1 if t0 == target else t0
-        pool = Pool(pool_address, router, target, quote, self.decimals(target),
-                    self.decimals(quote), t0 == target, fee)
+        pool = Pool(
+            pool_address,
+            router,
+            target,
+            quote,
+            self.decimals(target),
+            self.decimals(quote),
+            t0 == target,
+            fee,
+        )
         if require_liquidity:
             self.price(pool)
         return pool
@@ -278,15 +377,20 @@ class Chain:
         # A failed read must invalidate the snapshot used by a subsequent PAPER fill.
         self._paper_price_snapshot = None
         block = self.check(force_network=False)
-        header = getattr(self, 'checked_header', None)
-        key = (pool, block, bytes(header['hash'])) if header is not None and header.get('hash') else None
-        cached = getattr(self, '_price_cache', None)
+        header = getattr(self, "checked_header", None)
+        key = (pool, block, bytes(header["hash"])) if header is not None and header.get("hash") else None
+        cached = getattr(self, "_price_cache", None)
         self.price_cache_hit = False
-        if key is not None and cached is not None and cached[0] == key and getattr(self, 'price_cache_enabled', True):
+        if (
+            key is not None
+            and cached is not None
+            and cached[0] == key
+            and getattr(self, "price_cache_enabled", True)
+        ):
             self.price_block = dict(header)
             self.price_cache_hit = True
             self._paper_price_snapshot = (pool, dict(header), time.monotonic())
-            TIMINGS.record('chain.price_cache_hit', 0)
+            TIMINGS.record("chain.price_cache_hit", 0)
             return cached[1]
         with localcontext() as context:
             context.prec = 78
@@ -298,8 +402,10 @@ class Chain:
                 ratio = D(numerator) / D(denominator)
             else:
                 from dipbot.market.discovery import batch, request
-                liquidity, slot = batch(self, [request(pool.address, POOL_ABI, name)
-                                               for name in ("liquidity", "slot0")], block)
+
+                liquidity, slot = batch(
+                    self, [request(pool.address, POOL_ABI, name) for name in ("liquidity", "slot0")], block
+                )
                 if liquidity is None or slot is None:
                     raise ValueError("Не удалось прочитать состояние V3 через Multicall")
                 if not liquidity:
@@ -312,7 +418,7 @@ class Chain:
                     ratio = 1 / ratio
             price = ratio * D(10) ** (pool.token_decimals - pool.quote_decimals)
             if key is not None:
-                self.canonical_receipt({'blockNumber':block, 'blockHash':header['hash']})
+                self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
                 self._price_cache = (key, price)
             if header is not None:
                 self.price_block = dict(header)
@@ -321,10 +427,12 @@ class Chain:
 
     def resolve_address(self, raw, catalogs):
         from dipbot.market.discovery import resolve
+
         return resolve(self, raw, catalogs)
 
     def discover_candidates(self, target, quote, router, pair_name):
         from dipbot.market.autopair import Candidate
+
         self.check()
         target, quote = address(target), address(quote)
         if target == quote:
@@ -332,8 +440,7 @@ class Chain:
         if router == "V2":
             addresses = [self.call(V2_FACTORY, FACTORY_ABI, "getPair", target, quote)]
         elif router == "V3":
-            addresses = [self.call(V3_FACTORY, FACTORY_ABI, "getPool", target, quote, fee)
-                         for fee in FEES]
+            addresses = [self.call(V3_FACTORY, FACTORY_ABI, "getPool", target, quote, fee) for fee in FEES]
         else:
             raise ValueError("Неподдерживаемый router")
         result, seen = [], set()
@@ -379,23 +486,32 @@ class Chain:
             raise ValueError("Нулевая сумма")
         token_in, token_out = (pool.quote, pool.token) if buy else (pool.token, pool.quote)
         if pool.router == "V2":
-            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, [token_in, token_out], block=block)[-1]
-        return self.call(V3_QUOTER, QUOTER_ABI, "quoteExactInputSingle",
-                         (token_in, token_out, amount, pool.fee, 0), block=block)[0]
+            return self.call(V2_ROUTER, V2_ABI, "getAmountsOut", amount, [token_in, token_out], block=block)[
+                -1
+            ]
+        return self.call(
+            V3_QUOTER,
+            QUOTER_ABI,
+            "quoteExactInputSingle",
+            (token_in, token_out, amount, pool.fee, 0),
+            block=block,
+        )[0]
 
     @timed("chain.entry_quote")
     def entry_quote(self, pool, amount, maximum):
         from dipbot.domain.entry_guard import assess
+
         block = self.check(force_network=False)
         header = dict(self.checked_header)
         target = self.quote(pool, amount, True, block=block)
         if type(target) is not int or target <= 0:
             from dipbot.domain.entry_guard import EntryRejected
-            raise EntryRejected('Вход пропущен: нулевая котировка BUY')
+
+            raise EntryRejected("Вход пропущен: нулевая котировка BUY")
         reverse = self.quote(pool, target, False, block=block)
         # A numbered block can change during a reorg. Revalidate before accepting.
-        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
-        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
+        self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
+        self.quote_context = {"block": block, "block_hash": bytes(header["hash"]).hex()}
         return assess(amount, target, reverse, block, maximum)
 
     @timed("chain.exit_quote")
@@ -404,31 +520,35 @@ class Chain:
         header = dict(self.checked_header)
         output = self.quote(pool, amount, False, block=block)
         if type(output) is not int or not 0 <= output < 2**256:
-            raise ValueError('Некорректная котировка выхода')
-        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
-        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
+            raise ValueError("Некорректная котировка выхода")
+        self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
+        self.quote_context = {"block": block, "block_hash": bytes(header["hash"]).hex()}
         return output
 
     def paper_quote(self, pool, amount, buy):
         # One immutable block for this simulated fill; no approval or signature.
-        snapshot = getattr(self, '_paper_price_snapshot', None)
+        snapshot = getattr(self, "_paper_price_snapshot", None)
         self._paper_price_snapshot = None  # Single-use, including failed quotes.
-        reusable = (getattr(self, 'paper_price_reuse_enabled', True) and snapshot is not None
-                    and snapshot[0] == pool and 0 <= time.monotonic()-snapshot[2] <= .55
-                    and 'timestamp' in snapshot[1]
-                    and -15 <= time.time()-snapshot[1]['timestamp'] <= getattr(self, 'max_block_age', 30))
+        reusable = (
+            getattr(self, "paper_price_reuse_enabled", True)
+            and snapshot is not None
+            and snapshot[0] == pool
+            and 0 <= time.monotonic() - snapshot[2] <= 0.55
+            and "timestamp" in snapshot[1]
+            and -15 <= time.time() - snapshot[1]["timestamp"] <= getattr(self, "max_block_age", 30)
+        )
         if reusable:
             header = dict(snapshot[1])
-            block = header['number']
-            TIMINGS.record('chain.paper_price_snapshot_reused', 0)
+            block = header["number"]
+            TIMINGS.record("chain.paper_price_snapshot_reused", 0)
         else:
             block = self.check(force_network=False)
             header = dict(self.checked_header)
         output = self.quote(pool, amount, buy, block=block)
         if type(output) is not int or not 0 <= output < 2**256:
-            raise ValueError('Некорректная котировка PAPER')
-        self.canonical_receipt({'blockNumber': block, 'blockHash': header['hash']})
-        self.quote_context = {'block': block, 'block_hash': bytes(header['hash']).hex()}
+            raise ValueError("Некорректная котировка PAPER")
+        self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
+        self.quote_context = {"block": block, "block_hash": bytes(header["hash"]).hex()}
         return output
 
     def quote_route(self, route, amount, reverse=False):

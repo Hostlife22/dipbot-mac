@@ -16,6 +16,9 @@ This repository contains the independent macOS application in `dipbot/`. The Win
 
 ```bash
 uv sync --frozen --group dev
+uv run --frozen ruff check dipbot tests tools launcher.py
+uv run --frozen ruff format --check dipbot tests tools launcher.py
+uv run --frozen mypy
 uv run --frozen pytest -q
 QT_QPA_PLATFORM=offscreen uv run --frozen python launcher.py --smoke-test
 ./BUILD_MAC.command

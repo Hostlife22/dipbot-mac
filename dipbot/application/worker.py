@@ -1,50 +1,31 @@
-from dipbot.application.ports import StateStore
-from dipbot.application.messages import Command, CommandKind, Event, EventKind, StatusPayload
-from dipbot.application import commands
-from dipbot.application import market_observation
-from dipbot.application import positions
-from dipbot.application.errors import safe_error
-from dipbot.application.sweep import SweepService
-from dipbot.observability.telemetry import timed
-from dipbot.observability.cycle_trace import signal_cycle, mark
-from dataclasses import asdict, replace
 import queue
-import re
 import threading
 import time
-from requests.exceptions import ConnectionError as RPCConnectionError, Timeout as RPCTimeout, HTTPError
+from dataclasses import asdict
 
 from PySide6.QtCore import QThread, Signal
-from eth_account import Account
-from web3.exceptions import Web3RPCError, BlockNotFound
 
-from dipbot.market.chain import Chain, Pool, WBNB, address, profiles
-from dipbot.persistence.storage import Store, SaveAfterReplaceError
-from dipbot.persistence.vault import Vault
-from dipbot.persistence import dynamic
-from dipbot.persistence import wallet_registry
-from dipbot.market.routes import seed_preference
-from dipbot.domain.strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minimum_out
-from dipbot.execution.trader import LiveTrader
-from dipbot.execution.paper import PaperTrader
-from dipbot.execution.errors import UncertainTransaction
-from dipbot.execution.reconciliation import reconcile_receipts
-
-
-from dipbot.market.exit_reads import retry_read, ExitReadCancelled, transient
-from dipbot.application.trade_view import entry_view, exit_view
-from dipbot.domain.entry_guard import EntryRejected
-from dipbot.domain.signal_policy import SignalPolicy
-from dipbot.market.head_feed import HeadFeed, HeadSchedule
-from dipbot.market.market_monitor import monitor_execution
-from dipbot.research.market_tape import MarketTape
-from dipbot.domain.sizing import SizingPolicy
-from dipbot.domain.exit_policy import ExitPolicy
-from dipbot.market.rpc_health import RpcHealth
+from dipbot.application import commands, market_observation, positions
+from dipbot.application.errors import safe_error
+from dipbot.application.messages import Command, CommandKind, Event, EventKind, StatusPayload
+from dipbot.application.ports import StateStore
+from dipbot.application.sweep import SweepService
+from dipbot.application.trade_view import entry_view
 from dipbot.domain.cost_policy import CostPolicy
+from dipbot.domain.entry_guard import EntryRejected
 from dipbot.domain.paper_policy import PaperPolicy
-from dipbot.market.chain import StaleBlock
-from dipbot.execution.accounting import RateBook, marked_value, operation_fees, record_close, closed_summary, accounting_report
+from dipbot.domain.sizing import SizingPolicy
+from dipbot.domain.strategy import D, Settings, Strategy
+from dipbot.execution.accounting import (
+    RateBook,
+    closed_summary,
+)
+from dipbot.execution.paper import PaperTrader
+from dipbot.market.chain import Chain
+from dipbot.market.exit_reads import ExitReadCancelled
+from dipbot.market.head_feed import HeadSchedule
+from dipbot.market.rpc_health import RpcHealth
+from dipbot.observability.cycle_trace import mark
 
 
 class Worker(QThread):
@@ -78,7 +59,7 @@ class Worker(QThread):
         self.adaptive_rpc = False
         self.last_market_header = None
         self.backup_verified_pool = None
-        self.market_source = 'BSC'
+        self.market_source = "BSC"
         self.pool = None
         self.mode = "DEMO"
         self.running = False
@@ -103,7 +84,8 @@ class Worker(QThread):
 
     def discovery_current(self, generation):
         return (generation is None or generation == self.discovery_generation) and not (
-            self.stop_event.is_set() or self.quit_event.is_set())
+            self.stop_event.is_set() or self.quit_event.is_set()
+        )
 
     def discovery_emit(self, generation, name, value):
         if generation is None:
@@ -135,8 +117,11 @@ class Worker(QThread):
         next_watch = 0.0
         while not self.quit_event.is_set():
             try:
-                timeout = (min(0.05, max(0, next_tick - time.monotonic()))
-                           if self.running and self.head_feed is None else 0.05)
+                timeout = (
+                    min(0.05, max(0, next_tick - time.monotonic()))
+                    if self.running and self.head_feed is None
+                    else 0.05
+                )
                 message = self.commands.get(timeout=timeout)
                 name, data = message.kind, message.data()
             except queue.Empty:
@@ -148,16 +133,31 @@ class Worker(QThread):
                 except ExitReadCancelled:
                     pass  # STOP below owns cancellation; do not report it as an RPC failure.
                 except Exception as exc:
-                    if name in ("discover", "verify", "select", "compare_routes") and not self.discovery_current(data.get("generation")):
+                    if name in (
+                        "discover",
+                        "verify",
+                        "select",
+                        "compare_routes",
+                    ) and not self.discovery_current(data.get("generation")):
                         continue
                     if name in ("reconcile", "compare_positions"):
-                        self.emit_event(EventKind.POSITION_COMPARISON_ERROR if name == CommandKind.COMPARE_POSITIONS else "receipt_review", safe_error(exc))
+                        self.emit_event(
+                            EventKind.POSITION_COMPARISON_ERROR
+                            if name == CommandKind.COMPARE_POSITIONS
+                            else "receipt_review",
+                            safe_error(exc),
+                        )
                     self.running = False
                     self.halt_reason = safe_error(exc)
-                    stopped_entry = (name in ('buy','start') and isinstance(exc,EntryRejected)
-                                     and self.stop_event.is_set() and not self.store.data.get('operation')
-                                     and not self.paper.position and not self.position())
-                    self.log.emit(('STOP: ' if stopped_entry else 'ОШИБКА: ') + safe_error(exc))
+                    stopped_entry = (
+                        name in ("buy", "start")
+                        and isinstance(exc, EntryRejected)
+                        and self.stop_event.is_set()
+                        and not self.store.data.get("operation")
+                        and not self.paper.position
+                        and not self.position()
+                    )
+                    self.log.emit(("STOP: " if stopped_entry else "ОШИБКА: ") + safe_error(exc))
                     if stopped_entry:
                         pass  # Normal cancellation; STOP handling below clears queued commands.
                     elif name == CommandKind.COMPARE_ROUTES:
@@ -199,39 +199,77 @@ class Worker(QThread):
                 recovery = self.gap_recovery
                 self.gap_recovery = None
                 if self.pool == recovery.pool:
-                    self.record_market('backfill', **recovery.result)
+                    self.record_market("backfill", **recovery.result)
                     result = recovery.result
-                    detail = (result['error_type'] if result['error_type'] else
-                              f"{result['count']} Swap; ограниченный диапазон" if result['truncated'] else f"{result['count']} Swap")
-                    self.log.emit(f"Дозагрузка событий {result['from_block']}–{result['to_block']}: {detail}. Исторические события не торгуются")
+                    detail = (
+                        result["error_type"]
+                        if result["error_type"]
+                        else f"{result['count']} Swap; ограниченный диапазон"
+                        if result["truncated"]
+                        else f"{result['count']} Swap"
+                    )
+                    self.log.emit(
+                        f"Дозагрузка событий {result['from_block']}–{result['to_block']}: {detail}. Исторические события не торгуются"
+                    )
             if not self.running and self.watchable_position() and time.monotonic() >= next_watch:
                 started = time.monotonic()
                 self.watch_position()
-                delay = min(5, .5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
+                delay = (
+                    min(5, 0.5 * 2 ** min(self.quote_failures, 4))
+                    if self.quote_unavailable
+                    else self.interval
+                )
                 next_watch = max(started + delay, time.monotonic())
                 self.status()
-            head = self.head_feed.snapshot() if self.head_feed is not None and self.mode != 'DEMO' and not self.quote_unavailable else None
-            due = (self.head_schedule.due(head, time.monotonic(), next_tick)
-                   if self.head_feed is not None and self.mode != 'DEMO' else time.monotonic() >= next_tick)
+            head = (
+                self.head_feed.snapshot()
+                if self.head_feed is not None and self.mode != "DEMO" and not self.quote_unavailable
+                else None
+            )
+            due = (
+                self.head_schedule.due(head, time.monotonic(), next_tick)
+                if self.head_feed is not None and self.mode != "DEMO"
+                else time.monotonic() >= next_tick
+            )
             if self.running and due:
                 poll_started = time.monotonic()
                 previous_head = self.head_schedule.last_head
                 if self.head_schedule.consume(head, poll_started):
                     if self.strategy.entry is None:
                         self.strategy.reset_anchor()
-                    self.log.emit('Пропуск или смена ветви WebSocket: читается актуальное состояние HTTP')
-                    self.record_market('stream_gap', previous_block=previous_head.number if previous_head else None,
-                        new_block=head.number, discontinuity=head.discontinuity)
+                    self.log.emit("Пропуск или смена ветви WebSocket: читается актуальное состояние HTTP")
+                    self.record_market(
+                        "stream_gap",
+                        previous_block=previous_head.number if previous_head else None,
+                        new_block=head.number,
+                        discontinuity=head.discontinuity,
+                    )
                     if self.gap_recovery is None and isinstance(self.chain, Chain) and self.pool is not None:
                         from dipbot.market.gap_recovery import GapRecovery
-                        start = previous_head.number+1 if previous_head and previous_head.number < head.number else max(0,head.number-31)
+
+                        start = (
+                            previous_head.number + 1
+                            if previous_head and previous_head.number < head.number
+                            else max(0, head.number - 31)
+                        )
                         source = self.backup_chain or self.chain
-                        self.gap_recovery = GapRecovery(str(source.w3.provider.endpoint_uri), self.pool, start, head.number).start()
+                        self.gap_recovery = GapRecovery(
+                            str(source.w3.provider.endpoint_uri), self.pool, start, head.number
+                        ).start()
                     elif self.gap_recovery is not None:
-                        self.log.emit('Дозагрузка предыдущего разрыва ещё выполняется; новый диапазон отмечен как неполный')
-                        self.record_market('backfill', pool=self.pool.address if self.pool else None,
-                            from_block=previous_head.number+1 if previous_head else None, to_block=head.number,
-                            truncated=True, count=None, events=[], error_type='Busy')
+                        self.log.emit(
+                            "Дозагрузка предыдущего разрыва ещё выполняется; новый диапазон отмечен как неполный"
+                        )
+                        self.record_market(
+                            "backfill",
+                            pool=self.pool.address if self.pool else None,
+                            from_block=previous_head.number + 1 if previous_head else None,
+                            to_block=head.number,
+                            truncated=True,
+                            count=None,
+                            events=[],
+                            error_type="Busy",
+                        )
                 try:
                     self.observe()
                 except ExitReadCancelled:
@@ -244,7 +282,11 @@ class Worker(QThread):
                     self.emit_event(EventKind.ERROR, safe_error(exc))
                 # One observation at a time; slow RPC skips missed slots instead
                 # of queuing catch-up requests or adding another full delay.
-                delay = min(5, 0.5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
+                delay = (
+                    min(5, 0.5 * 2 ** min(self.quote_failures, 4))
+                    if self.quote_unavailable
+                    else self.interval
+                )
                 next_tick = max(poll_started + delay, time.monotonic())
                 self.status()
 
@@ -253,74 +295,121 @@ class Worker(QThread):
             self.recorder.record(kind, **data)
             if not self.recorder_notice and (self.recorder.dropped or self.recorder.error_type):
                 self.recorder_notice = True
-                self.log.emit('Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут')
+                self.log.emit(
+                    "Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут"
+                )
 
     def record_quote(self, source, purpose, side, amount, output, reverse=None):
-        mark(self, 'quote')
-        context = getattr(source, 'quote_context', None) or {}
-        self.record_market('quote', purpose=purpose, side=side, amount_in_raw=amount,
-            amount_out_raw=output, reverse_out_raw=reverse,
-            block=context.get('block'), block_hash=context.get('block_hash'),
-            pool=self.pool.address if self.pool else None)
+        mark(self, "quote")
+        context = getattr(source, "quote_context", None) or {}
+        self.record_market(
+            "quote",
+            purpose=purpose,
+            side=side,
+            amount_in_raw=amount,
+            amount_out_raw=output,
+            reverse_out_raw=reverse,
+            block=context.get("block"),
+            block_hash=context.get("block_hash"),
+            pool=self.pool.address if self.pool else None,
+        )
 
     def paper_operation_cost(self):
         return self.paper_policy.operation_cost(self.gas_gwei, self.pool.quote, self.rates)
 
     def current_trade_detail(self):
-        if self.mode == 'LIVE' and self.position():
+        if self.mode == "LIVE" and self.position():
             pos = self.position()
-            return entry_view(D(pos['amount'])/D(10)**self.pool.token_decimals,
-                pos.get('cost_quote'), pos.get('entry_fees', {}).get('usd'), pos.get('entry_rate'),
-                total_usd=pos.get('entry_cost_usd'))
+            return entry_view(
+                D(pos["amount"]) / D(10) ** self.pool.token_decimals,
+                pos.get("cost_quote"),
+                pos.get("entry_fees", {}).get("usd"),
+                pos.get("entry_rate"),
+                total_usd=pos.get("entry_cost_usd"),
+            )
         return self.trade_detail
 
     def status(self):
         settings = self.strategy.settings
         wait_reason, signal_notice = self.strategy.entry_wait(time.monotonic())
-        realized = str(self.paper.realized) if self.mode != 'LIVE' else '—'
-        if self.mode == 'LIVE' and self.live and self.pool:
-            key = self.live.owner.lower() + ':' + self.pool.quote.lower()
-            realized = self.store.data.get('realized_quote', {}).get(key, '—')
+        realized = str(self.paper.realized) if self.mode != "LIVE" else "—"
+        if self.mode == "LIVE" and self.live and self.pool:
+            key = self.live.owner.lower() + ":" + self.pool.quote.lower()
+            realized = self.store.data.get("realized_quote", {}).get(key, "—")
         base, entry = self.strategy.base or D(0), self.strategy.entry or D(0)
-        levels = ({'ENTRY': str(entry), 'TP': str(entry*(1+settings.take_profit/100)),
-                   'SL': str(entry*(1-settings.stop_loss/100))} if entry else
-                  {'DIP': str(base*(1-self.strategy.effective_dip/100))})
-        if entry and self.strategy.exit_policy.tp_sl_basis == 'quote':
-            levels.pop('TP', None)
-            levels.pop('SL', None)
+        levels = (
+            {
+                "ENTRY": str(entry),
+                "TP": str(entry * (1 + settings.take_profit / 100)),
+                "SL": str(entry * (1 - settings.stop_loss / 100)),
+            }
+            if entry
+            else {"DIP": str(base * (1 - self.strategy.effective_dip / 100))}
+        )
+        if entry and self.strategy.exit_policy.tp_sl_basis == "quote":
+            levels.pop("TP", None)
+            levels.pop("SL", None)
         if entry and self.strategy.exit_policy.trailing_pct and self.strategy.peak_price:
-            levels['TRAIL'] = str(self.strategy.peak_price*(1-self.strategy.exit_policy.trailing_pct/100))
-        payload: StatusPayload = {"running": self.running, "mode": self.mode,
-                         "levels": levels,
-                         "exit_retry": self.exit_retry,
-                         "trade_detail": self.current_trade_detail(),
-                         "open_estimate": self.open_estimate,
-                         "position_watch_error": getattr(self, "position_watch_error", ""),
-                         "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
-                         "base": str(self.strategy.base or 0),
-                         "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
-                         "exit_basis": self.strategy.exit_policy.tp_sl_basis,
-                         "exit_return": getattr(self, "exit_return", None),
-                         "signal_mode": self.strategy.policy.mode,
-                         "signal_notice": signal_notice,
-                         "wait_reason": wait_reason,
-                         "effective_dip": str(self.strategy.effective_dip),
-                         "base_reason": self.strategy.base_reason,
-                         "base_age": max(0, time.monotonic() - self.strategy.base_time) if self.strategy.base_time is not None else None,
-                         "entry": str(self.strategy.entry or 0),
-                         "realized": realized,
-                         "paper_cost_model": self.paper_policy.export(),
-                         "historical_usd": (closed_summary(self.store, self.live.owner) if self.mode == 'LIVE' and self.live else
-                             {'value':str(self.paper_usd['value']) if self.paper_usd['closed'] and not self.paper_usd['missing'] else None,
-                              'closed':self.paper_usd['closed'], 'missing':self.paper_usd['missing'], 'includes_gas':False}),
-                         "pnl_quote": (self.paper_context[2] if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
-                                       else self.pool.quote if self.mode != "DEMO" and self.pool else ""),
-                         "quote_unavailable": self.quote_unavailable,
-                         "entry_notice": self.entry_notice or (
-                             f'Пауза после выхода: {max(0,self.strategy.cooldown_until-time.monotonic()):.1f} с'
-                             if self.strategy.cooldown_until and time.monotonic() < self.strategy.cooldown_until else ''),
-                         "halt_reason": self.halt_reason,
-                         "locked": bool(self.store.data.get("operation"))}
+            levels["TRAIL"] = str(
+                self.strategy.peak_price * (1 - self.strategy.exit_policy.trailing_pct / 100)
+            )
+        payload: StatusPayload = {
+            "running": self.running,
+            "mode": self.mode,
+            "levels": levels,
+            "exit_retry": self.exit_retry,
+            "trade_detail": self.current_trade_detail(),
+            "open_estimate": self.open_estimate,
+            "position_watch_error": getattr(self, "position_watch_error", ""),
+            "position": str(self.paper.position)
+            if self.mode != "LIVE"
+            else str(
+                D(self.position().get("amount", 0)) / D(10) ** (self.pool.token_decimals if self.pool else 18)
+            ),
+            "base": str(self.strategy.base or 0),
+            "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
+            "exit_basis": self.strategy.exit_policy.tp_sl_basis,
+            "exit_return": getattr(self, "exit_return", None),
+            "signal_mode": self.strategy.policy.mode,
+            "signal_notice": signal_notice,
+            "wait_reason": wait_reason,
+            "effective_dip": str(self.strategy.effective_dip),
+            "base_reason": self.strategy.base_reason,
+            "base_age": max(0, time.monotonic() - self.strategy.base_time)
+            if self.strategy.base_time is not None
+            else None,
+            "entry": str(self.strategy.entry or 0),
+            "realized": realized,
+            "paper_cost_model": self.paper_policy.export(),
+            "historical_usd": (
+                closed_summary(self.store, self.live.owner)
+                if self.mode == "LIVE" and self.live
+                else {
+                    "value": str(self.paper_usd["value"])
+                    if self.paper_usd["closed"] and not self.paper_usd["missing"]
+                    else None,
+                    "closed": self.paper_usd["closed"],
+                    "missing": self.paper_usd["missing"],
+                    "includes_gas": False,
+                }
+            ),
+            "pnl_quote": (
+                self.paper_context[2]
+                if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
+                else self.pool.quote
+                if self.mode != "DEMO" and self.pool
+                else ""
+            ),
+            "quote_unavailable": self.quote_unavailable,
+            "entry_notice": self.entry_notice
+            or (
+                f"Пауза после выхода: {max(0, self.strategy.cooldown_until - time.monotonic()):.1f} с"
+                if self.strategy.cooldown_until and time.monotonic() < self.strategy.cooldown_until
+                else ""
+            ),
+            "halt_reason": self.halt_reason,
+            "locked": bool(self.store.data.get("operation")),
+        }
         self.emit_event(EventKind.STATUS, payload)
 
     def position_key(self):
@@ -332,10 +421,14 @@ class Worker(QThread):
     def set_position(self, amount, entry):
         positions = self.store.data.setdefault("positions", {})
         if amount:
-            positions[self.position_key()] = {**positions.get(self.position_key(), {}),
-                "amount": amount, "entry": str(entry), "pool": asdict(self.pool),
+            positions[self.position_key()] = {
+                **positions.get(self.position_key(), {}),
+                "amount": amount,
+                "entry": str(entry),
+                "pool": asdict(self.pool),
                 "opened_at": positions.get(self.position_key(), {}).get("opened_at", time.time()),
-                "peak_price": positions.get(self.position_key(), {}).get("peak_price", str(entry))}
+                "peak_price": positions.get(self.position_key(), {}).get("peak_price", str(entry)),
+            }
         else:
             positions.pop(self.position_key(), None)
         self.store.save()
@@ -388,13 +481,18 @@ class Worker(QThread):
     def close_position(self, reason):
         return positions.close_position(self, reason)
 
-
     def sweep_service(self):
         """Bind the current connection and wallet when starting this use case."""
         return SweepService(
-            store=self.store, chain=self.chain, live=self.live,
-            strategy=self.strategy, rates=self.rates, stop_event=self.stop_event,
-            log=self.log.emit, emit=self.emit_event, position=self.position,
+            store=self.store,
+            chain=self.chain,
+            live=self.live,
+            strategy=self.strategy,
+            rates=self.rates,
+            stop_event=self.stop_event,
+            log=self.log.emit,
+            emit=self.emit_event,
+            position=self.position,
         )
 
     def sweep(self):

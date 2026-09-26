@@ -1,9 +1,12 @@
 """Asynchronous indicative USD feed owned by the Qt UI."""
+
 import json
 import re
 import time
+
 from PySide6.QtCore import QObject, QTimer, QUrl, Signal
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+
 from dipbot.domain.usd import select_rate
 
 MAX_AGE = 90
@@ -18,13 +21,13 @@ class UsdRate(QObject):
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
         self.timer.timeout.connect(self.refresh)
-        self.token = ''
+        self.token = ""
         self.rate = None
         self.received_at = None
         self.reply = None
 
     def current(self):
-        if self.received_at is None or time.monotonic()-self.received_at > MAX_AGE:
+        if self.received_at is None or time.monotonic() - self.received_at > MAX_AGE:
             return None
         return self.rate
 
@@ -39,7 +42,7 @@ class UsdRate(QObject):
             old.abort()
         self.timer.stop()
         self.changed.emit()
-        if re.fullmatch(r'0x[0-9a-f]{40}', token):
+        if re.fullmatch(r"0x[0-9a-f]{40}", token):
             self.timer.start()
             self.refresh()
 
@@ -47,9 +50,10 @@ class UsdRate(QObject):
         if not self.token or self.reply is not None:
             return
         token = self.token
-        request = QNetworkRequest(QUrl('https://api.dexscreener.com/tokens/v1/bsc/'+token))
+        request = QNetworkRequest(QUrl("https://api.dexscreener.com/tokens/v1/bsc/" + token))
         request.setTransferTimeout(5000)
         self.reply = reply = self.manager.get(request)
+
         def finished():
             if self.reply is reply:
                 self.reply = None
@@ -64,4 +68,5 @@ class UsdRate(QObject):
             finally:
                 reply.deleteLater()
                 self.changed.emit()
+
         reply.finished.connect(finished)

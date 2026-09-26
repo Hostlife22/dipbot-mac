@@ -1,16 +1,20 @@
-from dipbot.persistence.schema import load_state
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
+from pathlib import Path
 
 from dipbot.observability.telemetry import timed
 from dipbot.persistence.ledger_cache import Ledger
+from dipbot.persistence.schema import load_state
 
 
 def data_dir():
-    root = Path.home() / "Library/Application Support/DipBotMac" if sys.platform == "darwin" else Path.home() / ".local/share/dipbot-mac"
+    root = (
+        Path.home() / "Library/Application Support/DipBotMac"
+        if sys.platform == "darwin"
+        else Path.home() / ".local/share/dipbot-mac"
+    )
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     return root
 
@@ -27,7 +31,7 @@ class Store:
     def ledger(self, name):
         value = self.data.setdefault(name, {})
         if not isinstance(value, dict):
-            raise ValueError('Повреждён финансовый журнал; торговля заблокирована')
+            raise ValueError("Повреждён финансовый журнал; торговля заблокирована")
         if not isinstance(value, Ledger):
             value = Ledger(value)
             self.data[name] = value
@@ -38,21 +42,21 @@ class Store:
         self.data = load_state(self.data)
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         # Serialize once before touching disk; preserve the durable replace protocol.
-        for name in ('closed_trades', 'gas_ledger'):
+        for name in ("closed_trades", "gas_ledger"):
             if name in self.data:
                 self.ledger(name)
         if any(not isinstance(key, str) for key in self.data):
-            raise ValueError('Имена полей состояния должны быть строками')
+            raise ValueError("Имена полей состояния должны быть строками")
         encode = lambda value: json.dumps(value, ensure_ascii=False, separators=(",", ":"))
         # Serialize all fields before creating the temporary file. Reuse cached
         # ledger strings without joining/copying the entire large state in RAM.
-        payload = ['{']
-        for index,(key,value) in enumerate(self.data.items()):
+        payload = ["{"]
+        for index, (key, value) in enumerate(self.data.items()):
             if index:
-                payload.append(',')
-            payload.extend((encode(key), ':'))
+                payload.append(",")
+            payload.extend((encode(key), ":"))
             payload.extend(value.encoded_parts() if isinstance(value, Ledger) else (encode(value),))
-        payload.append('}')
+        payload.append("}")
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".state-")
         replaced = False
         try:

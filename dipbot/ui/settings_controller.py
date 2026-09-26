@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QComboBox, QMessageBox
 
-from dipbot.persistence.vault import Vault
 from dipbot.persistence import preferences
+from dipbot.persistence.vault import Vault
 
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dipbot.ui.window import Window
 
+
 def amount_map(view: Window):
-    return view.usd_pair_amounts if view.amount_currency == 'usd' else view.pair_amounts
+    return view.usd_pair_amounts if view.amount_currency == "usd" else view.pair_amounts
 
 
 def restore_amount(view: Window):
-    default = '1' if view.amount_currency == 'usd' else '0.02'
-    view.params['amount'].setText(view.amount_map().get(view.amount_key, default))
+    default = "1" if view.amount_currency == "usd" else "0.02"
+    view.params["amount"].setText(view.amount_map().get(view.amount_key, default))
 
 
 def amount_unit_changed(view: Window):
@@ -33,27 +34,37 @@ def remember_amount(view: Window):
 
 
 def paper_policy(view: Window):
-    return {'gas_units':int(view.paper_gas.value()),'latency_seconds':view.paper_delay.value(),'fee_quote':view.paper_fee.text().strip()}
+    return {
+        "gas_units": int(view.paper_gas.value()),
+        "latency_seconds": view.paper_delay.value(),
+        "fee_quote": view.paper_fee.text().strip(),
+    }
 
 
 def entry_cost_policy(view: Window):
-    return {'maximum_pct':str(view.cost_limit.value()),'roundtrip_gas':int(view.cost_gas.value())}
+    return {"maximum_pct": str(view.cost_limit.value()), "roundtrip_gas": int(view.cost_gas.value())}
 
 
 def exit_policy(view: Window):
-    return {'continue_after_risk_exit':view.continue_after_exit.isChecked(),
-            'tp_sl_basis':view.exit_basis.currentData(),
-            **{key: str(field.value()) for key, field in view.exit_fields.items()}}
+    return {
+        "continue_after_risk_exit": view.continue_after_exit.isChecked(),
+        "tp_sl_basis": view.exit_basis.currentData(),
+        **{key: str(field.value()) for key, field in view.exit_fields.items()},
+    }
 
 
 def sizing_policy(view: Window):
-    return {'unit':view.amount_unit.currentData(), 'reserve_bnb':view.gas_reserve.text().strip()}
+    return {"unit": view.amount_unit.currentData(), "reserve_bnb": view.gas_reserve.text().strip()}
 
 
 def signal_policy(view: Window):
-    return {'mode': view.signal_mode.currentData(), 'window_seconds': view.signal_window.value(),
-            'rebound_pct': str(view.signal_rebound.value()), 'max_block_age': view.block_age_limit.value(),
-            'volatility_multiplier':str(view.signal_volatility.value())}
+    return {
+        "mode": view.signal_mode.currentData(),
+        "window_seconds": view.signal_window.value(),
+        "rebound_pct": str(view.signal_rebound.value()),
+        "max_block_age": view.block_age_limit.value(),
+        "volatility_multiplier": str(view.signal_volatility.value()),
+    }
 
 
 def save_wallet(view: Window):
@@ -65,9 +76,9 @@ def save_wallet(view: Window):
 def load_rpc(view: Window):
     try:
         primary = Vault().get("rpc")
-        backup = Vault().get('backup_rpc')
-        websocket = Vault().get('ws_rpc')
-        broadcaster = Vault().get('send_rpc')
+        backup = Vault().get("backup_rpc")
+        websocket = Vault().get("ws_rpc")
+        broadcaster = Vault().get("send_rpc")
         if broadcaster is not None:
             view.send_rpc.setText(broadcaster)
         if websocket is not None:
@@ -86,17 +97,20 @@ def add_rpc_presets(view: Window, form, title, field, presets):
         combo.addItem(label, url)
     view.editable.append(combo)
     form.addRow(title, combo)
+
     def selected(index):
         url = combo.itemData(index)
         if url is not None:
             field.setText(url)
         else:
             field.setFocus()
+
     def edited(text):
-        index = next((i for i,(_,url) in enumerate(presets) if url == text.strip()), len(presets)-1)
+        index = next((i for i, (_, url) in enumerate(presets) if url == text.strip()), len(presets) - 1)
         combo.blockSignals(True)
         combo.setCurrentIndex(index)
         combo.blockSignals(False)
+
     combo.currentIndexChanged.connect(selected)
     field.textChanged.connect(edited)
     field.setText(presets[0][1])
@@ -105,29 +119,43 @@ def add_rpc_presets(view: Window, form, title, field, presets):
 
 def mode_changed(view: Window):
     mode = view.mode.currentText()
-    descriptions = {"DEMO": "DEMO · Локальный рынок и виртуальный баланс. RPC и кошелёк не нужны.",
-                    "PAPER": "PAPER · Реальная цена BSC, виртуальные сделки. Выберите пул и нажмите START.",
-                    "LIVE": "LIVE · Реальные средства. Укажите RPC, сохраните кошелёк и проверьте выбранный пул."}
+    descriptions = {
+        "DEMO": "DEMO · Локальный рынок и виртуальный баланс. RPC и кошелёк не нужны.",
+        "PAPER": "PAPER · Реальная цена BSC, виртуальные сделки. Выберите пул и нажмите START.",
+        "LIVE": "LIVE · Реальные средства. Укажите RPC, сохраните кошелёк и проверьте выбранный пул.",
+    }
     view.banner.setText(descriptions[mode])
-    view.banner.setVisible(mode == 'LIVE')
+    view.banner.setVisible(mode == "LIVE")
     view.mode_badge.setToolTip(descriptions[mode])
-    view.mode_badge.setText(mode + (" · реальные средства" if mode == "LIVE" else " · виртуальные сделки" if mode == "PAPER" else " · модель"))
-    view.mode_badge.setProperty('mode', mode)
+    view.mode_badge.setText(
+        mode
+        + (
+            " · реальные средства"
+            if mode == "LIVE"
+            else " · виртуальные сделки"
+            if mode == "PAPER"
+            else " · модель"
+        )
+    )
+    view.mode_badge.setProperty("mode", mode)
     view.mode_badge.style().unpolish(view.mode_badge)
     view.mode_badge.style().polish(view.mode_badge)
-    view.banner.setProperty('mode', mode)
+    view.banner.setProperty("mode", mode)
     view.banner.style().unpolish(view.banner)
     view.banner.style().polish(view.banner)
-    if mode == 'DEMO':
-        view.display_unit = 'условных единиц (DEMO)'
-    elif hasattr(view, 'quote'):
-        view.display_unit = view.quote.currentText() if view.quote.currentText() != 'ALL' else 'BASE'
-    if hasattr(view, 'chart'):
+    if mode == "DEMO":
+        view.display_unit = "условных единиц (DEMO)"
+    elif hasattr(view, "quote"):
+        view.display_unit = view.quote.currentText() if view.quote.currentText() != "ALL" else "BASE"
+    if hasattr(view, "chart"):
         view.reset_price_display()
     if hasattr(view, "selection_ready"):
         view.update_controls()
     if mode == "DEMO":
         view.market_summary.setText("Рынок: DEMO · локальная модель")
     elif hasattr(view, "pool_label"):
-        view.market_summary.setText(view.pool_label.text() if "DEMO" not in view.pool_label.text() else
-                                    "Рынок не выбран · AutoPair / CHECK POOL")
+        view.market_summary.setText(
+            view.pool_label.text()
+            if "DEMO" not in view.pool_label.text()
+            else "Рынок не выбран · AutoPair / CHECK POOL"
+        )

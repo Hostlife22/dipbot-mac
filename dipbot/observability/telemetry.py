@@ -1,10 +1,11 @@
 """Bounded, process-local timing statistics. Never retain arguments or responses."""
-from collections import deque
-from contextlib import contextmanager
-from functools import wraps
+
 import math
 import threading
 import time
+from collections import deque
+from contextlib import contextmanager
+from functools import wraps
 
 
 class Timings:
@@ -44,8 +45,8 @@ class Timings:
             rows = {k: (v[0], v[1], sorted(v[2])) for k, v in self._series.items()}
         result = {}
         for name, (count, errors, samples) in rows.items():
-            result[name] = {'count': count, 'errors': errors, 'window': len(samples)}
-            for label, fraction in [('p50_ms', .50), ('p95_ms', .95), ('p99_ms', .99)]:
+            result[name] = {"count": count, "errors": errors, "window": len(samples)}
+            for label, fraction in [("p50_ms", 0.50), ("p95_ms", 0.95), ("p99_ms", 0.99)]:
                 result[name][label] = samples[max(0, math.ceil(len(samples) * fraction) - 1)]
         return result
 
@@ -59,5 +60,7 @@ def timed(name):
         def wrapped(*args, **kwargs):
             with TIMINGS.measure(name):
                 return function(*args, **kwargs)
+
         return wrapped
+
     return decorate

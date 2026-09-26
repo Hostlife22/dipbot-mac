@@ -26,6 +26,9 @@ git switch -c docs/your-change
 ## Проверка
 
 ```bash
+uv run --frozen ruff check dipbot tests tools launcher.py
+uv run --frozen ruff format --check dipbot tests tools launcher.py
+uv run --frozen mypy
 uv run --frozen pytest -q
 QT_QPA_PLATFORM=offscreen uv run --frozen python launcher.py --smoke-test
 git diff --check
@@ -65,3 +68,9 @@ codesign --verify --deep --strict "dist/DipBot Mac.app"
 ## Архитектура
 
 Новые модули размещайте по ответственности согласно [архитектуре](docs/ARCHITECTURE_RU.md). `tests/architecture/test_architecture.py` запрещает зависимости domain от фреймворков и приложения от tools/tests. CI также проверяет запуск установленного wheel с недоступными tools/tests. Не переносите бизнес-логику в построение Qt-экранов и не создавайте второй поток отправки транзакций.
+
+Ruff проверяет весь Python-код приложения, инструментов и тестов. Mypy подключён
+постепенно: строгие аннотации обязательны для messages, ports, schema, assets и
+проверок совместимости адаптеров. Это не полная типизация всех старых модулей;
+расширяйте список `tool.mypy.files` при выделении новых границ. Изменения
+форматирования отделяйте от изменений торгового поведения.

@@ -1,19 +1,21 @@
 """Small native Qt presentation helpers; no trading state or side effects."""
+
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QFontMetricsF
+from PySide6.QtGui import QFontMetricsF, QPainter
 from PySide6.QtWidgets import QLabel, QSizePolicy
 
 
 def set_tone(widget, tone):
-    if widget.property('tone') != tone:
-        widget.setProperty('tone', tone)
+    if widget.property("tone") != tone:
+        widget.setProperty("tone", tone)
         widget.style().unpolish(widget)
         widget.style().polish(widget)
 
 
 class MetricLabel(QLabel):
     """Keep full accessible text while fitting narrow financial readouts."""
-    def __init__(self, text='', parent=None):
+
+    def __init__(self, text="", parent=None):
         super().__init__(text, parent)
         self.setMinimumWidth(0)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)

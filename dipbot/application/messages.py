@@ -1,10 +1,12 @@
 """Typed envelopes at the queue/Qt boundary; credentials are excluded from repr."""
+
 from __future__ import annotations
+
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Generic, Mapping, TypeVar, TypedDict, cast
+from typing import Generic, Mapping, TypedDict, TypeVar, cast
 
 
 class CommandKind(StrEnum):
@@ -130,16 +132,16 @@ class Command:
     def from_wire(cls, name: str | CommandKind, payload: Mapping[str, object]) -> Command:
         kind = CommandKind(name)
         if not isinstance(payload, Mapping):
-            raise ValueError('Повреждены данные команды')
+            raise ValueError("Повреждены данные команды")
         if any(not isinstance(key, str) for key in payload):
-            raise ValueError('Имена полей команды должны быть строками')
+            raise ValueError("Имена полей команды должны быть строками")
         if payload.keys() - CommandPayload.__annotations__.keys():
-            raise ValueError('Неизвестное поле команды')
-        if 'mode' in payload and payload['mode'] not in ('DEMO', 'PAPER', 'LIVE'):
-            raise ValueError('Неизвестный режим торговли')
-        generation = payload.get('generation')
+            raise ValueError("Неизвестное поле команды")
+        if "mode" in payload and payload["mode"] not in ("DEMO", "PAPER", "LIVE"):
+            raise ValueError("Неизвестный режим торговли")
+        generation = payload.get("generation")
         if generation is not None and type(generation) is not int:
-            raise ValueError('Некорректное поколение поиска')
+            raise ValueError("Некорректное поколение поиска")
         # Nested UI settings must not change after enqueueing.
         return cls(kind, MappingProxyType(deepcopy(dict(payload))))
 
@@ -147,7 +149,7 @@ class Command:
         return cast(CommandPayload, dict(self.payload))
 
 
-Payload = TypeVar('Payload', covariant=True)
+Payload = TypeVar("Payload")
 
 
 @dataclass(frozen=True, slots=True)
