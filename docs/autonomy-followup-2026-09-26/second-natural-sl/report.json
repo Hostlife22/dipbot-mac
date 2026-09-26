@@ -1,0 +1,128 @@
+{
+  "token": "0xa3f9BfF5f01f934a7576aBd45Fd8D045cf835872",
+  "utc": "2026-09-26T10:08:28.081843+00:00",
+  "mode": "PAPER",
+  "frozen": false,
+  "transactions_sent": 0,
+  "checks": 7333,
+  "mismatches": [],
+  "errors": [],
+  "trades": [],
+  "test_restarts": 0,
+  "automatic_only": true,
+  "source": "live BSC RPC, no replay",
+  "preflight_fault_requested": null,
+  "rpc_failures": [
+    {
+      "method": "eth_getBlockByNumber",
+      "phase": "automatic_live_prices",
+      "at": 58138.416719862,
+      "type": "HTTPError",
+      "http_status": 429
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "phase": "automatic_live_prices",
+      "at": 58180.562219782,
+      "type": "HTTPError",
+      "http_status": 429
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "phase": "automatic_live_prices",
+      "at": 58221.137221195,
+      "type": "HTTPError",
+      "http_status": 429
+    },
+    {
+      "method": "eth_call",
+      "phase": "automatic_live_prices",
+      "at": 58263.762375344,
+      "type": "HTTPError",
+      "http_status": 429
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "phase": "automatic_live_prices",
+      "at": 58308.41105537,
+      "type": "HTTPError",
+      "http_status": 429
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "phase": "automatic_live_prices",
+      "at": 58348.862455709,
+      "type": "HTTPError",
+      "http_status": 429
+    }
+  ],
+  "ui_states": {
+    "IDLE": 3,
+    "STALE": 1,
+    "WAIT DIP": 3663,
+    "STOPPING": 1
+  },
+  "price_sources": {
+    "BSC": 3665
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x4101a0943e43952CB2467C773837fCF7d45110b2"
+  ],
+  "pool": "0x4101a0943e43952CB2467C773837fCF7d45110b2",
+  "router": "V2",
+  "token_decimals": 18,
+  "sizing": {
+    "unit": "usd",
+    "reserve_bnb": "0.0001"
+  },
+  "quote_token": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+  "paper_policy": {
+    "gas_units": 0,
+    "latency_seconds": 0.25,
+    "fee_quote": "0.00001295118697628637664641964436"
+  },
+  "settings": {
+    "amount": "1",
+    "dip": "10",
+    "take_profit": "15",
+    "stop_loss": "15",
+    "slippage": "5",
+    "dynamic": "120",
+    "min_swaps": "0",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "legacy",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.0",
+    "max_block_age": 5.0,
+    "volatility_multiplier": "2.0"
+  },
+  "exit_policy": {
+    "continue_after_risk_exit": true,
+    "tp_sl_basis": "spot",
+    "trailing_pct": "0.0",
+    "max_hold_seconds": "0.0",
+    "cooldown_seconds": "30.0"
+  },
+  "adaptive_rpc": false,
+  "interval": 0.1,
+  "fee_usd_at_start": "0.01",
+  "effective_interval": 0.1,
+  "observed_seconds": 600.0,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "passed": true,
+  "router_fills": [],
+  "rpc_methods": {
+    "eth_chainId": 6425,
+    "eth_getBlockByNumber": 5033,
+    "eth_getCode": 10,
+    "eth_call": 1369
+  },
+  "distinct_prices": 37,
+  "price_range": [
+    "1.17541653259937536783422830229662690961920606919888635499711056653920200178431E-13",
+    "5.44859840369618287719635280588059264450393661379024075318120308124055132248125E-7"
+  ]
+}

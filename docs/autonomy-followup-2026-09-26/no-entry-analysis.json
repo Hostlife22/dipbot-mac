@@ -1,0 +1,28 @@
+[
+  {
+    "name": "natural-trailing-0",
+    "replay_observation_only": true,
+    "distinct_prices": 294,
+    "range_pct": "52.25994943695819750178828130",
+    "max_eligible_dip_pct": "7.907141675102596975892168100",
+    "base_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 159,
+      "Разрыв наблюдений": 17,
+      "Два снижения (legacy)": 40
+    }
+  },
+  {
+    "name": "natural-trailing-5",
+    "replay_observation_only": true,
+    "distinct_prices": 295,
+    "range_pct": "52.25994943695819750178828130",
+    "max_eligible_dip_pct": "7.907141675102596975892168100",
+    "base_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 160,
+      "Разрыв наблюдений": 17,
+      "Два снижения (legacy)": 40
+    }
+  }
+]
