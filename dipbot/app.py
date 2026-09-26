@@ -22,6 +22,7 @@ from . import preferences
 from .usd import UsdRate, price_text
 
 
+from .strategy import Settings
 from .theme import STYLE, COLORS, METRICS
 from .ui_components import MetricLabel, set_tone
 
@@ -468,8 +469,8 @@ class Window(QMainWindow):
         compact_grid = QGridLayout(compact)
         self.params = {}
         for column, (key, title, value) in enumerate([
-                ('amount', 'Сумма', '0.02'), ('dip', 'DIP %', '3'),
-                ('take_profit', 'Take Profit %', '2'), ('stop_loss', 'Stop Loss %', '2')]):
+                ('amount', 'Сумма', '0.02'), ('dip', 'DIP %', str(Settings().dip)),
+                ('take_profit', 'Take Profit %', str(Settings().take_profit)), ('stop_loss', 'Stop Loss %', str(Settings().stop_loss))]):
             field = self.field(value)
             field.setAlignment(Qt.AlignRight)
             self.params[key] = field
@@ -544,8 +545,8 @@ class Window(QMainWindow):
         body.addWidget(pool_group, 3)
         strategy = QGroupBox("ПАРАМЕТРЫ СТРАТЕГИИ")
         grid = self.form(strategy)
-        for key, title, value in [("slippage", "SLIPPAGE %", "3"),
-                 ("dynamic", "DYNAMIC", "150"),
+        for key, title, value in [("slippage", "SLIPPAGE %", str(Settings().slippage)),
+                 ("dynamic", "DYNAMIC", str(Settings().dynamic)),
                  ("min_swaps", "Мин. Swap за 100 блоков · 0 выкл.", "0"),
                  ("max_roundtrip_loss", "Макс. потери BUY→SELL %", "3")]:
             self.params[key] = self.field(value)

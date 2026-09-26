@@ -15,7 +15,7 @@ def test_read_timeout_preserves_position_then_checks_exit(tmp_path, read_error):
     worker.running = True
     worker.paper.buy(D(1), D(1))
     worker.strategy.bought(D(1))
-    observations = iter([read_error("synthetic read failure"), D('1.03')])
+    observations = iter([read_error("synthetic read failure"), D('1.20')])
     def read():
         value = next(observations)
         if isinstance(value, Exception):

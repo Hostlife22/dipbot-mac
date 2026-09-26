@@ -8,7 +8,7 @@ from dipbot.strategy import Settings, Strategy
 
 
 def strategy(**kwargs):
-    return Strategy(Settings(take_profit=D(50), stop_loss=D(20)),
+    return Strategy(Settings(dip=D(3), take_profit=D(50), stop_loss=D(20)),
                     SignalPolicy(mode='window'), ExitPolicy(**kwargs))
 
 

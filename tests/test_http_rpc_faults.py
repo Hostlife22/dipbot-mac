@@ -89,7 +89,7 @@ def test_open_position_survives_disconnect_then_rechecks_exit(tmp_path,node):
     state['fault']='disconnect'
     for _ in range(12):w.observe()
     assert w.paper.position==1 and not exits
-    state.update(fault=None,price=110,height=101)
+    state.update(fault=None,price=120,height=101)
     w.observe()
     assert exits==['TAKE_PROFIT'] and not w.quote_unavailable
 

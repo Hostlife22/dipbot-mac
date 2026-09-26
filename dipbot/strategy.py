@@ -13,11 +13,11 @@ D = Decimal
 @dataclass(frozen=True)
 class Settings:
     amount: D = D("0.02")
-    dip: D = D("3")
-    take_profit: D = D("2")
-    stop_loss: D = D("2")
-    slippage: D = D("3")
-    dynamic: D = D("150")
+    dip: D = D("10")
+    take_profit: D = D("15")
+    stop_loss: D = D("15")
+    slippage: D = D("5")
+    dynamic: D = D("120")
     max_gap: float = 0.55
     max_roundtrip_loss: D = D("3")
     min_swaps: D = D(0)

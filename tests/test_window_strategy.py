@@ -7,11 +7,11 @@ from test_preferences import values
 
 
 def window(**kwargs):
-    return Strategy(Settings(max_gap=10), SignalPolicy('window', **kwargs))
+    return Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), max_gap=10), SignalPolicy('window', **kwargs))
 
 
 def test_gradual_dip_retains_high_where_legacy_reanchors():
-    rolling, legacy = window(), Strategy(Settings(max_gap=10))
+    rolling, legacy = window(), Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), max_gap=10))
     actions, old = [], []
     for i, price in enumerate(['100','99','98','97']):
         actions.append(rolling.observe(D(price), i))

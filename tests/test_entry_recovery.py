@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 from dipbot.worker import Worker
 from dipbot.storage import Store
-from dipbot.strategy import D
+from dipbot.strategy import D, Settings, Strategy
 from dipbot.trader import UncertainTransaction
 from test_autopair_dynamic import POOL
 from test_worker import config
@@ -13,6 +13,7 @@ def test_rejected_dip_cools_down_reads_prices_and_requires_new_signal(tmp_path, 
     clock = [10.0]
     monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
     w = Worker(Store(tmp_path/'state.json'))
+    w.strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2)))
     w.mode = 'PAPER'; w.pool = POOL; w.running = True
     quotes = []
     output = [0]
@@ -47,6 +48,7 @@ def test_rejected_dip_cools_down_reads_prices_and_requires_new_signal(tmp_path, 
 @pytest.mark.parametrize('recovered,reason,running', [('97', 'STOP_LOSS', False), ('103', 'TAKE_PROFIT', True)])
 def test_open_position_exits_after_rpc_recovers(tmp_path, recovered, reason, running):
     w = Worker(Store(tmp_path/'state.json')); w.running = True
+    w.strategy = Strategy(Settings(take_profit=D(2), stop_loss=D(2)))
     w.paper.buy_quoted(D(100), D(1)); w.strategy.bought(D(100))
     logs = []; w.log.connect(logs.append)
     def outage():

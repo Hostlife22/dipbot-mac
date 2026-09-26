@@ -129,7 +129,7 @@ VECTORS = json.loads((Path(__file__).parent / 'fixtures/parity/strategy.json').r
 @pytest.mark.parametrize('case', VECTORS['scenarios'], ids=lambda c: c['id'])
 def test_native_strategy_vectors(case):
     # These historical vectors explicitly use SL=5, not the recovered UI default.
-    strategy = Strategy(Settings(stop_loss=D(5)))
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(5)))
     if 'entry' in case:
         strategy.bought(D(case['entry']))
     for now, price, signal, base in case['ticks']:

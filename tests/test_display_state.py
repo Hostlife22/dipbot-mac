@@ -1,7 +1,7 @@
 from decimal import Decimal as D
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
-from dipbot.strategy import Settings
+from dipbot.strategy import Settings, Strategy
 
 
 def test_market_and_mode_changes_clear_quotes(window):
@@ -26,7 +26,7 @@ def test_display_levels_use_worker_settings_and_position(window):
     w.on_event('selected', POOL)
     worker = w.worker
     worker.mode = 'PAPER'; worker.running = True
-    worker.strategy.settings = Settings(dip=D(3), take_profit=D(2), stop_loss=D(2))
+    worker.strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2)))
     worker.strategy.base = D('1e-12')
     worker.status()
     assert D(w.chart.levels['DIP']) == D('0.97e-12')

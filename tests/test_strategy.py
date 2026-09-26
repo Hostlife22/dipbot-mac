@@ -4,7 +4,7 @@ from dipbot.trader import PaperTrader
 
 
 def test_dip_take_profit_reanchor():
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     assert strategy.observe(D(100), 0) is None
     assert strategy.observe(D(102), 0.1) is None
     assert strategy.observe(D(99), 0.2) is None
@@ -17,7 +17,7 @@ def test_dip_take_profit_reanchor():
 
 
 def test_stop_loss_stops_reentry():
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     strategy.bought(D(100))
     assert strategy.observe(D(95), 1) == "STOP_LOSS"
     strategy.sold(D(95), "STOP_LOSS")
@@ -26,7 +26,7 @@ def test_stop_loss_stops_reentry():
 
 
 def test_feed_gap_resets_buy_but_still_exits_open_position():
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     strategy.observe(D(100), 0)
     assert strategy.observe(D(80), 20) is None
     assert strategy.base == 80
@@ -35,7 +35,7 @@ def test_feed_gap_resets_buy_but_still_exits_open_position():
 
 
 def test_old_observation_ignored():
-    s = Strategy(Settings())
+    s = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     s.observe(D(100), 10)
     assert s.observe(D(50), 9) is None
     assert s.last_price == 100
@@ -56,7 +56,7 @@ def test_amounts_round_down_and_never_zero():
     assert minimum_out(12345, D("0.5")) == 12283
     with pytest.raises(ValueError):
         minimum_out(1, D("20"))
-    assert Settings().buy_tolerance == D("1.5")
+    assert Settings().buy_tolerance == D("3.8")
     huge = 10**70 + 123456789
     assert minimum_out(huge, D("0.5")) == huge * 995 // 1000
     assert raw_amount(D("1.123456789012345678901234567890123456"), 36) == 1123456789012345678901234567890123456
@@ -78,7 +78,7 @@ def test_paper_accounts_slippage_both_directions():
     ([100, 99, 99.5, 99], "99.5", 1),
 ])
 def test_original_reanchor_vectors(prices, base, streak):
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     for i, price in enumerate(prices):
         assert strategy.observe(D(str(price)), i / 10) is None
     assert strategy.base == D(base)
@@ -86,7 +86,7 @@ def test_original_reanchor_vectors(prices, base, streak):
 
 
 def test_buy_checked_before_second_down_reanchor():
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     strategy.observe(D(100), 0)
     strategy.observe(D("98.5"), 0.1)
     assert strategy.observe(D(97), 0.2) == "BUY"
@@ -95,13 +95,13 @@ def test_buy_checked_before_second_down_reanchor():
 
 @pytest.mark.parametrize("gap,action", [(0.55, "BUY"), (0.551, None)])
 def test_gap_boundary(gap, action):
-    strategy = Strategy(Settings())
+    strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)))
     strategy.observe(D(100), 0)
     assert strategy.observe(D(90), gap) == action
 
 
 def test_dynamic_above_slippage_clamps_to_zero():
-    assert Settings(dynamic=D(301)).buy_tolerance == 0
+    assert Settings(slippage=D(3), dynamic=D(301)).buy_tolerance == 0
     assert Settings(slippage=D(0), dynamic=D(150)).buy_tolerance == 0
 
 

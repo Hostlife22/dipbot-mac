@@ -88,7 +88,7 @@ def test_live_buy_uses_signal_guard_and_post_receipt_reference(tmp_path):
     worker.live = SimpleNamespace(owner=address("0x"+"34"*20), begin=lambda _: None,
         finish=lambda: None, swap=swap)
     worker.open_position()
-    assert guards == [9_850_000_000_000_000]
+    assert guards == [9_620_000_000_000_000]  # Default BUY tolerance: 5 - 120/100 = 3.8%.
     assert worker.strategy.entry == D("2.1")
     assert worker.position()["entry"] == "2.1"
     assert worker.position()["amount"] == 10**16

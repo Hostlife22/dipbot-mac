@@ -8,7 +8,7 @@ from test_audit_ui_modes import status
 
 
 def test_wait_explains_rebound_without_changing_signal():
-    s = Strategy(Settings(), SignalPolicy(mode='window', rebound_pct=D('.1')),
+    s = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2), slippage=D(3), dynamic=D(150)), SignalPolicy(mode='window', rebound_pct=D('.1')),
                  ExitPolicy(cooldown_seconds=2))
     assert s.entry_wait(1)[0] == 'baseline'
     s.observe(D(100), 1)

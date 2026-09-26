@@ -100,7 +100,9 @@ def from_windows_ui(payload, gas='0.1', interval='0.1'):
     if not isinstance(payload, dict) or not isinstance(payload.get('trade', {}), dict):
         raise ValueError('Повреждён публичный Windows UI JSON')
     trade = payload.get('trade', {})
-    defaults = Settings()
+    # Missing Windows fields retain the original release defaults, not Mac presets.
+    defaults = Settings(dip=D(3), take_profit=D(2), stop_loss=D(2),
+                        slippage=D(3), dynamic=D(150))
     mapping = {'amount':'amount_wbnb','dip':'dip_pct','take_profit':'tp_pct',
                'stop_loss':'sl_pct','slippage':'slippage_pct','dynamic':'dynamic_dip_x100'}
     settings = {key:str(trade.get(old, getattr(defaults,key))) for key,old in mapping.items()}
