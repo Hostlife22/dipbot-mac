@@ -74,6 +74,20 @@ def test_error_redaction():
     assert "11"*32 not in safe_error(ValueError("bad key " + "11"*32))
 
 
+def test_http_error_keeps_status_without_provider_credentials():
+    from requests import Response
+    from requests.exceptions import HTTPError
+    response = Response()
+    response.status_code = 429
+    response.url = 'https://node/private-api-key'
+    message = safe_error(HTTPError(response.url, response=response))
+    assert 'HTTP 429' in message and 'лимит запросов' in message
+    assert 'private-api-key' not in message and 'https' not in message
+    response.status_code = 503
+    assert 'HTTP 503' in safe_error(HTTPError(response.url, response=response))
+    assert 'private-api-key' not in safe_error(HTTPError(response.url))
+
+
 
 def test_live_buy_uses_signal_guard_and_post_receipt_reference(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))

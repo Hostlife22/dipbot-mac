@@ -38,6 +38,11 @@ from .accounting import RateBook, marked_value, operation_fees, record_close, cl
 def safe_error(exc):
     if type(exc) is SaveAfterReplaceError:
         return "Файл заменён, но надёжность сохранения не подтверждена; проверьте сохранённое состояние"
+    if isinstance(exc, HTTPError):
+        code = getattr(exc.response, 'status_code', None)
+        if type(code) is int and 100 <= code <= 599:
+            detail = 'лимит запросов RPC' if code == 429 else 'ошибка HTTP при обращении к RPC'
+            return f'HTTP {code}: {detail}. Операция прервана'
     # Provider exceptions can contain RPC credentials. Do not log arbitrary text.
     if type(exc) in (ValueError, RuntimeError, UncertainTransaction, EntryRejected):
         message = str(exc)
