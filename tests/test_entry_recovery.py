@@ -9,6 +9,41 @@ from test_autopair_dynamic import POOL
 from test_worker import config
 
 
+@pytest.mark.parametrize('code', [-32005, -32016, -32602])
+def test_preflight_rpc_failure_never_executes_or_reuses_old_signal(tmp_path, monkeypatch, code):
+    from web3.exceptions import Web3RPCError
+    clock = [10.0]
+    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
+    w = Worker(Store(tmp_path/'state.json'))
+    w.mode = 'PAPER'; w.pool = POOL; w.running = True
+    calls = []
+    def screen(*args):
+        calls.append('screen')
+        raise Web3RPCError('private provider message', rpc_response={'error': {'code': code}})
+    w.chain = SimpleNamespace(entry_quote=screen,
+        quote=lambda *args: pytest.fail('Must not execute after failed preflight'))
+    price = [D(100)]
+    def read():
+        w.current_price = price[0]
+        return price[0]
+    w.read_price = read
+    w.observe()
+    clock[0] += .1; price[0] = D(89)
+    if code == -32602:
+        with pytest.raises(Web3RPCError):
+            w.observe()
+    else:
+        w.observe()
+        assert w.entry_notice and w.running
+        clock[0] += 1
+        w.observe()
+        clock[0] += 5
+        w.observe()
+        assert not w.entry_notice and w.strategy.base == 89
+    assert calls == ['screen']
+    assert not w.paper.position and not w.store.data.get('operation')
+
+
 def test_rejected_dip_cools_down_reads_prices_and_requires_new_signal(tmp_path, monkeypatch):
     clock = [10.0]
     monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])

@@ -991,7 +991,14 @@ class Worker(QThread):
             if self.mode == 'LIVE':
                 self.require_live()
             raw = raw_amount(settings.amount, self.pool.quote_decimals)
-            check = self.chain.entry_quote(self.pool, raw, settings.max_roundtrip_loss)
+            try:
+                check = self.chain.entry_quote(self.pool, raw, settings.max_roundtrip_loss)
+            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, Web3RPCError) as exc:
+                if not transient(exc):
+                    raise
+                # This is strictly before live.begin/swap. Discard the old signal;
+                # observe() applies a pause and requires a new DIP after recovery.
+                raise EntryRejected('Проверка входа недоступна: ' + safe_error(exc)) from None
             self.record_quote(self.chain, 'entry_screen', 'BUY', check.amount_in, check.target_out, check.reverse_out)
             estimated_cost = self.cost_policy.assess(check, self.pool, self.gas_gwei, self.rates)
             if estimated_cost is not None:
