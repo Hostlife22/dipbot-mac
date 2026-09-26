@@ -1,0 +1,1211 @@
+{
+  "token": "0x681234b574ac190eaf58bb12a5d61fb29bb07777",
+  "utc": "2026-09-26T08:54:20.159772+00:00",
+  "mode": "PAPER",
+  "frozen": false,
+  "transactions_sent": 0,
+  "checks": 6490,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.69792518721166713263490324887829362927894737359199175556085779362624634736168E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.69683556032951664040811453280578309246619455122362657832024268520261223983308E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.67005296771260197815496221235977826976833527510457917153062543500682122630997E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.67070084283403150282883585884442696241702616807244322577839094974827770608079E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.66805763159365649849956151950520708551180509205892972062240547137247447659890E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.62980460701208546852424173216920208218746631330756539348145027271415944675424E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.58046767422509949932026220348868587044506495114837753052796660313468758033291E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.67515460928275244703315455169180606037921432761631754982892112368600714109778E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.67532974509147713125131158675134682439497062407336171827001039218604937192075E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.65627470271611956707971537695447489698294978970198132056379756067076516852539E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.72612451171402789230485370166516549937853406345451504792553910141494612393609E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.73626572263217224013267027349587530399311075013981352117867931923611617848437E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.63191283167622505562221371012812102147846726262577706150126369046087203363291E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.62381250100672371161186855146264694663634523278504863219050984675536476599606E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.97234065319937551213112813707707949274744411872200859810985558622441053109718E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "2.96458137444830377706757953388511111066966885066777665212788187733449242361435E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.38757442610528738304758503279667882425069578890698181985953447245045724716526E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.40215071825530430728309905216290540401401201286696224446944587444608177093815E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.62534427637420623656291113242997986212212317806121771409549463538724537296380E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.67006025986243087902699247781645356802898356547861129328991085537509363414394E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.59810197744269817583385163312699528462066602593064917507105966912970116253002E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.59810197744269817583385163312699528462066602593064917507105966912970116253002E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.38559344816340760108812630588161506387620619969557103727606258650070861335082E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.27621819726770710713716666437396913226054705625433687557047506677431627133451E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.74129979725726847860230272860410511851726620784628349059176828705853338464332E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.76414179970697764498440548065289503841831153043475131676707437800268841138010E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.58980441272269142505763671437620724315764363988939414401528426636381182324498E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.63852782361996009055046790098766826013972778389677650931585317397040243588433E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.41612158107621404211597138847686751825946838072949254072319876899993915860549E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.60317781894900582761130965543628259789338470995335162769035287314512443488134E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.35061826890639395974104892668384637498192464278593090931074769271428084918223E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.35168415711157514197063101011199396905806294888335382387522350925123863930596E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.26450120987852433621015805481337746628448057814679839111959222563617085279686E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.21151893315972663710959690112545558331388818046171837355230161268710350648978E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.55955733051989793427213602046634717129679914260784022466051107311772035380000E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.55717405664601667296665301993989842088381767766100461917641965450253844873009E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.27739804347134791693116776847503067935310931264482552380184876955422469037774E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.28703187773259225237098212245608821084603528201209370002032932842963629772078E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.41363376921596395213491858767159457265197304480295615012368162134762705419098E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.46084998764022568728066861346426364701220423542126041744949652755186975584248E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.17925833946389063564527722157860173787576362035806674165987583785050734870728E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.19199802514536206174324942736713327786046928993539954000354960558775642431041E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.18622159356203791393328623276252226460287052814655161223655788225485656812760E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.20406142077528030804301389701109090351733560862939070247777653045730335677291E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.02246344626655564993885434049943486932453608201240122396858503935144204829404E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.21866459814823584850360006288321815296172209647336848164357301241791603882497E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.06022875629655482358477998002829781188221028937814311232554285097236058573925E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.01406564005971754261747126082927354600946550187358180929223033056162476882050E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.18357342679079182484694211380726907682318109571080526861172881663918387656353E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.18357342679079182484694211380726907682318109571080526861172881663918387656353E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.09756671699961498244434120662951192040664613783265957124858419101124836853054E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.09206900611570701551957918377884188722380440274678336777147567922001746034171E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "3.98319210258677743724498011369542685835256467669757310079932152483604650038860E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.98069401430981002863165509892934844782175613427305009199416814212074721155131E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.40711292272402884521903270820112189752733678179249421842991365747407950972435E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.64251147628769034619305326900491820935142722864379594530413869734108173095445E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.40481119506630457432316565250828813282670978498324673731103680132924355545898E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.42251138633849960740287684863407000857938403350461753743172560458300028507682E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.86184580922063497450006447721816343517067220840813670652649790675644059234347E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.89793657833118383611192432147946073680335645425506409481197414772706230024821E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.76168075064265883245680791124213757916803598322269885482446532257828036716968E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.75967982633352056263548065368593268802698340983838476542027516291195263690414E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.67038504380866686620763288304051000816074670755419044903503207200734050091513E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.66171567309052567436370541500803904415720109787431778811451964256334611608138E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.62121256499048182662642208682869961961878879418020193783280421882750160960865E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.62121256499048182662642208682869961961878879418020193783280421882750160960865E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.43019354702313991988954576199507617792985917335243925576590921114532365281617E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.39137868915100331536984550763583263633266058873528512028977229242898516828716E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.38677317432635476304615772604198323110681787888462048725482518625567667497348E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.44048782825823651367649230844344680397372916275627301958054594677494248620389E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.77043607489855702872908902499906265527555113189980157450744698570571931075759E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.76869774703284038916935310933251097107026161932235526752139085609389535944204E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.63780650556086771944744348655824214853750179360732470102744588030689050741688E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.63188231339216358115286822217013056983143298677827768775141427090381874080141E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.46929459250248890982609660401443114775085501604666645061144505904853299080718E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "4.42280433800715600771936674254809984501804840504861572822713679915866539900608E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "4.06507257266367963271133449353504980182266051553326561855156323653866453084982E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "3.93246311012132046844340804903072120260653468650118746739577186189431195455055E-7",
+      "phase": "automatic_live_prices"
+    }
+  ],
+  "test_restarts": 0,
+  "automatic_only": true,
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 3,
+    "STALE": 1,
+    "WAIT DIP": 1621,
+    "REBOUND": 717,
+    "POSITION": 115,
+    "COOLDOWN": 779,
+    "WAIT RPC": 1,
+    "EXECUTING": 1,
+    "STOPPING": 1
+  },
+  "price_sources": {
+    "BSC": 3251
+  },
+  "candidates": [
+    "V2 / QQQB / 2500 · 0x99BA1075D94de62AE670cd616555D7bB7FA382b6"
+  ],
+  "pool": "0x99BA1075D94de62AE670cd616555D7bB7FA382b6",
+  "router": "V2",
+  "token_decimals": 18,
+  "sizing": {
+    "unit": "usd",
+    "reserve_bnb": "0.0001"
+  },
+  "quote_token": "0x205812CdBed920aFf76C6580abD681a46D11efc7",
+  "paper_policy": {
+    "gas_units": 0,
+    "latency_seconds": 0.25,
+    "fee_quote": "0.00001343201386183830541713119048"
+  },
+  "settings": {
+    "amount": "1",
+    "dip": "0.5",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150",
+    "min_swaps": "1",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "window",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.1",
+    "max_block_age": 5.0,
+    "volatility_multiplier": "2.0"
+  },
+  "exit_policy": {
+    "continue_after_risk_exit": true,
+    "tp_sl_basis": "quote",
+    "trailing_pct": "0.75",
+    "max_hold_seconds": "60.0",
+    "cooldown_seconds": "3.0"
+  },
+  "adaptive_rpc": false,
+  "interval": 0.1,
+  "fee_usd_at_start": "0.01",
+  "effective_interval": 0.1,
+  "open_estimate_observations": 38,
+  "observed_seconds": 600.01,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "passed": true,
+  "router_fills": [
+    {
+      "amount_raw": 1343201386183830,
+      "received_raw": 4965976831939613241727,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 4965976831939613241727,
+      "received_raw": 1335834541852553,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343201386183830,
+      "received_raw": 5017814646974822371796,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5017814646974822371796,
+      "received_raw": 1336697901167329,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343201386183830,
+      "received_raw": 5021567205933481256541,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5021567205933481256541,
+      "received_raw": 1317213903575561,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343526218914162,
+      "received_raw": 5193268121854952967828,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5193268121854952967828,
+      "received_raw": 1385741888451680,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343526218914162,
+      "received_raw": 4755248173792529285670,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 4737037569280091732468,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 5009667378959637669242,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5009667378959637669242,
+      "received_raw": 1327319207690602,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343598425302645,
+      "received_raw": 4916062167500684137938,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 4916062167500684137938,
+      "received_raw": 1341742627047738,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343598425302645,
+      "received_raw": 5092033013179721972678,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5092033013179721972678,
+      "received_raw": 1332653714082053,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343688694203326,
+      "received_raw": 5134425213028454453053,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343688694203326,
+      "received_raw": 4511900892691155489759,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 4511900892691155489759,
+      "received_raw": 1482007809896578,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343688694203326,
+      "received_raw": 4144131804581357084488,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3956394221078444001223,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3956394221078444001223,
+      "received_raw": 1342606338073547,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3556645365331988413470,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3717183098939187244110,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3700775036193727483697,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3696917365045880845579,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3696917365045880845579,
+      "received_raw": 1353346640106103,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343670639452857,
+      "received_raw": 3724907297247360296705,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3724907297247360296705,
+      "received_raw": 1336857413289020,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343706749439002,
+      "received_raw": 3958815702777490727867,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3958815702777490727867,
+      "received_raw": 1293701313784305,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343544269783689,
+      "received_raw": 3118377350776908720307,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343544269783689,
+      "received_raw": 2695224104044550033686,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343544269783689,
+      "received_raw": 2826525213774107216727,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2826525213774107216727,
+      "received_raw": 1343185039500619,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343544269783689,
+      "received_raw": 2721555230629017473587,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 2920250186847415796399,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2920250186847415796399,
+      "received_raw": 1351133480794366,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3035099503293561738814,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3035099503293561738814,
+      "received_raw": 1393568090930090,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3080795452744245868354,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3080795452744245868354,
+      "received_raw": 1337266428866749,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3143007737335071178182,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3143007737335071178182,
+      "received_raw": 1320328094493178,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343417923881940,
+      "received_raw": 2958130601376978921301,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343417923881940,
+      "received_raw": 2938911454725293283931,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2938911454725293283931,
+      "received_raw": 1335919236379915,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3133531486987444439323,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3133531486987444439323,
+      "received_raw": 1339949271680783,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3036810394600157750156,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3036810394600157750156,
+      "received_raw": 1351241748999289,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343742861366048,
+      "received_raw": 3232625231725722747067,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3232625231725722747067,
+      "received_raw": 1351679431600719,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 3198273700420363873545,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3198273700420363873545,
+      "received_raw": 1341164665421986,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 3133919564605893468379,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 3331721082568806703107,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3331721082568806703107,
+      "received_raw": 1401975383383401,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343778975234153,
+      "received_raw": 3301220273887004744865,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3301220273887004744865,
+      "received_raw": 1321771147724911,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343778975234153,
+      "received_raw": 3203891834315622067801,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3203891834315622067801,
+      "received_raw": 1336973133454910,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343778975234153,
+      "received_raw": 3271139357680281014123,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3271139357680281014123,
+      "received_raw": 1335178355851963,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343724805159903,
+      "received_raw": 3364930499789129500554,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3364930499789129500554,
+      "received_raw": 1336078440790786,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343724805159903,
+      "received_raw": 3041262852931119896898,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3041262852931119896898,
+      "received_raw": 1408329858993847,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343815091043472,
+      "received_raw": 3043056498439548641644,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3043056498439548641644,
+      "received_raw": 1342384049485454,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343815091043472,
+      "received_raw": 3044375595665716534999,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343815091043472,
+      "received_raw": 2732951574307402916692,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 2756519099929909765301,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2756519099929909765301,
+      "received_raw": 1346705653811224,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 2814503317377906002190,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2814503317377906002190,
+      "received_raw": 1336219892046700,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343580372977911,
+      "received_raw": 2839076926514725395211,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343616478112487,
+      "received_raw": 2869596830443384696169,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2869596830443384696169,
+      "received_raw": 1334335269968731,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343616478112487,
+      "received_raw": 2900130551108619236234,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2900130551108619236234,
+      "received_raw": 1328837455300616,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343616478112487,
+      "received_raw": 3025174844314883983951,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3025174844314883983951,
+      "received_raw": 1325102073676168,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343616478112487,
+      "received_raw": 3055117568054738975404,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3055117568054738975404,
+      "received_raw": 1353182408100595,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343616478112487,
+      "received_raw": 2810437494782184023516,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2810437494782184023516,
+      "received_raw": 1336817647652988,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343399876407211,
+      "received_raw": 2889288335646893690175,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2889288335646893690175,
+      "received_raw": 1334893606363484,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343399876407211,
+      "received_raw": 2998225231938824603433,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 2998225231938824603433,
+      "received_raw": 1322695970456726,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 1343399876407211,
+      "received_raw": 3296356761905478478910,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 3296356761905478478910,
+      "received_raw": 1292993590437804,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    }
+  ],
+  "rpc_methods": {
+    "eth_chainId": 7831,
+    "eth_getBlockByNumber": 5254,
+    "eth_getCode": 229,
+    "eth_call": 2100,
+    "eth_getLogs": 54
+  },
+  "distinct_prices": 885,
+  "price_range": [
+    "2.50014257799275285700195798136574973030097208557983824293611211018275030475189E-7",
+    "5.06439130606606192115022023040193322806096078583262931477038977736751443394015E-7"
+  ]
+}

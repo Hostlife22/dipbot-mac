@@ -76,6 +76,12 @@ def run(output):
             geometry();snap(f'paper-{width}x{height}')
             report['checks'].append(f'chart/status/footer visible; no horizontal scroll {width}x{height}')
         w.resize(940,700)
+        seed()
+        for offset in range(5, 60, 4):
+            for shift, side in ((0,'BUY'),(1,'SELL')):
+                i=-offset-shift
+                w.chart.markers.append((w.chart.times[i],side,w.chart.values[i]))
+        events();geometry();snap('dense-trades')
         for reason, notice in (
                 ('rebound', 'DIP достигнут · ждёт отскок 0.1% от минимума; сейчас ≈0.0999%'),
                 ('cooldown', 'Пауза после выхода: 3.0 с · затем новый DIP')):

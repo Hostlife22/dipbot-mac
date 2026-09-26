@@ -187,3 +187,19 @@ def test_stop_retains_rpc_reason_and_countdown(window):
     assert w.metrics['state'].text()=='STOPPING'
     assert 'Останавливается' in w.strategy_status.text()
     assert 'HTTPError' in w.strategy_status.text() and 'через' in w.strategy_status.text()
+
+
+def test_missing_block_retries_before_generic_rpc_code_filter():
+    from web3.exceptions import BlockNotFound, Web3RPCError
+    from dipbot.exit_reads import retry_read, transient
+    error = BlockNotFound('block not available on backend', rpc_response={'error':{'code':-32000}})
+    assert isinstance(error, Web3RPCError) and transient(error)
+    attempts = []
+    def read(index):
+        attempts.append(index)
+        if index == 0: raise error
+        return 123
+    assert retry_read(read, cancelled=lambda:False, wait=lambda _:False,
+                      notify=lambda _:None) == 123
+    assert attempts == [0, 1]
+    assert not transient(Web3RPCError('execution rejected', rpc_response={'error':{'code':-32000}}))

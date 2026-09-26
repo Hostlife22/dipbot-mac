@@ -9,6 +9,9 @@ class ExitReadCancelled(RuntimeError):
 
 
 def transient(exc):
+    # BlockNotFound is a Web3RPCError subclass; classify it before generic codes.
+    if isinstance(exc, BlockNotFound):
+        return True
     if isinstance(exc, HTTPError):
         return getattr(exc.response, 'status_code', None) in (429, 500, 502, 503, 504)
     if isinstance(exc, Web3RPCError):

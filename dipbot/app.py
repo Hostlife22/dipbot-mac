@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from decimal import Decimal
 
-from PySide6.QtCore import Qt, QLockFile, QTimer, QPointF
+from PySide6.QtCore import Qt, QLockFile, QTimer, QPointF, QRectF
 from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QLineEdit, QComboBox, QDoubleSpinBox, QFormLayout, QVBoxLayout, QHBoxLayout,
@@ -146,7 +146,9 @@ class Chart(QWidget):
         for i, value in enumerate(self.values):
             if i == 0 or self.times[i]-self.times[i-1] > .55:
                 painter.drawEllipse(QPointF(left+(right-left)*(self.times[i]-self.times[0])/elapsed, y(value)), 1.5, 1.5)
-        for stamp, label, value in self.markers:
+        captions = []
+        fm = painter.fontMetrics()
+        for stamp, label, value in reversed(self.markers):
             if stamp < self.times[0]:
                 continue
             px = left+(right-left)*(stamp-self.times[0])/elapsed
@@ -154,8 +156,20 @@ class Chart(QWidget):
             painter.setPen(QColor('#60e1bb' if label == 'BUY' else '#f4c76b'))
             painter.drawEllipse(QPointF(px, py), 4, 4)
             caption = label + ' · рынок'
-            width = painter.fontMetrics().horizontalAdvance(caption)
-            painter.drawText(int(max(left, min(px+6, right-width))), int(max(top+12, py-8)), caption)
+            width = fm.horizontalAdvance(caption)
+            tx = max(left, min(px+6, right-width))
+            direction = -1 if label == 'BUY' else 1
+            for lane in (direction, -direction, 2*direction, -2*direction):
+                baseline = py + lane*(fm.height()+4)
+                box = QRectF(tx, baseline-fm.ascent(), width, fm.height())
+                if box.top() < top or box.bottom() > bottom:
+                    continue
+                if any(box.adjusted(-3, -2, 3, 2).intersects(other) for other in captions):
+                    continue
+                captions.append(box)
+                painter.drawText(int(tx), int(baseline), caption)
+                break
+            # All execution markers remain visible; crowded captions yield to recent ones.
         if self.hover is not None and left <= self.hover.x() <= right and top <= self.hover.y() <= bottom:
             stamp = self.times[0]+elapsed*(self.hover.x()-left)/(right-left)
             index = min(range(len(self.times)), key=lambda i: abs(self.times[i]-stamp))
