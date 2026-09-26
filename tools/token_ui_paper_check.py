@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc='', observe_manual_position=False, min_swaps='1'):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc='', observe_manual_position=False, min_swaps='1', dip=None, slippage=None, dynamic=None):
     if automatic_only and (exercise_recovery or observe_manual_position):
         raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
@@ -169,6 +169,9 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 if automatic_only:
                     w.continue_after_exit.setChecked(True)
                     w.exit_fields['trailing_pct'].setValue(.75)
+            for field, value in (('dip', dip), ('slippage', slippage), ('dynamic', dynamic)):
+                if value is not None:
+                    w.params[field].setText(str(value))
             report['settings'] = {k:v.text() for k,v in w.params.items()}
             report['signal_policy'] = w.signal_policy()
             report['exit_policy'] = w.exit_policy()
@@ -341,8 +344,9 @@ if __name__ == '__main__':
     parser.add_argument('--backup-rpc',default='')
     parser.add_argument('--rpc',default='https://bsc-dataseed.binance.org')
     parser.add_argument('--take-profit',default='2');parser.add_argument('--stop-loss',default='2')
+    parser.add_argument('--dip');parser.add_argument('--slippage');parser.add_argument('--dynamic')
     args=parser.parse_args()
     if args.automatic_only and args.exercise_recovery:
         parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc,observe_manual_position=args.observe_manual_position,min_swaps=args.min_swaps))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc,observe_manual_position=args.observe_manual_position,min_swaps=args.min_swaps,dip=args.dip,slippage=args.slippage,dynamic=args.dynamic))
