@@ -1,3 +1,4 @@
+from dipbot.application.ports import StateStore
 from dipbot.application.messages import Command, CommandKind, Event, EventKind, StatusPayload
 from dipbot.application import commands
 from dipbot.application import market_observation
@@ -49,7 +50,7 @@ class Worker(QThread):
     log = Signal(str)
     event = Signal(str, object)
 
-    def __init__(self, store: Store):
+    def __init__(self, store: StateStore):
         super().__init__()
         self.store = store
         self.commands: queue.Queue[Command] = queue.Queue()

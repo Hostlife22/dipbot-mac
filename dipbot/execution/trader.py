@@ -19,6 +19,8 @@ from dipbot.execution.accounting import marked_value, record_gas
 
 
 class LiveTrader:
+    trade_router: str | None = None
+
     def __init__(self, chain: Chain, key: str, store: Store, gas_gwei: D, log, max_fee=D("0.005")):
         if not gas_gwei.is_finite() or not 0 < gas_gwei <= 1000:
             raise ValueError("GAS GWEI должен быть от 0 до 1000")

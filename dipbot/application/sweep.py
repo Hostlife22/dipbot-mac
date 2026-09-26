@@ -1,5 +1,8 @@
+from __future__ import annotations
 """Sequential Sweep use case with explicit dependencies and durable operations."""
 from dipbot.application.errors import safe_error
+from dipbot.application.ports import (StateStore, MarketReader, TradeExecutor, RateSource, StopSignal, LogSink, EventSink, PositionReader)
+from dipbot.domain.strategy import Strategy
 from dipbot.domain.strategy import D
 from dipbot.market.chain import Pool, WBNB, address, profiles
 from dipbot.persistence import dynamic, wallet_registry
@@ -8,8 +11,9 @@ from dipbot.execution.errors import UncertainTransaction
 
 
 class SweepService:
-    def __init__(self, *, store, chain, live, strategy, rates, stop_event,
-                 log, emit, position):
+    def __init__(self, *, store: StateStore, chain: MarketReader, live: TradeExecutor,
+                 strategy: Strategy, rates: RateSource, stop_event: StopSignal,
+                 log: LogSink, emit: EventSink, position: PositionReader) -> None:
         self.store = store
         self.chain = chain
         self.live = live
