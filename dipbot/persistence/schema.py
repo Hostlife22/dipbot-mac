@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, TypedDict
 
+from dipbot.domain.records import OperationRecord, PositionRecord
+
 CURRENT_VERSION = 1
 VERSION_FIELD = "state_version"
 State = dict[str, Any]
@@ -13,9 +15,9 @@ State = dict[str, Any]
 class PublicState(TypedDict, total=False):
     state_version: int
     wallet_address: str
-    positions: dict[str, Any]
-    operation: dict[str, Any] | None
-    history: list[dict[str, Any]]
+    positions: dict[str, PositionRecord]
+    operation: OperationRecord | None
+    history: list[OperationRecord]
     closed_trades: dict[str, Any]
     gas_ledger: dict[str, Any]
     ui_preferences: dict[str, Any]
@@ -44,6 +46,92 @@ def validate_state(value: State) -> None:
         raise ValueError("Повреждён журнал операции; торговля заблокирована")
     if "history" in value and not isinstance(value["history"], list):
         raise ValueError("Повреждена история операций; торговля заблокирована")
+
+    validate_records(value)
+
+
+def validate_records(value: State) -> None:
+    """Validate present legacy fields without guessing defaults or dropping extensions."""
+
+    def mapping(raw: object, label: str) -> dict[str, Any]:
+        if not isinstance(raw, dict) or any(not isinstance(k, str) for k in raw):
+            raise ValueError(f"Повреждена запись {label}; торговля заблокирована")
+        return raw
+
+    def fields(raw: dict[str, Any], expected: dict[str, tuple[type, ...]], label: str) -> None:
+        for key, types in expected.items():
+            if key in raw and type(raw[key]) not in types:
+                raise ValueError(f"Повреждено поле {label}.{key}; торговля заблокирована")
+
+    for raw in value.get("positions", {}).values():
+        position = mapping(raw, "position")
+        fields(
+            position,
+            {
+                "amount": (int,),
+                "entry": (str,),
+                "peak_price": (str,),
+                "opened_at": (float, int),
+                "entry_cost_usd": (str, type(None)),
+                "cost_quote": (str,),
+            },
+            "position",
+        )
+        if "pool" in position:
+            pool = mapping(position["pool"], "pool")
+            fields(
+                pool,
+                {
+                    "address": (str,),
+                    "token": (str,),
+                    "quote": (str,),
+                    "router": (str,),
+                    "token_decimals": (int,),
+                    "quote_decimals": (int,),
+                    "fee": (int,),
+                    "token_is_0": (bool,),
+                },
+                "pool",
+            )
+    operations = list(value.get("history", []))
+    if value.get("operation") is not None:
+        operations.append(value["operation"])
+    for raw in operations:
+        operation = mapping(raw, "operation")
+        fields(
+            operation,
+            {"wallet": (str,), "description": (str,), "started": (int,), "transactions": (list,)},
+            "operation",
+        )
+        for raw_transaction in operation.get("transactions", []):
+            transaction = mapping(raw_transaction, "transaction")
+            fields(
+                transaction,
+                {
+                    "hash": (str,),
+                    "nonce": (int,),
+                    "status": (str,),
+                    "stage": (str,),
+                    "block": (int,),
+                    "gas_fee_wei": (int,),
+                    "request": (dict,),
+                },
+                "transaction",
+            )
+
+            if "request" in transaction:
+                fields(
+                    transaction["request"],
+                    {
+                        "chainId": (int,),
+                        "nonce": (int,),
+                        "value": (int,),
+                        "gas": (int,),
+                        "gasPrice": (int,),
+                        "to": (str,),
+                    },
+                    "request",
+                )
 
 
 def migrate_v0(value: State) -> State:
