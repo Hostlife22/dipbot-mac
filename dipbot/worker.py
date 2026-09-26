@@ -1201,6 +1201,8 @@ class Worker(QThread):
                   "unknown": [], "status": "interrupted"}
         tokens, checked = set(), set()
         try:
+            if self.store.data.get('operation'):
+                raise UncertainTransaction("Незавершённая операция: Sweep требует сверки")
             completed = self._sweep(report, tokens, checked)
             report["status"] = "completed" if completed else "stopped"
             # STOP can arrive after a confirmed sale. Keep TP/SL consistent with
@@ -1244,6 +1246,20 @@ class Worker(QThread):
                 changed = True
         return changed
 
+    def _clear_zero_sweep_position(self, token):
+        # An external zero balance has no known proceeds: do not invent a close/P&L.
+        from copy import deepcopy
+        previous = deepcopy(self.store.data.get('positions', {}))
+        try:
+            if self._account_sweep_token(token, 0):
+                self.store.save()
+        except SaveAfterReplaceError:
+            # File already replaced; keep the matching visible state and halt.
+            raise
+        except Exception:
+            self.store.data['positions'] = previous
+            raise
+
     def _record_sweep_exit(self, token, amount, residual, received, quote, decimals, pool_address=''):
         from .accounting import record_sweep_exit
         record_sweep_exit(self.store,self.live.owner,token,amount,residual,received,quote,decimals,
@@ -1284,8 +1300,14 @@ class Worker(QThread):
             seen_targets.add(pool.token.lower())
             try:
                 amount = self.chain.balance(pool.token, self.live.owner)
-                if not amount:
-                    continue
+            except Exception as exc:
+                failures.append(pool.token)
+                self.log.emit("SWEEP TARGET: " + safe_error(exc))
+                continue
+            if not amount:
+                self._clear_zero_sweep_position(pool.token)
+                continue
+            try:
                 if pool.token.lower() in registered:
                     result = self.chain.resolve_address(pool.token,catalogs)
                     candidate = wallet_registry.choose_registered(result,registered[pool.token.lower()])
@@ -1331,8 +1353,7 @@ class Worker(QThread):
                 self.log.emit("SWEEP BASE: " + safe_error(exc))
                 continue
             if not amount:
-                if self._account_sweep_token(token, 0):
-                    self.store.save()
+                self._clear_zero_sweep_position(token)
                 if token in skipped:
                     skipped.remove(token)
                 continue

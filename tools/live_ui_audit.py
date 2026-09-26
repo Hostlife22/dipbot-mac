@@ -34,10 +34,10 @@ def reserve_cost_usd(previous, gas_wei, value_wei, fx):
     return total
 
 
-def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, sweep_stop=False, exit_retry=False):
-    sweep_mode = sweep_only or sweep_multi or sweep_stop
-    multi = sweep_multi or sweep_stop
-    sweep_state = "state-sweep-stop.json" if sweep_stop else "state-sweep-multi.json" if sweep_multi else "state-sweep.json"
+def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, sweep_stop=False, exit_retry=False, sweep_route=False):
+    sweep_mode = sweep_only or sweep_multi or sweep_stop or sweep_route
+    multi = sweep_multi or sweep_stop or sweep_route
+    sweep_state = "state-sweep-route.json" if sweep_route else "state-sweep-stop.json" if sweep_stop else "state-sweep-multi.json" if sweep_multi else "state-sweep.json"
     directory.mkdir(parents=True, exist_ok=resume or sweep_mode or exit_retry)
     key = key_path.read_text().strip()
     account = Account.from_key(key)
@@ -47,6 +47,8 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
     assert chain.w3.eth.get_transaction_count(account.address,'pending') == chain.w3.eth.get_transaction_count(account.address,'latest')
     expected_wrapped = 10**14 if resume else 0
     assert chain.balance(WBNB,account.address) == expected_wrapped and chain.balance(USDT,account.address) == 0, 'Unexpected holdings: do not continue'
+    if not resume:
+        assert all(not Store(p).data.get('operation') for p in directory.glob('state*.json')), 'Earlier audit needs reconciliation'
     before = chain.w3.eth.get_balance(account.address)
     pools = chain.find_pools(USDT,WBNB)
     v2 = next(p for p in pools if p.router=='V2')
@@ -209,6 +211,7 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
                 report['passed']=not report['ui_mismatches']
                 return
             if sweep_mode:
+                if sweep_route: assert v3 is not None, 'Verified V3 route required before funding'
                 w.convert_amount.setText('0.00005' if multi else '0.00002');click('BUY BASE')
                 assert chain.balance(WBNB,account.address)==(50000000000000 if multi else 20000000000000)
                 if multi:
@@ -216,6 +219,35 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
                     assert chain.balance(USDT,account.address)>0 and chain.balance(WBNB,account.address)>0
                 # Restrict the audit catalog, never sell other wallet holdings.
                 # Actual Worker Sweep and LiveTrader conversion remain unchanged.
+                if sweep_route:
+                    original_quote = w.worker.chain.quote
+                    def unavailable(pool, amount, buy):
+                        if not buy and pool.token.lower() == USDT.lower():
+                            raise TimeoutError('Controlled preflight failure')
+                        return original_quote(pool, amount, buy)
+                    with patch.object(w.worker.chain, 'quote', unavailable):
+                        click('SELL WALLET → BNB')
+                    partial = report['sweep_reports'][-1]
+                    assert USDT in partial['failed'] and partial['remaining'][USDT] > 0
+                    assert chain.balance(WBNB,account.address) == 0
+                    assert w.worker.position() and not w.store.data.get('operation')
+                    capture('sweep_route_partial')
+                    from dipbot.autopair import Candidate
+                    from dipbot.discovery import Resolution
+                    candidate = Candidate(v3, 'WBNB', True, 1)
+                    with patch.object(w.worker.chain, 'resolve_address',
+                                      return_value=Resolution('RESOLVED',(candidate,),candidate)):
+                        click('SELL WALLET → BNB')
+                    target_ops = [op for op in w.store.data['history'] if op['description'].startswith('SWEEP TARGET')]
+                    assert len(target_ops) == 1
+                    sells = [tx for tx in target_ops[0]['transactions'] if tx['label'] == 'SELL']
+                    assert len(sells) == 1 and sells[0]['request']['to'].lower() == V3_ROUTER.lower()
+                    assert chain.balance(USDT,account.address) == chain.balance(WBNB,account.address) == 0
+                    assert not w.worker.position() and not w.store.data.get('operation')
+                    report['scenarios'].append('LIVE partial Sweep: injected TARGET preflight timeout, WBNB unwrapped; controlled verified V2-to-V3 rediscovery, real SELL and unwrap')
+                    report['passed'] = not report['ui_mismatches']
+                    capture('sweep_route_completed')
+                    return
                 if sweep_stop:
                     original_swap = LiveTrader.swap
                     stopped = []
@@ -295,7 +327,8 @@ if __name__=='__main__':
     p.add_argument('--sweep-multi',action='store_true',help='Continue existing budget: USDT target and WBNB base Sweep only')
     p.add_argument('--exit-retry',action='store_true',help='Continue existing budget: one small LIVE BUY/STOP with controlled quote failure')
     p.add_argument('--sweep-stop',action='store_true',help='Continue existing budget: controlled STOP after target receipt, then resume remaining base')
+    p.add_argument('--sweep-route',action='store_true',help='Continue budget: partial preflight failure then verified V3 reroute')
     a=p.parse_args()
-    if sum([a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry])>1:p.error('Choose one continuation mode')
+    if sum([a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry,a.sweep_route])>1:p.error('Choose one continuation mode')
     if not a.execute:p.error('Explicit --execute and user authorization required')
-    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry)
+    run(a.key_file,a.output,a.resume,a.sweep_only,a.sweep_multi,a.sweep_stop,a.exit_retry,a.sweep_route)

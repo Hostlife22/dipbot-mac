@@ -32,7 +32,7 @@ def validate_read_request(payload):
     return rows
 
 
-def run(anvil, endpoint, token, pool_address, amount, output):
+def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False):
     # Upstream is constructed only as a Chain for validation/read calls.
     remote=Chain(endpoint,request_timeout=8)
     block=remote.check()
@@ -151,6 +151,11 @@ def run(anvil, endpoint, token, pool_address, amount, output):
             trader.begin('SELL local fork')
             returned=trader.swap(pool,received,False,D(3),simulate=True)
             trader.finish()
+            if sweep_audit:
+                report['phase']='sweep_audit'
+                from tools.fork_sweep_audit import audit
+                report['sweep_scenarios']=[]
+                audit(chain,account,directory,pool,amount,report['sweep_scenarios'])
             receipts=[r for op in store.data['history'] for r in op['transactions']]
             report.update(passed=True,quoted_buy=str(quoted_buy),received=str(received),
                           quoted_sell=str(quoted_sell),returned_wei=str(returned),
@@ -159,6 +164,8 @@ def run(anvil, endpoint, token, pool_address, amount, output):
                           local_transactions=len(receipts)+1,
                           bootstrap_local_transactions=1,
                           local_gas_wei=str(sum(r.get('gas_fee_wei',0) for r in receipts)))
+            if sweep_audit:
+                report['roundtrip_local_transactions']=report.pop('local_transactions')
     except Exception as exc:
         report['failure_type']=type(exc).__name__
         from dipbot.worker import safe_error
@@ -190,8 +197,9 @@ def main():
     p.add_argument('--pool',required=True)
     p.add_argument('--amount-wei',type=int,default=10**14)
     p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--sweep-audit',action='store_true')
     a=p.parse_args()
-    report=run(a.anvil,a.rpc,address(a.token),address(a.pool),a.amount_wei,a.output)
+    report=run(a.anvil,a.rpc,address(a.token),address(a.pool),a.amount_wei,a.output,sweep_audit=a.sweep_audit)
     print(json.dumps(report))
     raise SystemExit(0 if report['passed'] else 1)
 

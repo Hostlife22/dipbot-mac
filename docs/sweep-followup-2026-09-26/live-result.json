@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "errors": [],
+  "ui_mismatches": [],
+  "journal_locked": false,
+  "remaining_wbnb_raw": 0,
+  "remaining_usdt_raw": 0,
+  "conservative_cost_bound_usd": "0.60558368048640",
+  "scenario": "LIVE partial Sweep: injected TARGET preflight timeout, WBNB unwrapped; controlled verified V2-to-V3 rediscovery, real SELL and unwrap",
+  "receipts": [
+    {
+      "label": "BNB → WBNB",
+      "hash": "37c75e13bd9544ca4fb55bdc4265a54967f1e00b502f8f2d2c936733e830c445",
+      "status": 1,
+      "block": 124110621,
+      "gas_fee_wei": 4503800000000
+    },
+    {
+      "label": "APPROVE EXACT AMOUNT",
+      "hash": "313e6228ca20ed6202857511d0288dd65b4f95a228baac23df3b551c4059bd04",
+      "status": 1,
+      "block": 124110632,
+      "gas_fee_wei": 4604000000000
+    },
+    {
+      "label": "BUY",
+      "hash": "699c234635b97bab8279719e7a3556500260b09e97c78574977ac64418a0e9f2",
+      "status": 1,
+      "block": 124110637,
+      "gas_fee_wei": 11750100000000
+    },
+    {
+      "label": "WBNB → BNB",
+      "hash": "3b58683131b99f7b15f4bf7ab4efc257471aa6ee20433d00e8b5beedffe8003f",
+      "status": 1,
+      "block": 124110650,
+      "gas_fee_wei": 3039200000000
+    },
+    {
+      "label": "APPROVE EXACT AMOUNT",
+      "hash": "b6fb4935ce4aec3d85b8bb361c6a6a60d256cb3c5c0ab4523329d70c4bc3a64d",
+      "status": 1,
+      "block": 124110664,
+      "gas_fee_wei": 4620600000000
+    },
+    {
+      "label": "SELL",
+      "hash": "e3138ee5a30141ebedc1c7f9a455d6289809a7094d01cade9c10b7b5ce061388",
+      "status": 1,
+      "block": 124110669,
+      "gas_fee_wei": 12969800000000
+    },
+    {
+      "label": "WBNB → BNB",
+      "hash": "dbea47670ffd0630fbc89d3a32d98934bfe2b7e5254f5b42d30251309a2973c1",
+      "status": 1,
+      "block": 124110675,
+      "gas_fee_wei": 3040400000000
+    }
+  ],
+  "sweep_reports": [
+    {
+      "sold": [
+        "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+      ],
+      "failed": [
+        "0x55d398326f99059fF775485246999027B3197955"
+      ],
+      "skipped": [],
+      "remaining": {
+        "0x55d398326f99059fF775485246999027B3197955": 15453837160812251
+      },
+      "unknown": [],
+      "status": "completed",
+      "needs_reconciliation": false
+    },
+    {
+      "sold": [
+        "0x55d398326f99059fF775485246999027B3197955",
+        "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+      ],
+      "failed": [],
+      "skipped": [],
+      "remaining": {},
+      "unknown": [],
+      "status": "completed",
+      "needs_reconciliation": false
+    }
+  ],
+  "tracked_matches_sold": true,
+  "closed_net_usd": "-0.02630930634493003031",
+  "new_gas_wei": 44527900000000
+}
