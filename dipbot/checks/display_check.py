@@ -1,9 +1,21 @@
 """Visible read-only GUI audit, plus explicitly labelled market-data replay."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QApplication
+    from web3.types import RPCEndpoint
+
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain
+
 import json
 import sys
 import time
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -16,7 +28,7 @@ from dipbot.persistence.storage import Store
 from dipbot.persistence.vault import Vault
 
 
-def run(app, directory, replay_path, seconds=60):
+def run(app: QApplication, directory: Path, replay_path: Any, seconds: float = 60) -> int:
     from dipbot.ui.window import Window
 
     directory = Path(directory)
@@ -24,7 +36,7 @@ def run(app, directory, replay_path, seconds=60):
     if (directory / "state.json").exists():
         raise ValueError("Use a fresh display-check directory")
     app.setQuitOnLastWindowClosed(False)
-    report = {
+    report: dict[str, Any] = {
         "frozen": bool(getattr(sys, "frozen", False)),
         "platform": app.platformName(),
         "transactions_sent": 0,
@@ -32,24 +44,25 @@ def run(app, directory, replay_path, seconds=60):
         "mismatches": [],
         "screenshots": [],
     }
-    errors, logs = [], []
+    errors: list[str] = []
+    logs: list[str] = []
     phase = ["live_rpc"]
     snapshots = set()
     original_init = Chain.__init__
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError("Wallet and LIVE are disabled during display audit")
 
-    def init(chain, endpoint):
+    def init(chain: Chain, endpoint: str) -> None:
         original_init(chain, endpoint)
         original = chain.w3.provider.make_request
 
-        def read_only(method, params):
+        def read_only(method: RPCEndpoint, params: Any) -> Any:
             if method not in {"eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call"}:
                 raise RuntimeError("Non-read RPC blocked")
             return original(method, params)
 
-        chain.w3.provider.make_request = read_only
+        setattr(chain.w3.provider, "make_request", read_only)
 
     with (
         patch.object(Chain, "__init__", init),
@@ -63,25 +76,25 @@ def run(app, directory, replay_path, seconds=60):
         w.worker.log.connect(logs.append)
         w.show()
 
-        def pump():
+        def pump() -> None:
             app.processEvents()
             time.sleep(0.01)
 
-        def wait(condition, timeout=60):
+        def wait(condition: Callable[[], bool], timeout: float = 60) -> None:
             deadline = time.monotonic() + timeout
             while not condition():
                 if time.monotonic() > deadline:
                     raise TimeoutError("Display check timed out")
                 pump()
 
-        def capture(name):
+        def capture(name: str) -> None:
             if name in snapshots:
                 return
             snapshots.add(name)
             w.grab().save(str(directory / (name + ".png")))
             report["screenshots"].append(name + ".png")
 
-        def check(kind, payload):
+        def check(kind: str, payload: Any) -> None:
             if kind not in {"price", "status"}:
                 return
             report["checks"] += 1
@@ -156,12 +169,16 @@ def run(app, directory, replay_path, seconds=60):
             last = [data["market_samples"][0]["price"]]
             from dipbot.domain.strategy import D
 
-            def price(_):
+            def price(_: Any) -> Any:
                 last[0] = next(values, last[0])
                 return D(last[0])
 
             # Saved real prices, consumed at the test interval; no claim of original timing.
-            w.worker.chain = SimpleNamespace(verify_pool=lambda *a: pool, price=price, price_source="REPLAY")
+            setattr(
+                w.worker,
+                "chain",
+                SimpleNamespace(verify_pool=lambda *a: pool, price=price, price_source="REPLAY"),
+            )
             w.reset_price_display()
             phase[0] = "replay"
             w.banner.setText("PAPER · ПОВТОР ЗАПИСАННЫХ ЦЕН · не текущий рынок")

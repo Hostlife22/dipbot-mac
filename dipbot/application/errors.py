@@ -1,5 +1,7 @@
 """Sanitized application errors; never expose provider URLs or credentials."""
 
+from __future__ import annotations
+
 import re
 
 from requests.exceptions import HTTPError
@@ -10,7 +12,7 @@ from dipbot.execution.errors import UncertainTransaction
 from dipbot.persistence.storage import SaveAfterReplaceError
 
 
-def safe_error(exc):
+def safe_error(exc: BaseException) -> str:
     if type(exc) is SaveAfterReplaceError:
         return "Файл заменён, но надёжность сохранения не подтверждена; проверьте сохранённое состояние"
     if isinstance(exc, HTTPError):

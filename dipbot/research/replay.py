@@ -1,8 +1,17 @@
 """Causal offline stress replay. Fixed costs are assumptions, not executable quotes."""
 
+from __future__ import annotations
+
+from collections.abc import Mapping
+from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.domain.signal_policy import SignalPolicy
+    from dipbot.domain.strategy import Settings
+
 import math
 from dataclasses import dataclass
-from decimal import Decimal as D
 
 from dipbot.domain.strategy import Strategy
 
@@ -15,7 +24,7 @@ class ReplayCosts:
     gas_quote: D = D(0)
     latency_seconds: float = 0.25
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         for value in (self.fee_bps, self.impact_bps, self.tax_bps, self.gas_quote):
             if not value.is_finite() or value < 0:
                 raise ValueError("Некорректная модель расходов")
@@ -25,11 +34,11 @@ class ReplayCosts:
             raise ValueError("Задержка исполнения должна быть от 0 до 30 секунд")
 
     @property
-    def factor(self):
+    def factor(self) -> D:
         return 1 - (self.fee_bps + self.impact_bps + self.tax_bps) / 10000
 
 
-def pool_fee_bps(header, override=None):
+def pool_fee_bps(header: Mapping[str, Any], override: Any = None) -> D:
     """Pancake fee tiers are millionths; one basis point is 100 millionths."""
     if override is not None:
         try:
@@ -58,8 +67,15 @@ def pool_fee_bps(header, override=None):
 
 
 def replay(
-    samples, settings, policy, costs=None, *, size_unit="quote", requested_amount=None, exit_policy=None
-):
+    samples: list[dict[str, Any]],
+    settings: Settings,
+    policy: SignalPolicy,
+    costs: ReplayCosts | None = None,
+    *,
+    size_unit: str = "quote",
+    requested_amount: Any = None,
+    exit_policy: Any = None,
+) -> dict[str, Any]:
     if settings.min_swaps:
         raise ValueError("Replay цен не содержит Swap-события для фильтра активности")
     if size_unit not in ("quote", "usd"):

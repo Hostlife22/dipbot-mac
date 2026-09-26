@@ -1,9 +1,10 @@
 """Indicative USD marks for display/accounting and explicitly selected USD sizing."""
 
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 
-def select_rate(rows, token):
+def select_rate(rows: list[dict[str, Any]], token: str) -> Decimal:
     candidates = []
     for row in rows:
         if (
@@ -23,7 +24,7 @@ def select_rate(rows, token):
     return max(candidates)[1]
 
 
-def price_text(value, rate=None, digits=8) -> str:
+def price_text(value: Decimal | str | int | float, rate: Decimal | None = None, digits: int = 8) -> str:
     value = Decimal(str(value))
     if rate is not None:
         value *= rate

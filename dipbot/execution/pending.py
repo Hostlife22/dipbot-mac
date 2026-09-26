@@ -1,9 +1,18 @@
 """Read-only evidence about a missing receipt; never a dropped/replace permission."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Chain
+
 import time
 
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
+
+from dipbot.market.chain import address
 
 LABELS = {
     "pending_visible": "Транзакция видна узлу, receipt пока отсутствует",
@@ -17,8 +26,8 @@ LABELS = {
 }
 
 
-def inspect_missing(chain, owner, record):
-    result = {"checked_at": int(time.time()), "state": "legacy_unknown"}
+def inspect_missing(chain: Chain, owner: str, record: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {"checked_at": int(time.time()), "state": "legacy_unknown"}
     nonce = record.get("nonce")
     if type(nonce) is not int or nonce < 0:
         return result
@@ -36,8 +45,8 @@ def inspect_missing(chain, owner, record):
                 raise ValueError("Несогласованные данные транзакции")
             result["state"] = "pending_visible" if tx.get("blockNumber") is None else "mined_receipt_missing"
         else:
-            latest = chain.w3.eth.get_transaction_count(owner, "latest")
-            pending = chain.w3.eth.get_transaction_count(owner, "pending")
+            latest = chain.w3.eth.get_transaction_count(address(owner), "latest")
+            pending = chain.w3.eth.get_transaction_count(address(owner), "pending")
             if any(type(n) is not int or n < 0 for n in (latest, pending)) or pending < latest:
                 raise ValueError("Несогласованные nonce узла")
             result.update(latest_nonce=latest, pending_nonce=pending)
@@ -61,7 +70,9 @@ def inspect_missing(chain, owner, record):
     return result
 
 
-def find_nonce_replacement(chain, owner, record, *, max_blocks=32, timeout=8):
+def find_nonce_replacement(
+    chain: Chain, owner: str, record: dict[str, Any], *, max_blocks: int = 32, timeout: float = 8
+) -> dict[str, Any]:
     """Bounded read-only evidence. A found replacement never clears the latch."""
     from dipbot.execution.trader import LiveTrader
 
@@ -84,6 +95,8 @@ def find_nonce_replacement(chain, owner, record, *, max_blocks=32, timeout=8):
             raise ValueError("Invalid search block")
         scanned += 1
         for tx in block["transactions"]:
+            if isinstance(tx, bytes):
+                raise ValueError("Expected full transaction data")
             if tx.get("from", "").lower() != owner.lower() or tx.get("nonce") != record["nonce"]:
                 continue
             tx_hash = Web3.to_hex(tx["hash"])

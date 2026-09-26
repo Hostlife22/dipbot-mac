@@ -5,15 +5,15 @@ from decimal import Decimal as D
 
 
 class RollingVolatility:
-    def __init__(self):
+    def __init__(self) -> None:
         self.clear()
 
-    def clear(self):
-        self.rows = deque()
+    def clear(self) -> None:
+        self.rows: deque[tuple[float, D]] = deque()
         self.total = self.squared = D(0)
-        self.previous = None
+        self.previous: D | None = None
 
-    def add(self, price, now, window):
+    def add(self, price: D, now: float, window: float) -> D:
         while self.rows and self.rows[0][0] < now - window:
             _, value = self.rows.popleft()
             self.total -= value

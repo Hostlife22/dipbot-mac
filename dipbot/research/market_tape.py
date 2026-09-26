@@ -1,5 +1,7 @@
 """Bounded asynchronous public-market recordings, never credentials or signed data."""
 
+from __future__ import annotations
+
 import json
 import os
 import queue
@@ -7,6 +9,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 FIELDS = {
     "cycle_latency": {
@@ -47,23 +50,29 @@ class MarketTape:
     # Reserve segment capacity across recorders in this process. Closed files
     # still count toward the directory quota; no history is silently deleted.
     _quota_lock = threading.Lock()
-    _leases = {}
+    _leases: dict[Path, int] = {}
 
     def __init__(
-        self, directory, metadata, *, max_bytes=10 * 1024**2, max_total_bytes=200 * 1024**2, capacity=1024
-    ):
+        self,
+        directory: Path,
+        metadata: dict[str, Any],
+        *,
+        max_bytes: Any = 10 * 1024**2,
+        max_total_bytes: Any = 200 * 1024**2,
+        capacity: int = 1024,
+    ) -> None:
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.directory = directory.resolve()
         self.segment_limit = max_bytes
         self.total_limit = max_total_bytes
         self.session_id = uuid.uuid4().hex
-        self.paths = []
+        self.paths: list[Path] = []
         self.segment = 0
         self.segment_written = 0
         self.last_written_sequence = 0
         self.full = False
-        self.queue = queue.Queue(maxsize=capacity)
+        self.queue: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=capacity)
         self.stop_event = threading.Event()
         self.started = time.monotonic()
         self.sequence = self.dropped = self.written = 0
@@ -131,7 +140,7 @@ class MarketTape:
         self.thread = threading.Thread(target=self.run, name="market-recorder", daemon=True)
         self.thread.start()
 
-    def open_segment(self, index, previous):
+    def open_segment(self, index: int, previous: Any) -> Any:
         path = self.directory / (
             "market-" + time.strftime("%Y%m%d-%H%M%S") + "-" + self.session_id + "-" + str(index) + ".jsonl"
         )
@@ -171,7 +180,7 @@ class MarketTape:
         self.paths.append(path)
         return stream, path, capacity, size
 
-    def finish_segment(self, next_file=None):
+    def finish_segment(self, next_file: Any = None) -> None:
         try:
             self.stream.write(
                 json.dumps(
@@ -193,7 +202,7 @@ class MarketTape:
             with self._quota_lock:
                 self._leases.pop(self.current_path, None)
 
-    def rotate(self):
+    def rotate(self) -> Any:
         try:
             new = self.open_segment(self.segment + 1, self.current_path.name)
         except ArchiveFull:
@@ -211,7 +220,7 @@ class MarketTape:
         self.segment_written = 0
         return True
 
-    def record(self, kind, **data):
+    def record(self, kind: str, **data: Any) -> None:
         if kind not in FIELDS or self.stop_event.is_set():
             return
         self.sequence += 1
@@ -226,7 +235,7 @@ class MarketTape:
         except queue.Full:
             self.dropped += 1
 
-    def run(self):
+    def run(self) -> None:
         try:
             while not self.stop_event.is_set() or not self.queue.empty():
                 try:
@@ -260,7 +269,7 @@ class MarketTape:
             with self._quota_lock:
                 self._leases.pop(self.current_path, None)
 
-    def close(self):
+    def close(self) -> bool:
         self.stop_event.set()
         self.thread.join(timeout=0.5)
         return not self.thread.is_alive()

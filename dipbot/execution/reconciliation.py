@@ -1,5 +1,14 @@
 """Receipt reconciliation; never rebroadcasts or clears the latch."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain
+    from dipbot.persistence.ports import StateStore
+
 import time
 
 from web3 import Web3
@@ -10,7 +19,7 @@ from dipbot.execution.errors import UncertainTransaction
 from dipbot.execution.trader import LiveTrader
 
 
-def reconcile_receipts(chain, store, owner):
+def reconcile_receipts(chain: Chain, store: StateStore, owner: str) -> str:
     operation = store.data.get("operation")
     if not operation:
         return "Незавершённых операций нет"

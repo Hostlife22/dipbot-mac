@@ -1,10 +1,19 @@
 """Price chart rendering; no trading or startup responsibilities."""
 
+from __future__ import annotations
+
+from decimal import Decimal as D
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PySide6.QtCore import QEvent, QPointF
+    from PySide6.QtWidgets import QWidget
+
 import time
 from collections import deque
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPaintEvent, QPen
 from PySide6.QtWidgets import QWidget
 
 from dipbot.domain.usd import price_text
@@ -12,40 +21,40 @@ from dipbot.ui.theme import COLORS, METRICS
 
 
 class Chart(QWidget):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.values = deque(maxlen=180)
-        self.times = deque(maxlen=180)
-        self.levels = {}
-        self.reference_base = None
-        self.usd_rate = None
-        self.markers = deque(maxlen=180)
-        self.hover = None
+        self.values: deque[float] = deque(maxlen=180)
+        self.times: deque[float] = deque(maxlen=180)
+        self.levels: dict[str, str] = {}
+        self.reference_base: D | None = None
+        self.usd_rate: D | None = None
+        self.markers: deque[tuple[float, str, float]] = deque(maxlen=180)
+        self.hover: QPointF | None = None
         self.setToolTip(
             "Вход* — опорная цена стратегии, не средняя цена сделки. BUY/SELL отмечают завершённые операции по цене сигнала/наблюдения, не цене исполнения LIVE. Наведите курсор для просмотра цены и относительного времени."
         )
         self.setMouseTracking(True)
         self.setMinimumHeight(METRICS["chart_height"])
 
-    def mark(self, label, price):
+    def mark(self, label: str, price: D | str) -> None:
         if self.times:
             self.markers.append((self.times[-1], label, float(price)))
             self.update()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self.hover = event.position()
         self.update()
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: QEvent) -> None:
         self.hover = None
         self.update()
 
-    def add(self, value):
+    def add(self, value: D | str | float) -> None:
         self.values.append(float(value))
         self.times.append(time.monotonic())
         self.update()
 
-    def clear(self):
+    def clear(self) -> None:
         self.values.clear()
         self.times.clear()
         self.levels.clear()
@@ -54,19 +63,21 @@ class Chart(QWidget):
         self.hover = None
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
         painter.setPen(QPen(QColor(COLORS["border"]), 1))
         painter.setBrush(QColor(COLORS["surface"]))
         painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 9, 9)
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         if len(self.values) < 2:
             painter.setPen(QColor("#93a6bb"))
-            painter.drawText(self.rect(), Qt.AlignCenter, "График появится после START / выбора пула")
+            painter.drawText(
+                self.rect(), Qt.AlignmentFlag.AlignCenter, "График появится после START / выбора пула"
+            )
             return
-        levels = dict(self.levels)
+        levels: dict[str, D | str | float] = dict(self.levels)
         if self.reference_base is not None and "DIP" in levels:
             levels["BASE"] = self.reference_base
         levels["PRICE"] = self.values[-1]
@@ -83,7 +94,7 @@ class Chart(QWidget):
         axis_width = min(145, max(100, fm.horizontalAdvance(price_text(hi, self.usd_rate, 6)) + 20))
         left, right, top, bottom = axis_width, max(axis_width + 40, w - 175), 25, h - 28
 
-        def y(value):
+        def y(value: float) -> float:
             return bottom - (bottom - top) * (value - lo) / spread
 
         elapsed = max(self.times[-1] - self.times[0], 0.001)
@@ -121,7 +132,7 @@ class Chart(QWidget):
             if float(value) > 0
         ]
         gap = min(28, (bottom - top) / max(1, len(rows) - 1))
-        positions = []
+        positions: list[float] = []
         for label, value in rows:
             positions.append(max(y(value), positions[-1] + gap if positions else top))
         if positions:
@@ -130,14 +141,14 @@ class Chart(QWidget):
                 positions[i] = min(positions[i], positions[i + 1] - gap)
         for (label, value), py_label in zip(rows, positions):
             color = QColor(colors.get(label, COLORS["entry"]))
-            style = Qt.DotLine if label in ("BASE", "PRICE") else Qt.DashLine
+            style = Qt.PenStyle.DotLine if label in ("BASE", "PRICE") else Qt.PenStyle.DashLine
             painter.setPen(QPen(color, 1, style))
             py = y(value)
             painter.drawLine(QPointF(left, py), QPointF(right, py))
             painter.setPen(color)
             name = names.get(label, label)
             text = f"{name}  {price_text(value, self.usd_rate, 6)}"
-            text = fm.elidedText(text, Qt.ElideMiddle, w - int(right) - 14)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideMiddle, w - int(right) - 14)
             painter.drawText(int(right) + 8, int(py_label) + 4, text)
         path = QPainterPath()
         for i, value in enumerate(self.values):
@@ -156,7 +167,7 @@ class Chart(QWidget):
                     1.5,
                     1.5,
                 )
-        captions = []
+        captions: list[QRectF] = []
         fm = painter.fontMetrics()
         for stamp, label, value in reversed(self.markers):
             if stamp < self.times[0]:
@@ -184,7 +195,7 @@ class Chart(QWidget):
             stamp = self.times[0] + elapsed * (self.hover.x() - left) / (right - left)
             index = min(range(len(self.times)), key=lambda i: abs(self.times[i] - stamp))
             px = left + (right - left) * (self.times[index] - self.times[0]) / elapsed
-            painter.setPen(QPen(QColor(COLORS["muted"]), 1, Qt.DotLine))
+            painter.setPen(QPen(QColor(COLORS["muted"]), 1, Qt.PenStyle.DotLine))
             painter.drawLine(QPointF(px, top), QPointF(px, bottom))
             painter.drawEllipse(QPointF(px, y(self.values[index])), 4, 4)
             painter.setPen(QColor("#e7eef7"))

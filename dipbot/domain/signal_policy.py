@@ -1,8 +1,11 @@
 """Explicit strategy versions, independent from legacy numeric trade settings."""
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -13,7 +16,7 @@ class SignalPolicy:
     max_block_age: float = 5.0
     volatility_multiplier: Decimal = Decimal(2)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not math.isfinite(self.max_block_age) or not 1 <= self.max_block_age <= 30:
             raise ValueError("Возраст блока должен быть от 1 до 30 секунд")
         if not self.volatility_multiplier.is_finite() or not 0 < self.volatility_multiplier <= 20:
@@ -26,7 +29,7 @@ class SignalPolicy:
             raise ValueError("Подтверждение отскока должно быть от 0 до 20%")
 
     @classmethod
-    def parse(cls, value):
+    def parse(cls, value: object) -> SignalPolicy:
         if not isinstance(value, dict):
             raise ValueError("Повреждены параметры версии стратегии")
         try:
@@ -40,7 +43,7 @@ class SignalPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждены параметры версии стратегии") from exc
 
-    def export(self):
+    def export(self) -> dict[str, Any]:
         return {
             "mode": self.mode,
             "window_seconds": self.window_seconds,

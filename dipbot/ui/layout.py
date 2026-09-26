@@ -1,5 +1,19 @@
 """Build Qt screens on the window; event handling stays in Window."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dipbot.ui.window import Window
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QWidget
+
+    from dipbot.domain.strategy import Settings
+
 from decimal import Decimal
 
 from PySide6.QtCore import Qt, QTimer
@@ -15,6 +29,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QTableWidget,
     QVBoxLayout,
@@ -27,7 +42,7 @@ from dipbot.ui.ui_components import MetricLabel
 from dipbot.ui.usd_feed import UsdRate
 
 
-def build_bot(self):
+def build_bot(self: Window) -> None:
     layout = self.tab("Торговля")
     metrics = QHBoxLayout()
     self.metrics = {}
@@ -50,7 +65,7 @@ def build_bot(self):
         card.addWidget(caption)
         metric = MetricLabel("—")
         metric.setObjectName("metric")
-        metric.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        metric.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         if key == "price":
             metric.setProperty("tone", "positive")
         card.addWidget(metric)
@@ -67,7 +82,7 @@ def build_bot(self):
     self.last_price = None
     layout.addWidget(self.strategy_status)
     self.chart = Chart()
-    self.chart.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    self.chart.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
     self.chart.setToolTip(
         self.chart.toolTip()
         + " USD — ориентировочный пересчёт всех точек по последнему полученному курсу, не исторический валютный график."
@@ -92,16 +107,12 @@ def build_bot(self):
     layout.addWidget(self.position_estimate)
     self.trade_details = QLabel("Нет данных об исполнении")
     self.trade_details.setWordWrap(True)
-    self.trade_details.setTextInteractionFlags(Qt.TextSelectableByMouse)
+    self.trade_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     self.trade_toggle = self.disclosure(
         layout, "Исполнение и результат последней сделки · USD", self.trade_details
     )
     self.trade_toggle.toggled.connect(
-        lambda opened: (
-            QTimer.singleShot(0, lambda: self.tabs.widget(0).ensureWidgetVisible(self.trade_details))
-            if opened
-            else None
-        )
+        lambda opened: QTimer.singleShot(0, lambda: show_in_tab(self, self.trade_details)) if opened else None
     )
     self.chart.setToolTip(
         self.chart.toolTip()
@@ -131,7 +142,7 @@ def build_bot(self):
         ]
     ):
         field = self.field(value)
-        field.setAlignment(Qt.AlignRight)
+        field.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.params[key] = field
         label = QLabel(title)
         label.setBuddy(field)
@@ -142,7 +153,7 @@ def build_bot(self):
     self.amount_unit.addItem("База пары", "quote")
     self.amount_unit.addItem("USD", "usd")
     self.amount_unit.setMinimumContentsLength(8)
-    self.amount_unit.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+    self.amount_unit.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
     self.amount_unit.setToolTip(
         "USD пересчитывается в базу перед каждым входом по свежей ориентировочной котировке; "
         "газ не входит в AMOUNT. Доступно в PAPER/LIVE."
@@ -197,7 +208,7 @@ def build_bot(self):
     self.candidates = QComboBox()
     self.candidates.setAccessibleName("Найденные маршруты")
     self.candidates.setMinimumContentsLength(20)
-    self.candidates.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+    self.candidates.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
     self.editable.append(self.candidates)
     form.addRow("Маршрут", self.candidates)
     choose = QHBoxLayout()
@@ -228,7 +239,7 @@ def build_bot(self):
         ("max_roundtrip_loss", "Макс. потери BUY→SELL %", "3"),
     ]:
         self.params[key] = self.field(value)
-        self.params[key].setAlignment(Qt.AlignRight)
+        self.params[key].setAlignment(Qt.AlignmentFlag.AlignRight)
         grid.addRow(title, self.params[key])
     self.params["max_roundtrip_loss"].setToolTip(
         "Проверка котировок входа и обратного выхода на одном блоке до покупки. "
@@ -237,7 +248,7 @@ def build_bot(self):
     )
     self.signal_mode = QComboBox()
     self.signal_mode.setMinimumContentsLength(12)
-    self.signal_mode.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+    self.signal_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
     self.signal_mode.addItem("Совместимость · два снижения", "legacy")
     self.signal_mode.addItem("DIP от максимума за окно", "window")
     self.signal_mode.addItem("DIP с порогом волатильности", "volatility")
@@ -337,18 +348,18 @@ def build_bot(self):
     grid.addRow(section)
     grid.addRow("База TP/SL", self.exit_basis)
     self.exit_fields = {}
-    for key, label, maximum, suffix in (
+    for key, exit_label, maximum, suffix in (
         ("trailing_pct", "Trailing stop · 0 выкл.", 99.99, " %"),
         ("max_hold_seconds", "Макс. время позиции · 0 выкл.", 86400, " s"),
         ("cooldown_seconds", "Пауза после выхода", 3600, " s"),
     ):
-        field = QDoubleSpinBox()
-        field.setRange(0, maximum)
-        field.setDecimals(2)
-        field.setSuffix(suffix)
-        self.exit_fields[key] = field
-        self.editable.append(field)
-        grid.addRow(label, field)
+        exit_field = QDoubleSpinBox()
+        exit_field.setRange(0, maximum)
+        exit_field.setDecimals(2)
+        exit_field.setSuffix(suffix)
+        self.exit_fields[key] = exit_field
+        self.editable.append(exit_field)
+        grid.addRow(exit_label, exit_field)
     self.exit_fields["trailing_pct"].setToolTip(
         "Падение от максимальной наблюдавшейся цены после входа. TP/SL имеют приоритет. "
         "По умолчанию после trailing stop автоматическая торговля останавливается."
@@ -396,11 +407,7 @@ def build_bot(self):
     layout.removeWidget(body_widget)
     layout.insertWidget(1, body_widget)
     self.market_toggle.toggled.connect(
-        lambda opened: (
-            QTimer.singleShot(0, lambda: self.tabs.widget(0).ensureWidgetVisible(body_widget))
-            if opened
-            else None
-        )
+        lambda opened: QTimer.singleShot(0, lambda: show_in_tab(self, body_widget)) if opened else None
     )
     self.execution_bar = QWidget()
     controls = QHBoxLayout(self.execution_bar)
@@ -427,25 +434,25 @@ def build_bot(self):
     self.disclosure(layout, "CONVERTER / WALLET SWEEP · LIVE", converter)
 
 
-def build_settings(self):
+def build_settings(self: Window) -> None:
     from dipbot.market.rpc_presets import BACKUP, MAIN
 
     layout = self.tab("RPC и кошелёк")
     group = QGroupBox("ПОДКЛЮЧЕНИЕ BSC")
     form = self.form(group)
     self.rpc = self.field(placeholder="https://… — ваш BSC HTTP RPC")
-    self.rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+    self.rpc.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
     self.rpc_preset = self.add_rpc_presets(form, "Источник RPC", self.rpc, MAIN)
     form.addRow("HTTP RPC", self.rpc)
     self.backup_rpc = self.field(placeholder="Резервный HTTPS RPC · только чтение котировок")
-    self.backup_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+    self.backup_rpc.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
     self.backup_rpc_preset = self.add_rpc_presets(form, "Источник резерва", self.backup_rpc, BACKUP)
     form.addRow("Резервный RPC", self.backup_rpc)
     self.ws_rpc = self.field(placeholder="Необязательный wss://… · новые блоки + HTTP fallback")
-    self.ws_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+    self.ws_rpc.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
     form.addRow("WebSocket RPC", self.ws_rpc)
     self.send_rpc = self.field(placeholder="Необязательный HTTPS RPC отправки")
-    self.send_rpc.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+    self.send_rpc.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
     self.send_rpc.setToolTip(
         "Например, private RPC выбранного провайдера. Приватность определяется провайдером; "
         "этот клиент её не доказывает. Отправка только через выбранный endpoint, без публичного fallback. "
@@ -503,7 +510,7 @@ def build_settings(self):
     )
     form.addRow("Резерв газа, BNB", self.gas_reserve)
     self.gas.setMaximumWidth(180)
-    self.gas.setAlignment(Qt.AlignRight)
+    self.gas.setAlignment(Qt.AlignmentFlag.AlignRight)
     form.addRow("GAS GWEI", self.gas)
     hint = QLabel(
         "Лимит: 0.005 BNB газа на транзакцию. Накопительного бюджета оборота нет; размер покупки задаётся AMOUNT."
@@ -526,7 +533,7 @@ def build_settings(self):
     wallet = QGroupBox("КОШЕЛЁК")
     form = self.form(wallet)
     self.key = self.field(placeholder="Private key отдельного BSC-кошелька")
-    self.key.setEchoMode(QLineEdit.Password)
+    self.key.setEchoMode(QLineEdit.EchoMode.Password)
     form.addRow("PRIVATE KEY", self.key)
     form.addRow(self.button("VERIFY WALLET AND SAVE · Keychain", self.save_wallet))
     self.wallet = self.field(
@@ -538,9 +545,9 @@ def build_settings(self):
     recovery = self.recovery_group = QGroupBox("ВОССТАНОВЛЕНИЕ LIVE")
     rec = QVBoxLayout(recovery)
     self.recovery_details = QLabel()
-    self.recovery_details.setTextFormat(Qt.PlainText)
+    self.recovery_details.setTextFormat(Qt.TextFormat.PlainText)
     self.recovery_details.setWordWrap(True)
-    self.recovery_details.setTextInteractionFlags(Qt.TextSelectableByMouse)
+    self.recovery_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     rec.addWidget(self.recovery_details)
     self.saved_positions = QComboBox()
     rec.addWidget(self.saved_positions)
@@ -549,7 +556,7 @@ def build_settings(self):
     self.receipt_result.setWordWrap(True)
     rec.addWidget(self.receipt_result)
     self.position_comparison = QLabel("Балансы сохранённых позиций ещё не сверены с сетью.")
-    self.position_comparison.setTextFormat(Qt.PlainText)
+    self.position_comparison.setTextFormat(Qt.TextFormat.PlainText)
     self.position_comparison.setWordWrap(True)
     rec.addWidget(self.position_comparison)
     rec.addWidget(self.button("Сверить сохранённые позиции с сетью", self.compare_saved_positions))
@@ -566,7 +573,7 @@ def build_settings(self):
     layout.addStretch()
 
 
-def build_pairs(self):
+def build_pairs(self: Window) -> None:
     layout = self.tab("Активы и балансы")
     row = QHBoxLayout()
     hint = QLabel("Базовые активы для AutoPair · балансы и ликвидность проверяются через RPC")
@@ -582,20 +589,20 @@ def build_pairs(self):
     self.table.verticalHeader().hide()
     self.table.verticalHeader().setDefaultSectionSize(38)
     self.table.setMinimumHeight(330)
-    self.table.setSelectionMode(QTableWidget.SingleSelection)
+    self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
     self.table.setHorizontalHeaderLabels(["Актив", "Контракт BSC", "Баланс"])
-    self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+    self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
     self.table.setColumnWidth(0, 160)
     self.table.setColumnWidth(2, 180)
-    self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-    self.table.setSelectionBehavior(QTableWidget.SelectRows)
+    self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+    self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
     self.table.doubleClicked.connect(self.pair_clicked)
     layout.addWidget(self.table)
     layout.addWidget(QLabel("Двойной клик по активу выбирает PAIR для AutoPair. «?» означает ошибку чтения."))
     layout.addWidget(self.button("REMOVE выбранную пользовательскую базу", self.remove_profile))
 
 
-def build_about(self):
+def build_about(self: Window) -> None:
     layout = self.tab("О реализации")
     intro = QLabel("DipBot Mac · Руководство")
     intro.setObjectName("title")
@@ -637,7 +644,13 @@ def build_about(self):
         box = QVBoxLayout(group)
         text = QLabel(description)
         text.setWordWrap(True)
-        text.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         box.addWidget(text)
         layout.addWidget(group)
     layout.addStretch()
+
+
+def show_in_tab(view: Window, widget: QWidget) -> None:
+    tab = view.tabs.widget(0)
+    if isinstance(tab, QScrollArea):
+        tab.ensureWidgetVisible(widget)

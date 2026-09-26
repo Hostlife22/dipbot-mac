@@ -1,6 +1,15 @@
-from typing import Any, Callable, TypeVar, cast
-
 """Independent read-only price monitoring while the serial executor is occupied."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
+
+if TYPE_CHECKING:
+    from web3.types import RPCEndpoint
+
+    from dipbot.market.chain import Chain, Pool
+
 
 import threading
 import time
@@ -23,21 +32,23 @@ class MarketSnapshot:
 
 
 class MarketMonitor:
-    def __init__(self, endpoint, pool, factory=None, max_block_age=5):
+    def __init__(
+        self, endpoint: str, pool: Pool, factory: Callable[[str], Chain] | None = None, max_block_age: int = 5
+    ) -> None:
         self.endpoint, self.pool = endpoint, pool
         self.factory = factory or (lambda url: Chain(url, request_timeout=2, max_block_age=max_block_age))
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
-        self.latest = None
+        self.latest: MarketSnapshot | None = None
         self.error_type = ""
-        self.thread = None
+        self.thread: threading.Thread | None = None
 
-    def start(self):
+    def start(self) -> Self:
         self.thread = threading.Thread(target=self.run, name="execution-market-monitor", daemon=True)
         self.thread.start()
         return self
 
-    def snapshot(self, now=None):
+    def snapshot(self, now: float | None = None) -> MarketSnapshot | None:
         now = time.monotonic() if now is None else now
         with self.lock:
             value = self.latest
@@ -45,7 +56,7 @@ class MarketMonitor:
                 return None
             return value
 
-    def run(self):
+    def run(self) -> None:
         revision = 0
         failures = 0
         try:
@@ -55,12 +66,12 @@ class MarketMonitor:
                 provider = chain.w3.provider
                 request = provider.make_request
 
-                def cancellable(method, params):
+                def cancellable(method: RPCEndpoint, params: Any) -> Any:
                     if self.stop_event.is_set():
                         raise RuntimeError("Monitor stopped")
                     return request(method, params)
 
-                provider.make_request = cancellable
+                setattr(provider, "make_request", cancellable)
             pool = chain.verify_pool(self.pool.address, self.pool.token)
             if pool != self.pool:
                 raise ValueError("Monitor returned a different pool")
@@ -98,7 +109,7 @@ class MarketMonitor:
             with self.lock:
                 self.latest = None
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_event.set()
         if self.thread is not None:
             self.thread.join(timeout=0.1)
@@ -109,11 +120,11 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def monitor_execution(function: F) -> F:
     @wraps(function)
-    def wrapped(worker, *args, **kwargs):
+    def wrapped(worker: Any, *args: Any, **kwargs: Any) -> Any:
         if worker.mode == "DEMO" or not isinstance(worker.chain, Chain) or worker.pool is None:
             return function(worker, *args, **kwargs)
         monitor = MarketMonitor(
-            str(worker.chain.w3.provider.endpoint_uri),
+            str(getattr(worker.chain.w3.provider, "endpoint_uri")),
             worker.pool,
             max_block_age=worker.strategy.policy.max_block_age,
         )

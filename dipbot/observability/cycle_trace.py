@@ -1,24 +1,33 @@
 """Bounded per-signal timings; no RPC, credentials, transaction data or retries."""
 
+from __future__ import annotations
+
 import time
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from typing import Any
 
 
 class CycleTrace:
-    def __init__(self, action, mode, header=None):
+    def __init__(self, action: str, mode: str, header: Mapping[str, Any] | None = None) -> None:
         self.started = time.perf_counter()
-        self.stages = []
+        self.stages: list[dict[str, Any]] = []
         self.truncated = False
-        self.data = {"action": action, "mode": mode, "signal_block": None, "block_to_signal_ms": None}
+        self.data: dict[str, Any] = {
+            "action": action,
+            "mode": mode,
+            "signal_block": None,
+            "block_to_signal_ms": None,
+        }
         if header:
             self.data["signal_block"] = header.get("number")
             timestamp = header.get("timestamp")
-            if type(timestamp) in (int, float) and 0 <= time.time() - timestamp < 3600:
+            if isinstance(timestamp, (int, float)) and 0 <= time.time() - timestamp < 3600:
                 # Wall-clock estimate from integer block timestamp, not exact propagation time.
                 self.data["block_to_signal_ms"] = (time.time() - timestamp) * 1000
         self.mark("signal")
 
-    def mark(self, stage, *, kind=None, block=None):
+    def mark(self, stage: str, *, kind: str | None = None, block: int | None = None) -> None:
         if stage not in {
             "signal",
             "quote",
@@ -51,7 +60,7 @@ class CycleTrace:
         self.stages.append(row)
 
 
-def mark(subject, stage, *, label=None, block=None):
+def mark(subject: object, stage: str, *, label: str | None = None, block: int | None = None) -> None:
     trace = getattr(subject, "cycle_trace", None)
     if isinstance(trace, CycleTrace):
         kind = (
@@ -63,7 +72,7 @@ def mark(subject, stage, *, label=None, block=None):
 
 
 @contextmanager
-def signal_cycle(worker, action, header):
+def signal_cycle(worker: Any, action: str, header: Mapping[str, Any] | None) -> Iterator[CycleTrace]:
     trace = CycleTrace(action, worker.mode, header)
     previous = getattr(worker, "cycle_trace", None)
     live = worker.live

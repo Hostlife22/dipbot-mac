@@ -1,5 +1,13 @@
 """Mac registry schema; Windows field semantics, without Windows vault migration."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Pool
+    from dipbot.persistence.ports import StateStore
+
 import re
 import time
 from copy import deepcopy
@@ -11,7 +19,7 @@ from dipbot.persistence.storage import SaveAfterReplaceError
 MODES = {"direct_v2", "direct_v3", "via_usdt_v3", "via_eth_v3", "native_wrap"}
 
 
-def records(store):
+def records(store: StateStore) -> dict[str, Any]:
     registry = store.data.get("dynamic_registry", {"version": 1, "records": {}})
     if not isinstance(registry, dict):
         raise ValueError("Повреждён реестр динамических профилей")
@@ -34,10 +42,10 @@ def records(store):
             valid = False
         if not valid:
             raise ValueError("Повреждён динамический профиль; повторная проверка обязательна")
-    return result
+    return cast(dict[str, Any], result)
 
 
-def catalog(store, router):
+def catalog(store: StateStore, router: str) -> dict[str, str]:
     registered = records(store)
     represented = {r["token_address"].lower() for r in registered.values()}
     # Old symbol->address entries remain router-agnostic until explicitly rechecked.
@@ -50,7 +58,7 @@ def catalog(store, router):
     return profiles() | legacy | current
 
 
-def preference(store, token, router=None):
+def preference(store: StateStore, token: str, router: str | None = None) -> dict[str, Any] | None:
     token = address(token)
     matches = [
         r
@@ -67,7 +75,7 @@ def preference(store, token, router=None):
     return {"converter_mode": mode, "converter_fee": fee}
 
 
-def route_settings(route):
+def route_settings(route: list[Pool]) -> tuple[str, int]:
     tokens, _ = route_path(route)
     if tokens[0] != address(WBNB):
         raise ValueError("Нужен маршрут покупки базы за WBNB")
@@ -82,7 +90,7 @@ def route_settings(route):
     raise ValueError("Неизвестный мост динамического конвертера")
 
 
-def persist(store, updated):
+def persist(store: StateStore, updated: Any) -> None:
     previous = store.data
     store.data = updated
     try:
@@ -96,14 +104,16 @@ def persist(store, updated):
         raise
 
 
-def safe_symbol(raw, token):
+def safe_symbol(raw: object, token: str) -> str:
     if isinstance(raw, bytes):
         raw = raw.rstrip(b"\0").decode("utf-8", "ignore")
     cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "", str(raw or "")).upper()[:16]
     return cleaned or "PAIR_" + token[-4:].upper()
 
 
-def upsert(store, pool, route, loss_bps, *, symbol=None):
+def upsert(
+    store: StateStore, pool: Pool, route: list[Pool], loss_bps: int, *, symbol: Any = None
+) -> dict[str, Any]:
     old = records(store)
     mode, fee = route_settings(route)
     if route_path(route)[0][-1] != address(pool.quote):
@@ -150,7 +160,7 @@ def upsert(store, pool, route, loss_bps, *, symbol=None):
     return record
 
 
-def remove(store, name):
+def remove(store: StateStore, name: str) -> None:
     registered = records(store)
     updated = deepcopy(store.data)
     updated.get("dynamic_profiles", {}).pop(name, None)

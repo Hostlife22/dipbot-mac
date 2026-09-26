@@ -1,16 +1,30 @@
 """Explicit USD marks, complete/missing accounting and fresh FX for optional sizing/cost filters."""
 
+from __future__ import annotations
+
+from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any, Mapping, Protocol, cast
+
+if TYPE_CHECKING:
+    from dipbot.domain.records import (
+        FeeSummary,
+        OperationRecord,
+        PositionRecord,
+        RateMark,
+        UsdSummary,
+    )
+    from dipbot.persistence.ports import StateStore
+
 import threading
 import time
-from decimal import Decimal as D
 
 
 class RateBook:
-    def __init__(self):
+    def __init__(self) -> None:
         self.lock = threading.Lock()
-        self.rates = {}
+        self.rates: dict[str, dict[str, Any]] = {}
 
-    def update(self, token, value, received_at):
+    def update(self, token: str, value: D | str | None, received_at: float | None) -> None:
         if not token or value is None or received_at is None:
             return
         rate = D(str(value))
@@ -26,33 +40,33 @@ class RateBook:
                 "source": "DEX Screener",
             }
 
-    def snapshot(self, token):
+    def snapshot(self, token: str) -> RateMark | None:
         with self.lock:
             row = self.rates.get(token.lower())
             if row is None or not 0 <= time.monotonic() - row["monotonic"] <= 90:
                 return None
-            return {k: v for k, v in row.items() if k != "monotonic"}
+            return cast("RateMark", {k: v for k, v in row.items() if k != "monotonic"})
 
 
-def marked_value(amount, rate):
+def marked_value(amount: D | str, rate: RateMark | None) -> str | None:
     return str(D(amount) * D(rate["usd"])) if rate is not None else None
 
 
-def operation_fees(operation):
+def operation_fees(operation: OperationRecord | None) -> FeeSummary:
     rows = operation.get("transactions", []) if operation else []
     # Empty/missing receipts must never masquerade as zero fees.
     if not rows or any("gas_fee_wei" not in row for row in rows):
         return {"wei": None, "usd": None}
     wei = sum(row["gas_fee_wei"] for row in rows)
     usd = (
-        sum((D(row["gas_usd"]) for row in rows), D(0))
+        sum((D(cast(str, row["gas_usd"])) for row in rows), D(0))
         if all(row.get("gas_usd") is not None for row in rows)
         else None
     )
     return {"wei": str(wei), "usd": str(usd) if usd is not None else None}
 
 
-def record_gas(store, owner, record):
+def record_gas(store: StateStore, owner: str, record: Mapping[str, Any]) -> None:
     if "gas_fee_wei" not in record:
         return
     store.ledger("gas_ledger")[record["hash"]] = {
@@ -66,10 +80,10 @@ def record_gas(store, owner, record):
     }
 
 
-def closed_summary(store, owner):
+def closed_summary(store: StateStore, owner: str) -> UsdSummary:
     ledger = store.ledger("closed_trades")
 
-    def calculate():
+    def calculate() -> UsdSummary:
         rows = [r for r in ledger.values() if r["wallet"] == owner.lower()]
         missing = sum(row.get("net_usd") is None for row in rows)
         total = sum((D(row["net_usd"]) for row in rows if row.get("net_usd") is not None), D(0))
@@ -81,10 +95,20 @@ def closed_summary(store, owner):
             "scope": "tracked_positions_since_usd_accounting",
         }
 
-    return ledger.summary(owner.lower(), calculate)
+    return cast("UsdSummary", ledger.summary(owner.lower(), lambda: dict(calculate())))
 
 
-def record_close(store, owner, pool, position, received, operation, exit_rate, *, inventory_matches=True):
+def record_close(
+    store: StateStore,
+    owner: str,
+    pool: AccountingPool,
+    position: PositionRecord,
+    received: int,
+    operation: OperationRecord | None,
+    exit_rate: RateMark | None,
+    *,
+    inventory_matches: bool = True,
+) -> None:
     rows = operation.get("transactions", []) if operation else []
     if not rows:
         return  # Compatibility with synthetic execution adapters; no fabricated identifier.
@@ -123,10 +147,10 @@ def record_close(store, owner, pool, position, received, operation, exit_rate, *
     )
 
 
-def expense_summary(store, owner):
+def expense_summary(store: StateStore, owner: str) -> dict[str, Any]:
     closed = [r for r in store.data.get("closed_trades", {}).values() if r["wallet"] == owner.lower()]
     gas = {h: r for h, r in store.data.get("gas_ledger", {}).items() if r["wallet"] == owner.lower()}
-    allocated = set()
+    allocated: set[str] = set()
     complete = all(row.get("net_usd") is not None for row in closed)
     for row in closed:
         entry, exit_ = row.get("entry_gas_hashes"), row.get("exit_gas_hashes")
@@ -151,7 +175,7 @@ def expense_summary(store, owner):
     }
 
 
-def accounting_report(store, owner):
+def accounting_report(store: StateStore, owner: str) -> str:
     summary = closed_summary(store, owner)
     expenses = expense_summary(store, owner)
     rows = [r for r in store.data.get("gas_ledger", {}).values() if r["wallet"] == owner.lower()]
@@ -192,19 +216,19 @@ def accounting_report(store, owner):
 
 
 def record_sweep_exit(
-    store,
-    owner,
-    token,
-    sold,
-    residual,
-    proceeds,
-    quote,
-    quote_decimals,
-    operation,
-    exit_rate,
+    store: StateStore,
+    owner: str,
+    token: str,
+    sold: int,
+    residual: int,
+    proceeds: int,
+    quote: Any,
+    quote_decimals: int,
+    operation: OperationRecord | None,
+    exit_rate: RateMark | None,
     *,
-    pool_address="",
-):
+    pool_address: str = "",
+) -> None:
     """Aggregate tracked lots once per Sweep receipt; mismatches remain incomplete."""
     from types import SimpleNamespace
 
@@ -219,7 +243,7 @@ def record_sweep_exit(
     complete = residual == 0 and total == sold and all(p.get("entry_cost_usd") is not None for p in positions)
     entry_usd = sum((D(p["entry_cost_usd"]) for p in positions), D(0)) if complete else None
     same_quote = all(p["pool"]["quote"].lower() == quote.lower() and "cost_quote" in p for p in positions)
-    combined = {
+    combined: PositionRecord = {
         "entry_cost_usd": str(entry_usd) if entry_usd is not None else None,
         "cost_quote": str(sum((D(p["cost_quote"]) for p in positions), D(0))) if same_quote else None,
     }
@@ -250,3 +274,14 @@ def record_sweep_exit(
             residual_raw=residual,
             source_pools=[p["pool"]["address"] for p in positions],
         )
+
+
+class AccountingPool(Protocol):
+    @property
+    def address(self) -> str: ...
+    @property
+    def token(self) -> str: ...
+    @property
+    def quote(self) -> str: ...
+    @property
+    def quote_decimals(self) -> int: ...

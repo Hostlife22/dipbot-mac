@@ -17,7 +17,7 @@ class EntryQuote:
     roundtrip_loss_pct: Decimal
 
 
-def assess(amount, target, reverse, block, maximum):
+def assess(amount: int, target: int, reverse: int, block: int, maximum: Decimal) -> EntryQuote:
     if any(type(x) is not int or x <= 0 or x >= 2**256 for x in (amount, target, reverse)):
         raise EntryRejected("Вход пропущен: нулевая или некорректная котировка BUY/SELL")
     if not maximum.is_finite() or not 0 <= maximum <= 20:

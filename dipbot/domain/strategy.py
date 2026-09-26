@@ -24,7 +24,7 @@ class Settings:
     max_roundtrip_loss: D = D("3")
     min_swaps: D = D(0)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if (
             not self.min_swaps.is_finite()
             or not 0 <= self.min_swaps <= 10000
@@ -57,7 +57,7 @@ def raw_amount(amount: D, decimals: int) -> int:
     result = numerator * 10**decimals // denominator
     if result <= 0 or result >= 2**256:
         raise ValueError("Количество вне диапазона токена")
-    return result
+    return int(result)
 
 
 def minimum_out(quoted: int, tolerance: D) -> int:
@@ -67,7 +67,7 @@ def minimum_out(quoted: int, tolerance: D) -> int:
     result = quoted * (100 * denominator - numerator) // (100 * denominator)
     if result <= 0:
         raise ValueError("Минимальный выход округлился до нуля")
-    return result
+    return int(result)
 
 
 def snapshot_minimum(amount: int, price: D, quote_decimals: int, token_decimals: int, tolerance: D) -> int:
@@ -86,16 +86,18 @@ def snapshot_minimum(amount: int, price: D, quote_decimals: int, token_decimals:
 
 
 class Strategy:
-    def __init__(self, settings: Settings, policy=None, exit_policy=None):
+    def __init__(
+        self, settings: Settings, policy: SignalPolicy | None = None, exit_policy: ExitPolicy | None = None
+    ) -> None:
         self.exit_policy = exit_policy or ExitPolicy()
         self.entry_time: float | None = None
         self.peak_price: D | None = None
         self.cooldown_until: float | None = None
         self.policy = policy or SignalPolicy()
-        self.highs = deque()
-        self.trough = None
-        self.last_observation_id = None
-        self.base_time = None
+        self.highs: deque[tuple[float, D]] = deque()
+        self.trough: D | None = None
+        self.last_observation_id: object = None
+        self.base_time: float | None = None
         self.base_reason = "Ожидание первого наблюдения"
         self.settings = settings
         self.volatility = RollingVolatility()
@@ -107,7 +109,9 @@ class Strategy:
         self.down_streak = 0
         self.stopped = False
 
-    def observe(self, price: D, now: float, observation_id=None, exit_return=None) -> str | None:
+    def observe(
+        self, price: D, now: float, observation_id: object = None, exit_return: D | None = None
+    ) -> str | None:
         if not price.is_finite() or price <= 0 or not math.isfinite(now):
             raise ValueError("Некорректная цена")
         if self.stopped:
@@ -180,7 +184,7 @@ class Strategy:
                 self.down_streak = 0
         return None
 
-    def entry_wait(self, now):
+    def entry_wait(self, now: float) -> tuple[str, str]:
         """Read-only explanation of signal state; never advances the strategy."""
         if self.entry is not None or self.stopped:
             return "", ""
@@ -200,7 +204,7 @@ class Strategy:
                 )
         return "dip", "Ждёт падения до DIP"
 
-    def reset_anchor(self):
+    def reset_anchor(self) -> None:
         self.base = self.last_time = self.last_price = self.base_time = None
         self.down_streak = 0
         self.highs.clear()
@@ -210,7 +214,7 @@ class Strategy:
         self.volatility.clear()
         self.effective_dip = self.settings.dip
 
-    def observe_window(self, price, now, gap):
+    def observe_window(self, price: D, now: float, gap: bool) -> str | None:
         if gap or self.base is None:
             self.volatility.clear()
             self.highs.clear()
@@ -241,14 +245,14 @@ class Strategy:
             return "BUY"
         return None
 
-    def bought(self, execution_price: D, now=None):
+    def bought(self, execution_price: D, now: float | None = None) -> None:
         if self.entry is not None:
             raise ValueError("Позиция уже открыта")
         self.entry = execution_price
         self.peak_price = execution_price
         self.entry_time = self.last_time if now is None else now
 
-    def sold(self, price: D, reason: str, now=None):
+    def sold(self, price: D, reason: str, now: float | None = None) -> None:
         self.entry = None
         self.entry_time = self.peak_price = None
         self.volatility.clear()

@@ -553,7 +553,7 @@ class Window(QMainWindow):
         return settings_controller.load_rpc(self)
 
     def add_rpc_presets(
-        self, form: QFormLayout, title: str, field: QLineEdit, presets: tuple[tuple[str, str], ...]
+        self, form: QFormLayout, title: str, field: QLineEdit, presets: list[tuple[str, str | None]]
     ) -> QComboBox:
         return settings_controller.add_rpc_presets(self, form, title, field, presets)
 

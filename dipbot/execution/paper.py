@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Virtual execution and position accounting, with no RPC or signing."""
+
+from __future__ import annotations
 
 from decimal import Decimal as D
 

@@ -257,7 +257,7 @@ class Worker(QThread, StateAccess):
                 next_tick = max(poll_started + delay, time.monotonic())
                 self.status()
 
-    def record_market(self, kind: str | None, **data: Any) -> None:
+    def record_market(self, kind: str, **data: Any) -> None:
         if self.recorder is not None:
             self.recorder.record(kind, **data)
             if not self.recorder_notice and (self.recorder.dropped or self.recorder.error_type):

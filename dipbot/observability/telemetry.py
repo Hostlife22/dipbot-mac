@@ -1,23 +1,25 @@
-from typing import Callable, ParamSpec, TypeVar
-
 """Bounded, process-local timing statistics. Never retain arguments or responses."""
+
+from __future__ import annotations
 
 import math
 import threading
 import time
 from collections import deque
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from functools import wraps
+from typing import Any, ParamSpec, TypeVar
 
 
 class Timings:
-    def __init__(self, capacity=2048, max_series=128):
+    def __init__(self, capacity: int = 2048, max_series: int = 128) -> None:
         self.capacity = capacity
         self.max_series = max_series
-        self._series = {}
+        self._series: dict[str, list[Any]] = {}
         self._lock = threading.Lock()
 
-    def record(self, name, seconds, failed=False):
+    def record(self, name: str, seconds: float, failed: bool = False) -> None:
         if not math.isfinite(seconds) or seconds < 0:
             return
         with self._lock:
@@ -31,7 +33,7 @@ class Timings:
             row[2].append(seconds * 1000)
 
     @contextmanager
-    def measure(self, name):
+    def measure(self, name: str) -> Iterator[None]:
         start = time.perf_counter()
         failed = False
         try:
@@ -42,7 +44,7 @@ class Timings:
         finally:
             self.record(name, time.perf_counter() - start, failed)
 
-    def snapshot(self):
+    def snapshot(self) -> Any:
         with self._lock:
             rows = {k: (v[0], v[1], sorted(v[2])) for k, v in self._series.items()}
         result = {}

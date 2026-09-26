@@ -1,5 +1,12 @@
 """Application composition, command-line modes and process lifecycle."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QApplication
+
 import argparse
 import sys
 
@@ -13,7 +20,7 @@ from dipbot.ui.theme import STYLE
 from dipbot.ui.window import Window
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--position-check", help="Offline synthetic position UI audit directory")
     parser.add_argument("--position-check-resume", action="store_true")
@@ -38,17 +45,17 @@ def main():
     app.setApplicationName("DipBot Mac")
     app.setStyleSheet(STYLE)
     if args.position_check:
-        from dipbot.checks.position_check import run
+        from dipbot.checks.position_check import run as run_position_check
 
-        return run(app, args.position_check, args.position_check_resume)
+        return run_position_check(app, args.position_check, args.position_check_resume)
     if args.market_paper_token:
         if not args.market_paper_output:
             parser.error("--market-paper-token requires --market-paper-output")
         from pathlib import Path
 
-        from dipbot.checks.token_ui_paper import run
+        from dipbot.checks.token_ui_paper import run as run_token_ui_paper
 
-        return run(
+        result = run_token_ui_paper(
             args.market_paper_token,
             Path(args.market_paper_output),
             args.acceptance_seconds,
@@ -57,16 +64,17 @@ def main():
             close_after=True,
             modern=args.market_paper_modern,
         )
+        return result or 0
     if args.display_check:
         if not args.display_replay:
             parser.error("--display-check requires --display-replay")
-        from dipbot.checks.display_check import run
+        from dipbot.checks.display_check import run as run_display_check
 
-        return run(app, args.display_check, args.display_replay, args.acceptance_seconds)
+        return run_display_check(app, args.display_check, args.display_replay, args.acceptance_seconds)
     if args.paper_acceptance:
-        from dipbot.checks.acceptance import run
+        from dipbot.checks.acceptance import run as run_acceptance
 
-        return run(
+        return run_acceptance(
             app,
             args.paper_acceptance,
             args.acceptance_seconds,

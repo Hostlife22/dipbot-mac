@@ -97,7 +97,7 @@ def load_rpc(view: Window) -> None:
 
 
 def add_rpc_presets(
-    view: Window, form: QFormLayout, title: str, field: QLineEdit, presets: tuple[tuple[str, str], ...]
+    view: Window, form: QFormLayout, title: str, field: QLineEdit, presets: list[tuple[str, str | None]]
 ) -> QComboBox:
     combo = QComboBox()
     for label, url in presets:

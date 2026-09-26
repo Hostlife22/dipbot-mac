@@ -1,5 +1,15 @@
 """Versioned Mac UI preferences. No credentials or automatic LIVE resume."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.domain.cost_policy import CostPolicy
+    from dipbot.domain.signal_policy import SignalPolicy
+    from dipbot.domain.strategy import Settings
+    from dipbot.persistence.ports import StateStore
+
 from dipbot.domain.cost_policy import CostPolicy
 from dipbot.domain.exit_policy import ExitPolicy
 from dipbot.domain.paper_policy import PaperPolicy
@@ -20,24 +30,23 @@ FIELDS = (
 )
 
 
-def normalize(value):
+def normalize(value: object) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("version") != 1:
         raise ValueError("Неизвестный формат настроек")
     try:
-        settings = Settings(
-            **{
-                k: D(
-                    str(
-                        (
-                            value["settings"].get(k, str(getattr(Settings(), k)))
-                            if k in ("max_roundtrip_loss", "min_swaps")
-                            else value["settings"][k]
-                        )
+        settings_values: dict[str, Any] = {
+            k: D(
+                str(
+                    (
+                        value["settings"].get(k, str(getattr(Settings(), k)))
+                        if k in ("max_roundtrip_loss", "min_swaps")
+                        else value["settings"][k]
                     )
                 )
-                for k in FIELDS
-            }
-        )
+            )
+            for k in FIELDS
+        }
+        settings = Settings(**settings_values)
         gas, interval = D(str(value["gas"])), D(str(value["interval"]))
     except (KeyError, TypeError, ArithmeticError) as exc:
         raise ValueError("Повреждены настройки") from exc
@@ -93,7 +102,7 @@ def normalize(value):
     return result
 
 
-def save(store, value):
+def save(store: StateStore, value: object) -> None:
     normalized = normalize(value)
     previous = store.data.copy()
     store.data["ui_preferences"] = normalized
@@ -108,13 +117,13 @@ def save(store, value):
         raise
 
 
-def pair_key(router, pair):
+def pair_key(router: str, pair: str) -> str:
     if router not in ("AUTO", "V2", "V3") or not isinstance(pair, str) or not pair:
         raise ValueError("Некорректный router/pair")
     return router.upper() + ":" + pair
 
 
-def positive_amount(raw):
+def positive_amount(raw: object) -> str:
     try:
         number = D(str(raw))
     except ArithmeticError as exc:
@@ -124,7 +133,7 @@ def positive_amount(raw):
     return str(number)
 
 
-def from_windows_ui(payload, gas="0.1", interval="0.1"):
+def from_windows_ui(payload: object, gas: str = "0.1", interval: str = "0.1") -> dict[str, Any]:
     """Explicit pure-data migration of public UI JSON, never credentials/vault."""
     if not isinstance(payload, dict) or not isinstance(payload.get("trade", {}), dict):
         raise ValueError("Повреждён публичный Windows UI JSON")

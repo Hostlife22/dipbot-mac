@@ -1,14 +1,27 @@
 """Visible, isolated PAPER check on a specified live BSC market; no wallet access."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from decimal import Decimal as D
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from web3.types import RPCEndpoint
+
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain, Pool
+
 import json
 import sys
 import time
 from collections import Counter
 from datetime import datetime, timezone
-from decimal import Decimal as D
 from unittest.mock import patch
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
+from PySide6.QtGui import QStandardItemModel
+from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QScrollArea
 
 from dipbot.checks.read_only import guard_provider
 from dipbot.execution.trader import LiveTrader
@@ -20,40 +33,42 @@ from dipbot.ui.window import Window
 
 
 def run(
-    token,
-    directory,
-    seconds,
-    pool_address=None,
-    exercise_recovery=False,
-    close_after=False,
-    modern=False,
-    amount_usd=None,
-    automatic_only=False,
-    fee_usd="0.01",
-    adaptive_rpc=False,
-    endpoint="https://bsc-dataseed.binance.org",
-    take_profit="2",
-    stop_loss="2",
-    backup_rpc="",
-    observe_manual_position=False,
-    min_swaps="1",
-    dip=None,
-    slippage=None,
-    dynamic=None,
-    continue_after_sl=None,
-    cooldown=None,
-    trailing=None,
-    preflight_fault=None,
-):
+    token: str,
+    directory: Path,
+    seconds: float,
+    pool_address: str | None = None,
+    exercise_recovery: bool = False,
+    close_after: bool = False,
+    modern: bool = False,
+    amount_usd: Any = None,
+    automatic_only: bool = False,
+    fee_usd: str = "0.01",
+    adaptive_rpc: bool = False,
+    endpoint: str = "https://bsc-dataseed.binance.org",
+    take_profit: str = "2",
+    stop_loss: str = "2",
+    backup_rpc: str = "",
+    observe_manual_position: bool = False,
+    min_swaps: str = "1",
+    dip: Any = None,
+    slippage: Any = None,
+    dynamic: str | None = None,
+    continue_after_sl: Any = None,
+    cooldown: Any = None,
+    trailing: Any = None,
+    preflight_fault: Any = None,
+) -> int | None:
     if automatic_only and (exercise_recovery or observe_manual_position):
         raise ValueError("Autonomous audit cannot inject signals or restart the strategy")
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
         raise ValueError("Invalid PAPER fee model")
     directory.mkdir(parents=True, exist_ok=False)
-    app = QApplication.instance() or QApplication([])
+    app_instance = QApplication.instance()
+    assert app_instance is None or isinstance(app_instance, QApplication)
+    app = app_instance or QApplication([])
     app.setStyleSheet(STYLE)
     app.setQuitOnLastWindowClosed(False)
-    report = {
+    report: dict[str, Any] = {
         "token": token,
         "utc": datetime.now(timezone.utc).isoformat(),
         "mode": "PAPER",
@@ -70,10 +85,12 @@ def run(
     }
     report["preflight_fault_requested"] = preflight_fault
     report["rpc_failures"] = []
-    logs, rpc, fills = [], [], []
+    logs: list[str] = []
+    rpc: list[Counter[str]] = []
+    fills: list[dict[str, Any]] = []
     original_quote = Chain.paper_quote
 
-    def paper_quote(chain, pool, amount, buy):
+    def paper_quote(chain: Chain, pool: Pool, amount: int, buy: Any) -> Any:
         result = original_quote(chain, pool, amount, buy)
         fills.append(
             {
@@ -89,13 +106,13 @@ def run(
     phase = ["setup"]
     original = Chain.__init__
 
-    def init(chain, endpoint, **kwargs):
+    def init(chain: Chain, endpoint: str, **kwargs: Any) -> None:
         original(chain, endpoint, **kwargs)
         rpc.append(guard_provider(chain.w3.provider))
         request = chain.w3.provider.make_request
 
-        def observed_request(method, params):
-            def record(*, exc=None, response=None):
+        def observed_request(method: RPCEndpoint, params: Any) -> Any:
+            def record(*, exc: BaseException | None = None, response: Any = None) -> None:
                 item = {"method": str(method), "phase": phase[0], "at": time.monotonic()}
                 if exc is not None:
                     item["type"] = type(exc).__name__
@@ -120,11 +137,11 @@ def run(
                 record(response=result)
             return result
 
-        chain.w3.provider.make_request = observed_request
+        setattr(chain.w3.provider, "make_request", observed_request)
 
     original_entry_quote = Chain.entry_quote
 
-    def entry_quote(chain, *args, **kwargs):
+    def entry_quote(chain: Chain, *args: Any, **kwargs: Any) -> Any:
         if (
             preflight_fault
             and phase[0] == "automatic_live_prices"
@@ -144,10 +161,13 @@ def run(
                 raise HTTPError("Synthetic PAPER preflight limit", response=response)
             from web3.exceptions import Web3RPCError
 
-            raise Web3RPCError("Synthetic PAPER preflight limit", rpc_response={"error": {"code": -32005}})
+            raise Web3RPCError(
+                "Synthetic PAPER preflight limit",
+                rpc_response={"error": {"code": -32005, "message": "synthetic rate limit"}},
+            )
         return original_entry_quote(chain, *args, **kwargs)
 
-    def forbidden(*a, **kw):
+    def forbidden(*a: Any, **kw: Any) -> None:
         raise RuntimeError("Wallet/LIVE disabled in PAPER test")
 
     with (
@@ -163,30 +183,34 @@ def run(
         w.setWindowTitle("DipBot · видимая проверка PAPER · " + token[:10])
         w.mode.setCurrentText("PAPER")
         # This dedicated test window cannot switch to LIVE.
-        w.mode.model().item(2).setEnabled(False)
+        model = w.mode.model()
+        assert isinstance(model, QStandardItemModel)
+        model.item(2).setEnabled(False)
         w.worker.log.connect(logs.append)
         w.show()
         w.raise_()
         w.activateWindow()
 
-        def pump():
+        def pump() -> None:
             app.processEvents()
             time.sleep(0.01)
 
-        def wait(condition, timeout=120):
+        def wait(condition: Callable[[], bool], timeout: float = 120) -> None:
             start = time.monotonic()
             while not condition():
                 pump()
                 if time.monotonic() - start > timeout:
                     raise TimeoutError("GUI operation timed out")
 
-        def capture(name):
+        def capture(name: str) -> None:
             w.tabs.setCurrentIndex(0)
-            w.tabs.widget(0).verticalScrollBar().setValue(0)
+            tab = w.tabs.widget(0)
+            assert isinstance(tab, QScrollArea)
+            tab.verticalScrollBar().setValue(0)
             app.processEvents()
             w.grab().save(str(directory / (name + ".png")))
 
-        def check(kind, payload):
+        def check(kind: str, payload: Any) -> None:
             if kind == "price":
                 report["checks"] += 1
                 report["samples"].append({"time": time.monotonic(), "price": payload, "phase": phase[0]})
@@ -300,7 +324,7 @@ def run(
                 w.select_pool()
                 wait(lambda: not w.busy)
             assert w.selection_ready, report["errors"] or w.pool_label.text()
-            pool = w.worker.pool
+            pool = w.worker.market.selected
             report["pool"] = pool.address
             report["router"] = pool.router
             report["token_decimals"] = pool.token_decimals
@@ -349,7 +373,9 @@ def run(
             if amount_usd is not None or D(fee_usd):
                 wait(lambda: w.worker.rates.snapshot(pool.quote) is not None, 60)
             if D(fee_usd):
-                rate = D(w.worker.rates.snapshot(pool.quote)["usd"])
+                rate_snapshot = w.worker.rates.snapshot(pool.quote)
+                assert rate_snapshot is not None, "USD rate expired during PAPER setup"
+                rate = D(rate_snapshot["usd"])
                 w.paper_fee.setText(str(D(fee_usd) / rate))
             report["paper_policy"] = w.paper_policy()
             report["fee_usd_at_start"] = fee_usd
@@ -394,27 +420,27 @@ def run(
             wait(lambda: not w.busy)
             report["effective_interval"] = w.worker.interval
             began = progress = time.monotonic()
-            restart_after = 0
-            original_price = w.worker.chain.price
+            restart_after = 0.0
+            original_price = w.worker.connections.reader.price
             original_backup_price = w.worker.backup_chain.price if w.worker.backup_chain else None
             outage_started = outage_finished = stop_restart_done = False
 
-            def timeout(_):
+            def timeout(_: Any) -> None:
                 raise TimeoutError("Synthetic read-only failure")
 
             while time.monotonic() - began < seconds:
                 pump()
                 elapsed = time.monotonic() - began
                 if exercise_recovery and elapsed >= 120 and not outage_started:
-                    w.worker.chain.price = timeout
+                    setattr(w.worker.chain, "price", timeout)
                     if original_backup_price:
-                        w.worker.backup_chain.price = timeout
+                        setattr(w.worker.backup_chain, "price", timeout)
                     outage_started = True
                     report["controlled_rpc_outage"] = "20 seconds; primary and backup market reads only"
                 if outage_started and not outage_finished and elapsed >= 140:
-                    w.worker.chain.price = original_price
+                    setattr(w.worker.chain, "price", original_price)
                     if original_backup_price:
-                        w.worker.backup_chain.price = original_backup_price
+                        setattr(w.worker.backup_chain, "price", original_backup_price)
                     outage_finished = True
                 if exercise_recovery and elapsed >= 300 and not stop_restart_done:
                     phase[0] = "controlled_stop_restart"
@@ -474,7 +500,7 @@ def run(
                             indent=2,
                         )
                     )
-            w.worker.chain.price = original_price
+            setattr(w.worker.chain, "price", original_price)
             report["observed_seconds"] = round(time.monotonic() - began, 2)
             report["automatic_running_at_end"] = w.running
             capture("automatic_end")
@@ -498,13 +524,13 @@ def run(
                 observe = Strategy.observe
                 injected = {"signal": False, "quote": False}
 
-                def signal(strategy, price, now, **kwargs):
+                def signal(strategy: Any, price: D, now: float, **kwargs: Any) -> Any:
                     if strategy is w.worker.strategy and not injected["signal"] and strategy.entry is None:
                         injected["signal"] = True
                         return "BUY"
                     return observe(strategy, price, now, **kwargs)
 
-                def rejected_quote(chain, pool, amount, buy):
+                def rejected_quote(chain: Chain, pool: Pool, amount: int, buy: Any) -> Any:
                     if buy and not injected["quote"]:
                         injected["quote"] = True
                         return 0
@@ -537,16 +563,16 @@ def run(
             report["passed"] = False
         finally:
             if "original_price" in locals():
-                w.worker.chain.price = original_price
+                setattr(w.worker.chain, "price", original_price)
                 if original_backup_price:
-                    w.worker.backup_chain.price = original_backup_price
+                    setattr(w.worker.backup_chain, "price", original_backup_price)
             w.worker.stop_event.set()
             wait(lambda: not w.worker.running and not w.worker.stop_event.is_set(), 60)
             w.worker.quit_event.set()
             w.worker.wait()
             report["logs"] = logs
             report["router_fills"] = fills
-            calls = Counter()
+            calls: Counter[str] = Counter()
             for counter in rpc:
                 calls.update(counter)
             report["rpc_methods"] = dict(calls)
@@ -573,4 +599,4 @@ def run(
         w.banner.setText("PAPER · Проверка завершена. Доступно ручное управление; реальные сделки отключены.")
         w.update_controls()
         app.setQuitOnLastWindowClosed(True)
-        app.exec()
+        return app.exec()

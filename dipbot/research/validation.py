@@ -1,14 +1,30 @@
 """Chronological selection with an embargo; validation never selects parameters."""
 
+from __future__ import annotations
+
+from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.domain.signal_policy import SignalPolicy
+    from dipbot.domain.strategy import Settings
+    from dipbot.research.replay import ReplayCosts
+
 import math
 from dataclasses import replace
-from decimal import Decimal as D
 
 from dipbot.domain.signal_policy import SignalPolicy
 from dipbot.research.replay import ReplayCosts, replay
 
 
-def walk_forward(samples, settings, *, costs=None, folds=3, minimum_closed=3):
+def walk_forward(
+    samples: list[dict[str, Any]],
+    settings: Settings,
+    *,
+    costs: ReplayCosts | None = None,
+    folds: int = 3,
+    minimum_closed: int = 3,
+) -> dict[str, Any]:
     if type(folds) is not int or not 1 <= folds <= 10 or minimum_closed < 1:
         raise ValueError("Некорректные параметры проверки")
     if len(samples) < 100:

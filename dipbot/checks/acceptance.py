@@ -1,12 +1,24 @@
 """Explicit, read-only PAPER acceptance mode for the packaged application."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QApplication
+    from web3.types import RPCEndpoint
+
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain, Pool
+
 import json
 import statistics
 import sys
 import time
 from collections import Counter
 from datetime import datetime, timezone
-from pathlib import Path
 from urllib.parse import urlsplit
 
 from PySide6.QtCore import Qt
@@ -20,7 +32,13 @@ from dipbot.persistence.storage import Store
 from dipbot.persistence.vault import Vault
 
 
-def run(app, directory, seconds, resume=False, endpoint="https://bsc-dataseed.binance.org"):
+def run(
+    app: QApplication,
+    directory: Path,
+    seconds: float,
+    resume: bool = False,
+    endpoint: str = "https://bsc-dataseed.binance.org",
+) -> int:
     from dipbot.ui.window import Window
 
     directory = Path(directory)
@@ -30,9 +48,13 @@ def run(app, directory, seconds, resume=False, endpoint="https://bsc-dataseed.bi
         raise ValueError("Acceptance requires a new directory")
     if resume and not path.exists():
         raise ValueError("Acceptance state is missing")
-    methods, events, logs, errors = Counter(), [], [], []
-    wire_methods, price_latencies = Counter(), []
-    report = {
+    methods: Counter[str] = Counter()
+    events: list[Any] = []
+    logs: list[str] = []
+    errors: list[str] = []
+    wire_methods: Counter[str] = Counter()
+    price_latencies: list[float] = []
+    report: dict[str, Any] = {
         "utc": datetime.now(timezone.utc).isoformat(),
         "frozen": bool(getattr(sys, "frozen", False)),
         "platform": app.platformName(),
@@ -42,35 +64,36 @@ def run(app, directory, seconds, resume=False, endpoint="https://bsc-dataseed.bi
         "event_pump": "processEvents_then_sleep",
     }
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError("Signing, transactions and Keychain are disabled in acceptance mode")
 
-    LiveTrader.send = forbidden
-    Vault.get = Vault.save = forbidden
+    setattr(LiveTrader, "send", forbidden)
+    setattr(Vault, "get", forbidden)
+    setattr(Vault, "save", forbidden)
     original_init = Chain.__init__
     fault = {"enabled": False}
 
-    def init(chain, endpoint):
+    def init(chain: Chain, endpoint: str) -> None:
         original_init(chain, endpoint)
         original = chain.w3.provider.make_request
-        wire = chain.w3.provider._make_request
+        wire = getattr(chain.w3.provider, "_make_request")
 
-        def measured_wire(method, *args, **kwargs):
+        def measured_wire(method: RPCEndpoint, *args: Any, **kwargs: Any) -> Any:
             wire_methods[method] += 1
             return wire(method, *args, **kwargs)
 
-        chain.w3.provider._make_request = measured_wire
+        setattr(chain.w3.provider, "_make_request", measured_wire)
         price = chain.price
 
-        def measured_price(pool):
+        def measured_price(pool: Pool) -> Any:
             began = time.monotonic()
             result = price(pool)
             price_latencies.append(time.monotonic() - began)
             return result
 
-        chain.price = measured_price
+        setattr(chain, "price", measured_price)
 
-        def read_only(method, params):
+        def read_only(method: RPCEndpoint, params: Any) -> Any:
             if method not in {"eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call"}:
                 raise RuntimeError("RPC method blocked in acceptance mode")
             methods[method] += 1
@@ -78,28 +101,28 @@ def run(app, directory, seconds, resume=False, endpoint="https://bsc-dataseed.bi
                 raise ConnectionError("synthetic RPC outage")
             return original(method, params)
 
-        chain.w3.provider.make_request = read_only
+        setattr(chain.w3.provider, "make_request", read_only)
 
-    Chain.__init__ = init
-    QMessageBox.warning = lambda *args: errors.append(args[2])
+    setattr(Chain, "__init__", init)
+    setattr(QMessageBox, "warning", lambda *args: errors.append(args[2]))
     w = Window(Store(path))
     w.worker.log.connect(logs.append)
     w.worker.event.connect(lambda name, value: events.append((name, value)))
     w.show()
 
-    def pump():
+    def pump() -> None:
         # QTest.qWait holds the Python GIL on this build and starves QThread.
         app.processEvents()
         time.sleep(0.01)
 
-    def wait(predicate, timeout=90):
+    def wait(predicate: Callable[[], bool], timeout: float = 90) -> None:
         until = time.monotonic() + timeout
         while not predicate():
             if time.monotonic() >= until:
                 raise TimeoutError("Packaged PAPER acceptance timeout")
             pump()
 
-    def click(label):
+    def click(label: str) -> None:
         widget = next(x for x in w.findChildren(QPushButton) if x.text() == label)
         assert widget.isEnabled(), label
         parent = widget.parentWidget()
@@ -107,16 +130,16 @@ def run(app, directory, seconds, resume=False, endpoint="https://bsc-dataseed.bi
             if isinstance(parent, QScrollArea):
                 parent.ensureWidgetVisible(widget)
             parent = parent.parentWidget()
-        QTest.mouseClick(widget, Qt.LeftButton)
+        QTest.mouseClick(widget, Qt.MouseButton.LeftButton)
 
-    def idle():
+    def idle() -> None:
         wait(lambda: not w.busy)
 
-    def stop():
+    def stop() -> None:
         click("STOP · закрыть позицию")
         wait(lambda: not w.running and not w.worker.running and not w.worker.stop_event.is_set())
 
-    def start():
+    def start() -> None:
         click("START BOT")
         idle()
         wait(lambda: w.running)

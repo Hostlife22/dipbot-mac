@@ -1,5 +1,15 @@
 """Public per-wallet target registry, independent of transaction journal."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.autopair import Candidate
+    from dipbot.market.chain import Pool
+    from dipbot.market.discovery import Resolution
+    from dipbot.persistence.ports import StateStore
+
 import time
 from copy import deepcopy
 from dataclasses import asdict
@@ -8,7 +18,7 @@ from dipbot.market.chain import address
 from dipbot.persistence.dynamic import persist
 
 
-def records(store, owner):
+def records(store: StateStore, owner: str) -> dict[str, Any]:
     registry = store.data.get("wallet_tokens", {"version": 1, "wallets": {}})
     if (
         not isinstance(registry, dict)
@@ -29,7 +39,7 @@ def records(store, owner):
     return rows
 
 
-def register(store, owner, pool, pair_name):
+def register(store: StateStore, owner: str, pool: Pool, pair_name: str) -> None:
     old = records(store, owner).get(pool.token.lower())
     if old and old.get("pool") == asdict(pool) and old["pair_name"] == pair_name:
         return
@@ -45,7 +55,7 @@ def register(store, owner, pool, pair_name):
     persist(store, updated)
 
 
-def choose_registered(result, record):
+def choose_registered(result: Resolution, record: dict[str, Any]) -> Candidate | None:
     if result.state == "RESOLVED" and result.selected and result.selected.ready:
         return result.selected
     candidates = [
@@ -56,9 +66,9 @@ def choose_registered(result, record):
     return max(candidates, key=lambda c: c.liquidity_score) if candidates else None
 
 
-def ordered_bases(catalog):
+def ordered_bases(catalog: dict[str, str]) -> list[tuple[str, str]]:
     """Group aliases by address; native order is (WBNB in aliases, first.casefold())."""
-    grouped = {}
+    grouped: dict[str, list[str]] = {}
     for name, token in catalog.items():
         grouped.setdefault(address(token), []).append(name)
     return [
@@ -69,7 +79,7 @@ def ordered_bases(catalog):
     ]
 
 
-def base_router(pair_name, token, catalogs):
+def base_router(pair_name: str, token: str, catalogs: dict[str, dict[str, str]]) -> str:
     """Native Sweep prefers an installed V2 base profile, then V3."""
     token = address(token)
     for router in ("V2", "V3"):

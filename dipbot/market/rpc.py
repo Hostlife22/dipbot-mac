@@ -1,15 +1,13 @@
-from __future__ import annotations
-
-from typing import Any
-
-from web3.types import RPCEndpoint, RPCResponse
-
 """Bounded caching of network identity only; state and prices are never cached."""
+
+from __future__ import annotations
 
 import threading
 import time
+from typing import Any
 
 from web3 import HTTPProvider
+from web3.types import RPCEndpoint, RPCResponse
 
 from dipbot.observability.telemetry import TIMINGS
 

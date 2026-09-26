@@ -1,5 +1,7 @@
 """Local crash evidence without exception messages, locals, credentials or wallet data."""
 
+from __future__ import annotations
+
 import faulthandler
 import json
 import os
@@ -10,12 +12,14 @@ import threading
 import time
 import traceback
 from pathlib import Path
+from types import TracebackType
+from typing import Any
 
 from dipbot.observability.telemetry import TIMINGS
 from dipbot.persistence.storage import Store
 
 
-def native_thread_count():
+def native_thread_count() -> int | None:
     """Include QThread/native libraries; never retain process command text."""
     try:
         if sys.platform == "darwin":
@@ -35,7 +39,7 @@ def native_thread_count():
     return None
 
 
-def resource_snapshot():
+def resource_snapshot() -> dict[str, Any]:
     """No process arguments, paths, locals or thread names in the checkpoint."""
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return {
@@ -49,7 +53,7 @@ def resource_snapshot():
 
 
 class Diagnostics:
-    def __init__(self, directory):
+    def __init__(self, directory: Path) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.session = Store(self.directory / "session.json")
@@ -68,7 +72,7 @@ class Diagnostics:
         self.stream = os.fdopen(fd, "a", buffering=1)
         self.lock = threading.Lock()
         self.had_exception = False
-        self.last_checkpoint = None
+        self.last_checkpoint: tuple[float, float] | None = None
         self.old_hook = sys.excepthook
         self.old_thread_hook = threading.excepthook
         faulthandler.enable(self.stream, all_threads=True)
@@ -81,7 +85,7 @@ class Diagnostics:
         )
         self.checkpoint_thread.start()
 
-    def write(self, event):
+    def write(self, event: dict[str, Any]) -> None:
         try:
             with self.lock:
                 self.stream.write(json.dumps({"time": int(time.time()), **event}) + "\n")
@@ -89,7 +93,7 @@ class Diagnostics:
         except (OSError, ValueError):
             pass  # Diagnostics must never change trading or recovery state.
 
-    def exception(self, kind, value, tb):
+    def exception(self, kind: type[BaseException], value: BaseException, tb: TracebackType | None) -> None:
         self.had_exception = True
         # No source lines or exception text: either can contain secrets.
         frames = [
@@ -98,13 +102,13 @@ class Diagnostics:
         ]
         self.write({"event": "unhandled_exception", "type": kind.__name__, "frames": frames})
 
-    def thread_exception(self, args):
+    def thread_exception(self, args: Any) -> None:
         self.exception(args.exc_type, args.exc_value, args.exc_traceback)
 
-    def checkpoint(self):
+    def checkpoint(self) -> None:
         try:
             now = (time.time(), time.monotonic())
-            gaps = {}
+            gaps: dict[str, float] = {}
             if self.last_checkpoint is not None:
                 wall, monotonic = (now[i] - self.last_checkpoint[i] for i in (0, 1))
                 gaps = {
@@ -127,11 +131,11 @@ class Diagnostics:
         except (OSError, ValueError):
             pass  # A diagnostic failure must not halt trading.
 
-    def checkpoints(self):
+    def checkpoints(self) -> None:
         while not self.stop.wait(30):
             self.checkpoint()
 
-    def close(self, clean=True):
+    def close(self, clean: bool = True) -> None:
         self.stop.set()
         self.checkpoint_thread.join(timeout=1)
         try:

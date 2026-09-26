@@ -1,8 +1,13 @@
 """Explicit latency and per-fill base-currency cost model for online PAPER."""
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from decimal import Decimal as D
+from typing import Any
+
+from dipbot.domain.ports import RateSource
 
 
 @dataclass(frozen=True)
@@ -11,7 +16,7 @@ class PaperPolicy:
     fee_quote: D = D(0)
     gas_units: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if type(self.gas_units) is not int or not 0 <= self.gas_units <= 2_000_000:
             raise ValueError("Модель газа PAPER: целое число от 0 до 2000000")
         if not math.isfinite(self.latency_seconds) or not 0 <= self.latency_seconds <= 10:
@@ -20,7 +25,7 @@ class PaperPolicy:
             raise ValueError("Некорректная стоимость операции PAPER")
 
     @classmethod
-    def parse(cls, value):
+    def parse(cls, value: object) -> PaperPolicy:
         if not isinstance(value, dict):
             raise ValueError("Повреждена модель PAPER")
         try:
@@ -32,14 +37,14 @@ class PaperPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждена модель PAPER") from exc
 
-    def export(self):
+    def export(self) -> dict[str, Any]:
         return {
             "gas_units": self.gas_units,
             "latency_seconds": self.latency_seconds,
             "fee_quote": str(self.fee_quote),
         }
 
-    def operation_cost(self, gas_gwei, quote, rates) -> D:
+    def operation_cost(self, gas_gwei: D, quote: str, rates: RateSource) -> D:
         """Fixed extra cost plus explicit gas-unit assumption at current FX."""
         from dipbot.domain.assets import WBNB
 

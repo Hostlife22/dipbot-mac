@@ -1,5 +1,13 @@
 """Read-only address resolver and block-pinned Multicall discovery."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.autopair import Candidate
+    from dipbot.market.chain import Chain, Pool
+
 from dataclasses import dataclass
 
 from dipbot.domain.assets import FEES, V2_FACTORY, V3_FACTORY, ZERO
@@ -43,7 +51,13 @@ class Resolution:
     input_kind: str = "TOKEN"
 
 
-def batch(chain, requests, block, *, allow_empty=False):
+def batch(
+    chain: Chain,
+    requests: list[tuple[str, Any, str, tuple[Any, ...]]],
+    block: int,
+    *,
+    allow_empty: bool = False,
+) -> list[Any]:
     if not requests:
         return []
     calls = [
@@ -57,7 +71,7 @@ def batch(chain, requests, block, *, allow_empty=False):
     raw = chain.contract(MULTICALL, MULTICALL_ABI).functions.aggregate3(calls).call(block_identifier=block)
     if len(raw) != len(requests):
         raise ValueError("Multicall вернул неполный снимок")
-    result = []
+    result: list[Any] = []
     for (success, data), (_, abi, name, _) in zip(raw, requests):
         if not success or (allow_empty and not data):
             result.append(None)
@@ -70,11 +84,13 @@ def batch(chain, requests, block, *, allow_empty=False):
     return result
 
 
-def request(addr, abi, name, *args):
+def request(addr: str, abi: Any, name: str, *args: Any) -> tuple[str, Any, str, tuple[Any, ...]]:
     return addr, abi, name, args
 
 
-def discover(chain, target, catalogs, block=None):
+def discover(
+    chain: Chain, target: Any, catalogs: dict[str, dict[str, str]], block: int | None = None
+) -> list[Candidate]:
     block = chain.check() if block is None else block
     plans, queries = [], []
     for router, catalog in catalogs.items():
@@ -90,11 +106,13 @@ def discover(chain, target, catalogs, block=None):
                     else request(V3_FACTORY, FACTORY_ABI, "getPool", target, quote, fee)
                 )
     found = batch(chain, queries, block)
-    checks, pending, seen = [], [], set()
+    checks: list[tuple[str, Any, str, tuple[Any, ...]]] = []
+    pending: list[tuple[tuple[str, str, str, int], str]] = []
+    seen: set[tuple[str, str, str]] = set()
     for plan, raw in zip(plans, found):
         if raw is None or raw.lower() == ZERO:
             continue
-        pool_address = address(raw)
+        pool_address: str = address(raw)
         router, name, quote, fee = plan
         identity = (router, name, pool_address)
         if identity in seen:
@@ -129,7 +147,7 @@ def discover(chain, target, catalogs, block=None):
     return ordered(candidates)
 
 
-def resolve(chain, raw, catalogs):
+def resolve(chain: Chain, raw: str, catalogs: dict[str, dict[str, str]]) -> Resolution:
     entered = address(raw)
     block = chain.check()
     if not chain.w3.eth.get_code(entered, block_identifier=block):

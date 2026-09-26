@@ -1,8 +1,11 @@
 """Opt-in exit controls; existing TP/SL remains the default."""
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from decimal import Decimal as D
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -13,7 +16,7 @@ class ExitPolicy:
     tp_sl_basis: str = "spot"
     continue_after_risk_exit: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if type(self.continue_after_risk_exit) is not bool:
             raise ValueError("Продолжение после SL/trailing должно быть boolean")
         if self.continue_after_risk_exit and self.cooldown_seconds < 1:
@@ -28,7 +31,7 @@ class ExitPolicy:
             raise ValueError("Пауза после выхода должна быть от 0 до 3600 секунд")
 
     @classmethod
-    def parse(cls, value):
+    def parse(cls, value: object) -> ExitPolicy:
         if not isinstance(value, dict):
             raise ValueError("Повреждены настройки выхода")
         try:
@@ -42,7 +45,7 @@ class ExitPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждены настройки выхода") from exc
 
-    def export(self):
+    def export(self) -> dict[str, Any]:
         return {
             "continue_after_risk_exit": self.continue_after_risk_exit,
             "tp_sl_basis": self.tp_sl_basis,

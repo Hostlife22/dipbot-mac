@@ -1,5 +1,12 @@
 """Selection reconstructed from native choose_candidate at 0x140858fd0."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Pool
+
 from dataclasses import dataclass
 
 from dipbot.market.chain import Pool
@@ -13,12 +20,12 @@ class Candidate:
     liquidity_score: int
 
 
-def choose(candidates):
+def choose(candidates: Any) -> tuple[str, Candidate | None]:
     candidates = list(candidates)
     if not candidates:
         return "NOT_FOUND", None
     active = [c for c in candidates if c.ready] or candidates
-    best = {}
+    best: dict[tuple[str, str], Candidate] = {}
     for candidate in active:
         key = (candidate.pool.router, candidate.pair_name)
         if key not in best or candidate.liquidity_score > best[key].liquidity_score:
@@ -29,7 +36,7 @@ def choose(candidates):
     return ("RESOLVED" if selected.ready else "PENDING"), selected
 
 
-def ordered(candidates):
+def ordered(candidates: Any) -> list[Candidate]:
     # Native _discover_token sort lambda at 0x140868980.
     return sorted(
         candidates,

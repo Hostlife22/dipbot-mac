@@ -198,7 +198,7 @@ def observe(runtime: ObservationRuntime, read_only: bool = False) -> None:
         ):
             if runtime.session.mode == "LIVE":
                 position = runtime.position()
-                amount, cost = position["amount"], D(position.get("cost_quote", 0))
+                amount, cost = position["amount"], D(position.get("cost_quote") or 0)
             else:
                 cost = runtime.session.paper.cost
                 amount = (

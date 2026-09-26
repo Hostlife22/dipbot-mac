@@ -1,19 +1,28 @@
 """Two read-only sources: bounded latency history, backoff and switching hysteresis."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dipbot.domain.records import (
+        RpcHealthRow,
+    )
+
 from collections import deque
 from statistics import median
 
 
 class RpcHealth:
-    def __init__(self):
-        self.samples = [deque(maxlen=32), deque(maxlen=32)]
+    def __init__(self) -> None:
+        self.samples: list[deque[float]] = [deque(maxlen=32), deque(maxlen=32)]
         self.failures = [0, 0]
         self.blocked_until = [0.0, 0.0]
         self.preferred = 0
         self.last_probe = float("-inf")
         self.last_switch = float("-inf")
 
-    def choose(self, now):
+    def choose(self, now: float) -> int:
         if not self.samples[0] and not self.failures[0]:
             return 0
         other = 1 - self.preferred
@@ -27,7 +36,7 @@ class RpcHealth:
             return other
         return self.preferred
 
-    def success(self, source, duration, now):
+    def success(self, source: int, duration: float, now: float) -> None:
         self.samples[source].append(duration)
         self.failures[source] = 0
         self.blocked_until[source] = 0
@@ -42,11 +51,11 @@ class RpcHealth:
             self.preferred = source
             self.last_switch = now
 
-    def failure(self, source, now):
+    def failure(self, source: int, now: float) -> None:
         self.failures[source] += 1
         self.blocked_until[source] = now + min(120, 15 * 2 ** min(self.failures[source], 3))
 
-    def report(self):
+    def report(self) -> list[RpcHealthRow]:
         return [
             {
                 "source": name,

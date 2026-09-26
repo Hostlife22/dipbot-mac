@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import sys
@@ -9,7 +11,7 @@ from dipbot.persistence.ledger_cache import Ledger
 from dipbot.persistence.schema import load_state
 
 
-def data_dir():
+def data_dir() -> Path:
     root = (
         Path.home() / "Library/Application Support/DipBotMac"
         if sys.platform == "darwin"
@@ -24,11 +26,11 @@ class SaveAfterReplaceError(OSError):
 
 
 class Store:
-    def __init__(self, path=None):
+    def __init__(self, path: Path | None = None) -> None:
         self.path = Path(path) if path else data_dir() / "state.json"
         self.data = load_state(json.loads(self.path.read_text()) if self.path.exists() else {})
 
-    def ledger(self, name):
+    def ledger(self, name: str) -> Ledger:
         value = self.data.setdefault(name, {})
         if not isinstance(value, dict):
             raise ValueError("Повреждён финансовый журнал; торговля заблокирована")
@@ -38,7 +40,7 @@ class Store:
         return value
 
     @timed("storage.save")
-    def save(self):
+    def save(self) -> None:
         self.data = load_state(self.data)
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         # Serialize once before touching disk; preserve the durable replace protocol.

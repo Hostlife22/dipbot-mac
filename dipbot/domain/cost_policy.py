@@ -1,11 +1,15 @@
 """Optional per-entry estimated cost ceiling; never a cumulative turnover budget."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from decimal import Decimal as D
 from decimal import localcontext
+from typing import Any
 
 from dipbot.domain.assets import WBNB
-from dipbot.domain.entry_guard import EntryRejected
+from dipbot.domain.entry_guard import EntryQuote, EntryRejected
+from dipbot.domain.ports import QuoteAsset, RateSource
 
 
 @dataclass(frozen=True)
@@ -13,14 +17,14 @@ class CostPolicy:
     maximum_pct: D = D(0)
     roundtrip_gas: int = 400000
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.maximum_pct.is_finite() or not 0 <= self.maximum_pct <= 100:
             raise ValueError("Лимит расчётных расходов должен быть от 0 до 100%")
         if type(self.roundtrip_gas) is not int or not 21000 <= self.roundtrip_gas <= 2000000:
             raise ValueError("Модель газа должна быть от 21000 до 2000000 единиц")
 
     @classmethod
-    def parse(cls, data):
+    def parse(cls, data: object) -> CostPolicy:
         if not isinstance(data, dict):
             raise ValueError("Повреждена модель расходов")
         try:
@@ -31,10 +35,10 @@ class CostPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждена модель расходов") from exc
 
-    def export(self):
+    def export(self) -> dict[str, Any]:
         return {"maximum_pct": str(self.maximum_pct), "roundtrip_gas": self.roundtrip_gas}
 
-    def assess(self, entry_quote, pool, gas_gwei, rates):
+    def assess(self, entry_quote: EntryQuote, pool: QuoteAsset, gas_gwei: D, rates: RateSource) -> D | None:
         if not self.maximum_pct:
             return None
         if not gas_gwei.is_finite() or not 0 < gas_gwei <= 1000:

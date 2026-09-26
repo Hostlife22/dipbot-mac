@@ -38,6 +38,8 @@ def open_position(runtime: PositionRuntime) -> None:
         raise ValueError("Позиция уже открыта")
     settings = runtime.session.strategy.settings
     if runtime.session.sizing.unit == "usd":
+        if runtime.session.requested_amount is None:
+            raise ValueError("AMOUNT в USD не задан")
         settings = replace(
             settings,
             amount=runtime.session.sizing.amount_quote(
@@ -48,7 +50,7 @@ def open_position(runtime: PositionRuntime) -> None:
         from dipbot.market.activity import swap_count
 
         try:
-            activity = swap_count(runtime.connections.chain, runtime.market.pool)
+            activity = swap_count(runtime.connections.reader, runtime.market.selected)
         except (Web3RPCError, RPCConnectionError, RPCTimeout, TimeoutError, HTTPError) as exc:
             if runtime.connections.backup_chain is None:
                 raise EntryRejected("Не удалось прочитать активность пула; вход запрещён") from exc
@@ -230,7 +232,7 @@ def open_position(runtime: PositionRuntime) -> None:
         pos = runtime.position()
         runtime.session.trade_detail = entry_view(
             D(pos["amount"]) / D(10) ** runtime.market.selected.token_decimals,
-            D(pos["cost_quote"]),
+            pos["cost_quote"],
             pos["entry_fees"]["usd"],
             pos["entry_rate"],
             total_usd=pos.get("entry_cost_usd"),
@@ -307,8 +309,10 @@ def close_position(runtime: PositionRuntime, reason: str) -> None:
                 lambda source: require_reader(source).quote(pool, amount, buy), stopping=reason == "STOP"
             ),
         )
-        if isinstance(received, int) and "cost_quote" in position:
-            pnl = D(received) / D(10) ** runtime.market.selected.quote_decimals - D(position["cost_quote"])
+        if isinstance(received, int) and position.get("cost_quote") is not None:
+            pnl = D(received) / D(10) ** runtime.market.selected.quote_decimals - D(
+                cast(str, position["cost_quote"])
+            )
             key = runtime.session.executor.owner.lower() + ":" + runtime.market.selected.quote.lower()
             ledger = runtime.store.data.setdefault("realized_quote", {})
             ledger[key] = str(D(ledger.get(key, "0")) + pnl)

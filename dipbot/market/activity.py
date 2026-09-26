@@ -1,5 +1,13 @@
 """Canonical, bounded pool event screening. Swap count is not organic volume."""
 
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Chain, Pool, address
+
 from web3 import Web3
 
 from dipbot.market.chain import address
@@ -10,7 +18,7 @@ SIGNATURES = {
 }
 
 
-def swap_count(chain, pool, blocks=100):
+def swap_count(chain: Chain, pool: Pool, blocks: int = 100) -> dict[str, Any]:
     if type(blocks) is not int or not 1 <= blocks <= 100:
         raise ValueError("Окно активности должно быть от 1 до 100 блоков")
     end = chain.check(force_network=False)
@@ -20,10 +28,12 @@ def swap_count(chain, pool, blocks=100):
     return {"count": len(events), "from_block": start, "to_block": end}
 
 
-def read_swaps(chain, pool, start, end, header, limit=10000):
+def read_swaps(
+    chain: Chain, pool: Pool, start: int, end: int, header: Mapping[str, Any], limit: int = 10000
+) -> list[dict[str, Any]]:
     topic = Web3.keccak(text=SIGNATURES[pool.router])
     logs = chain.w3.eth.get_logs(
-        {"address": pool.address, "fromBlock": start, "toBlock": end, "topics": [Web3.to_hex(topic)]}
+        {"address": address(pool.address), "fromBlock": start, "toBlock": end, "topics": [Web3.to_hex(topic)]}
     )
     if len(logs) > limit:
         raise ValueError("Ответ активности превышает лимит; вход запрещён")

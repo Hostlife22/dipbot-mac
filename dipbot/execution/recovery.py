@@ -1,16 +1,24 @@
 """Read-only comparison of saved holdings against one canonical BSC block."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Chain
+    from dipbot.persistence.ports import StateStore
+
 from dipbot.market.chain import address
 
 
-def compare_positions(chain, store):
+def compare_positions(chain: Chain, store: StateStore) -> dict[str, Any]:
     block = chain.check(force_network=False)
     header = chain.w3.eth.get_block(block)
-    groups = {}
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
     for key, position in list(store.data.get("positions", {}).items()):
-        owner = address(key.split(":", 1)[0])
+        owner: str = address(key.split(":", 1)[0])
         pool = position["pool"]
-        token = address(pool["token"])
+        token: str = address(pool["token"])
         saved = position["amount"]
         decimals = pool["token_decimals"]
         if (

@@ -1,7 +1,18 @@
 """Explicit same-nonce cancellation. Never retries the trade or unlocks holdings."""
 
-import time
+from __future__ import annotations
+
 from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.domain.records import (
+        OperationRecord,
+    )
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain
+
+import time
 
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
@@ -10,7 +21,7 @@ from dipbot.domain.assets import WBNB
 from dipbot.execution.accounting import marked_value, record_gas
 
 
-def cancellation_plan(operation, gas_gwei):
+def cancellation_plan(operation: OperationRecord | None, gas_gwei: D) -> dict[str, Any]:
     if not operation:
         raise ValueError("Нет незавершённой операции")
     if not gas_gwei.is_finite() or not 0 < gas_gwei <= 1000:
@@ -65,10 +76,12 @@ def cancellation_plan(operation, gas_gwei):
     }
 
 
-def cancel_pending(trader, *, expected_hash, expected_gas_price):
+def cancel_pending(trader: LiveTrader, *, expected_hash: str, expected_gas_price: int) -> str:
     from dipbot.execution.errors import UncertainTransaction
 
     operation = trader.store.data.get("operation")
+    if operation is None:
+        raise ValueError("Нет незавершённой операции")
     plan = cancellation_plan(operation, D(trader.gas_price) / 10**9)
     if operation["wallet"].lower() != trader.owner.lower():
         raise ValueError("Кошелёк не совпадает с незавершённой операцией")
@@ -77,9 +90,9 @@ def cancel_pending(trader, *, expected_hash, expected_gas_price):
     chain = trader.chain
     chain.check()
     eth = chain.w3.eth
-    broadcaster = chain
+    broadcaster: Chain | None = chain
     if plan["broadcast_route"] == "custom":
-        broadcaster = getattr(trader, "broadcast_chain", None)
+        broadcaster = trader.broadcast_chain
         if broadcaster is None:
             raise ValueError("Для отмены нужен отдельный RPC исходной отправки")
         broadcaster.check()
@@ -135,6 +148,7 @@ def cancel_pending(trader, *, expected_hash, expected_gas_price):
     }
     operation["transactions"].append(record)
     trader.store.save()  # Durable cancellation hash before broadcast.
+    assert broadcaster is not None
     try:
         remote = broadcaster.w3.eth.send_raw_transaction(signed.raw_transaction)
         if Web3.to_hex(remote) != tx_hash:

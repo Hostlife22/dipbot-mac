@@ -51,6 +51,7 @@ def test_insufficient_activity_rejects_before_paper_buy(tmp_path, monkeypatch):
 
     w = Worker(Store(tmp_path / "state.json"))
     w.mode, w.pool = "PAPER", POOL
+    w.chain = object()  # swap_count is stubbed; retain the connected-reader precondition.
     w.current_price = D(1)
     w.strategy.settings = Settings(min_swaps=D(5))
     monkeypatch.setattr(

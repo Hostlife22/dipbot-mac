@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
+from dipbot.domain.ports import RateSource as RateSource
 from dipbot.domain.records import OperationRecord, PositionRecord
 from dipbot.persistence.ports import StateStore as StateStore
 
@@ -24,10 +25,6 @@ class SecretStore(Protocol):
 
 class StopSignal(Protocol):
     def is_set(self) -> bool: ...
-
-
-class RateSource(Protocol):
-    def snapshot(self, token: str) -> dict[str, Any] | None: ...
 
 
 class MarketReader(Protocol):

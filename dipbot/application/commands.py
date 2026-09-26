@@ -97,7 +97,7 @@ def configure(runtime: CommandRuntime, data: dict[str, Any]) -> None:
             ),
             runtime.market.selected.quote,
         )
-        wallet_registry.register(runtime.store, live.owner, runtime.market.pool, pair_name)
+        wallet_registry.register(runtime.store, live.owner, runtime.market.selected, pair_name)
     if runtime.market.pool and runtime.market.selected.router == "V3":
         interval = max(interval, 0.103)
     if mode != "LIVE":
@@ -300,7 +300,7 @@ def handle_compare_routes(runtime: CommandRuntime, name: CommandKind, data: dict
         D(data["amount"]), reference.quote, runtime.rates
     )
     report = compare(
-        runtime.connections.chain,
+        runtime.connections.reader,
         data["pools"],
         reference,
         amount,
@@ -526,7 +526,7 @@ def handle_compare_positions(runtime: CommandRuntime, name: CommandKind, data: d
     from dipbot.execution.recovery import compare_positions
 
     runtime.emit_event(
-        EventKind.POSITION_COMPARISON, compare_positions(runtime.connections.chain, runtime.store)
+        EventKind.POSITION_COMPARISON, compare_positions(runtime.connections.reader, runtime.store)
     )
 
 
@@ -535,7 +535,7 @@ def handle_reconcile(runtime: CommandRuntime, name: CommandKind, data: dict[str,
     if name == CommandKind.RECONCILE:
         operation = runtime.store.data.get("operation")
         result = reconcile_receipts(
-            runtime.connections.chain, runtime.store, operation["wallet"] if operation else ""
+            runtime.connections.reader, runtime.store, operation["wallet"] if operation else ""
         )
         runtime.log.emit(result)
         runtime.emit_event(EventKind.RECEIPT_REVIEW, result)

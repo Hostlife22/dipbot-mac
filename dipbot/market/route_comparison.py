@@ -1,7 +1,17 @@
 """Read-only, amount-specific route comparison at one canonical block."""
 
-import time
+from __future__ import annotations
+
+from collections.abc import Callable
 from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.domain.cost_policy import CostPolicy
+    from dipbot.domain.ports import RateSource
+    from dipbot.market.chain import Chain, Pool
+
+import time
 from decimal import localcontext
 
 from dipbot.domain.entry_guard import EntryRejected, assess
@@ -9,18 +19,18 @@ from dipbot.domain.strategy import raw_amount
 
 
 def compare(
-    chain,
-    pools,
-    reference,
-    amount,
-    maximum,
-    cost_policy,
-    gas_gwei,
-    rates,
+    chain: Chain,
+    pools: list[Pool],
+    reference: Pool,
+    amount: D,
+    maximum: D,
+    cost_policy: CostPolicy,
+    gas_gwei: D,
+    rates: RateSource,
     *,
-    cancelled=lambda: False,
-    timeout=15,
-):
+    cancelled: Callable[[], bool] = lambda: False,
+    timeout: float = 15,
+) -> dict[str, Any]:
     if reference is None:
         raise ValueError("Выберите маршрут, чтобы определить TARGET и базу сравнения")
     amount_raw = raw_amount(amount, reference.quote_decimals)
@@ -46,7 +56,7 @@ def compare(
             raise EntryRejected("Сравнение отменено: STOP или изменился адрес")
         if time.monotonic() - started > timeout:
             raise TimeoutError("Сравнение превысило лимит времени; сузьте список маршрутов")
-        row = {"pool": pool, "error": None}
+        row: dict[str, Any] = {"pool": pool, "error": None}
         try:
             output = chain.quote(pool, amount_raw, True, block=block)
             if type(output) is not int or not 0 < output < 2**256:

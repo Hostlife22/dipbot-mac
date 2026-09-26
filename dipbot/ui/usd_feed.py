@@ -1,5 +1,13 @@
 """Asynchronous indicative USD feed owned by the Qt UI."""
 
+from __future__ import annotations
+
+from decimal import Decimal as D
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QWidget
+
 import json
 import re
 import time
@@ -15,23 +23,23 @@ MAX_AGE = 90
 class UsdRate(QObject):
     changed = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.manager = QNetworkAccessManager(self)
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
         self.timer.timeout.connect(self.refresh)
         self.token = ""
-        self.rate = None
-        self.received_at = None
-        self.reply = None
+        self.rate: D | None = None
+        self.received_at: float | None = None
+        self.reply: QNetworkReply | None = None
 
-    def current(self):
+    def current(self) -> D | None:
         if self.received_at is None or time.monotonic() - self.received_at > MAX_AGE:
             return None
         return self.rate
 
-    def set_token(self, token):
+    def set_token(self, token: str) -> None:
         token = token.lower()
         if token == self.token:
             return
@@ -46,7 +54,7 @@ class UsdRate(QObject):
             self.timer.start()
             self.refresh()
 
-    def refresh(self):
+    def refresh(self) -> None:
         if not self.token or self.reply is not None:
             return
         token = self.token
@@ -54,13 +62,13 @@ class UsdRate(QObject):
         request.setTransferTimeout(5000)
         self.reply = reply = self.manager.get(request)
 
-        def finished():
+        def finished() -> None:
             if self.reply is reply:
                 self.reply = None
             try:
-                if token != self.token or reply.error() != QNetworkReply.NoError:
+                if token != self.token or reply.error() != QNetworkReply.NetworkError.NoError:
                     return
-                rows = json.loads(bytes(reply.readAll()))
+                rows = json.loads(reply.readAll().data())
                 self.rate = select_rate(rows, token)
                 self.received_at = time.monotonic()
             except (ValueError, TypeError, AttributeError):

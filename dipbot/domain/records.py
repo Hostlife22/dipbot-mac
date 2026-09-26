@@ -1,7 +1,7 @@
 """Wire/storage shapes. Decimal money is serialized as strings, raw amounts as integers."""
 
 from decimal import Decimal
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ExitRetry(TypedDict):
@@ -70,7 +70,7 @@ class PositionRecord(TypedDict, total=False):
     pool: PoolRecord
     opened_at: float
     peak_price: str
-    cost_quote: str
+    cost_quote: str | None
     entry_cost_usd: str | None
     entry_fees: FeeSummary
     entry_rate: RateMark | None
@@ -131,6 +131,7 @@ class RpcHealthRow(TypedDict):
 
 
 class UsdSummary(TypedDict):
+    scope: NotRequired[str]
     value: str | None
     closed: int
     missing: int

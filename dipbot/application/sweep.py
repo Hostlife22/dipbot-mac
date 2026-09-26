@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dipbot.market.chain import Pool
+    from dipbot.persistence.ports import StateStore
+
+
 from dipbot.application.errors import safe_error
 from dipbot.application.ports import (
     EventSink,
@@ -46,7 +53,7 @@ class SweepService:
         self.emit = emit
         self.position = position
 
-    def run(self):
+    def run(self) -> None:
         report: SweepReport = {
             "sold": [],
             "failed": [],
@@ -55,7 +62,8 @@ class SweepService:
             "unknown": [],
             "status": "interrupted",
         }
-        tokens, checked = set(), set()
+        tokens: set[str] = set()
+        checked: set[str] = set()
         try:
             if self.store.data.get("operation"):
                 raise UncertainTransaction("Незавершённая операция: Sweep требует сверки")
@@ -85,7 +93,7 @@ class SweepService:
                 f"не проверено {len(report['unknown'])}"
             )
 
-    def _account_sweep_token(self, token, residual):
+    def _account_sweep_token(self, token: str, residual: int) -> bool:
         """Bound aggregate tracked quantity; an unexplained remainder has no trusted basis."""
         if type(residual) is not int or not 0 <= residual < 2**256:
             raise ValueError("Некорректный остаток Sweep")
@@ -110,7 +118,7 @@ class SweepService:
                 changed = True
         return changed
 
-    def _clear_zero_sweep_position(self, token):
+    def _clear_zero_sweep_position(self, token: str) -> None:
         # An external zero balance has no known proceeds: do not invent a close/P&L.
         from copy import deepcopy
 
@@ -125,7 +133,16 @@ class SweepService:
             self.store.data["positions"] = previous
             raise
 
-    def _record_sweep_exit(self, token, amount, residual, received, quote, decimals, pool_address=""):
+    def _record_sweep_exit(
+        self,
+        token: str,
+        amount: int,
+        residual: int,
+        received: int,
+        quote: Any,
+        decimals: int,
+        pool_address: str = "",
+    ) -> None:
         from dipbot.execution.accounting import record_sweep_exit
 
         record_sweep_exit(
@@ -142,7 +159,7 @@ class SweepService:
             pool_address=pool_address,
         )
 
-    def _sweep(self, report, tokens, checked):
+    def _sweep(self, report: SweepReport, tokens: set[str], checked: set[str]) -> bool | None:
         self.log("SWEEP: зарегистрированные target, затем базовые активы → BNB")
         # Saved positions remain recoverable even if another selection replaced
         # the known-pool entry for the same target before a restart.
@@ -180,7 +197,7 @@ class SweepService:
         for raw in pools:
             if self.stop_event.is_set():
                 self.log("SWEEP остановлен между операциями")
-                return
+                return None
             pool = Pool(**raw)
             if pool.token.lower() in seen_targets:
                 continue
@@ -210,7 +227,7 @@ class SweepService:
                 self.log("SWEEP TARGET: " + safe_error(exc))
                 continue
             if self.stop_event.is_set():
-                return
+                return None
             self.live.begin("SWEEP TARGET " + pool.token)
             received = self.live.swap(
                 pool, amount, False, self.strategy.settings.slippage, simulate=True, deadline_seconds=60
@@ -237,7 +254,7 @@ class SweepService:
             seen.add(token)
             if self.stop_event.is_set():
                 self.log("SWEEP остановлен между операциями")
-                return
+                return None
             try:
                 amount = self.chain.balance(token, self.live.owner)
             except Exception as exc:
@@ -267,7 +284,7 @@ class SweepService:
                         continue
                 if self.stop_event.is_set():
                     self.log("SWEEP остановлен после проверки маршрута")
-                    return
+                    return None
                 self.live.begin("SWEEP BASE " + symbol)
                 received = self.live.convert(token, amount, False, self.strategy.settings.slippage)
                 # A target can also be a catalog base (e.g. USDT). Its sale via

@@ -1,10 +1,21 @@
 """Offline, explicitly synthetic Qt acceptance scenarios; no network or wallet."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QApplication
+
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.market.chain import Chain, Pool
+
 import json
 import sys
 import time
 from dataclasses import asdict
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -19,7 +30,7 @@ from dipbot.persistence.storage import Store
 from dipbot.persistence.vault import Vault
 
 
-def run(app, directory, resume=False):
+def run(app: QApplication, directory: Path, resume: bool = False) -> int:
     from dipbot.ui.window import Window
 
     directory = Path(directory)
@@ -30,7 +41,7 @@ def run(app, directory, resume=False):
     app.setQuitOnLastWindowClosed(False)
     pool = Pool(address("0x" + "12" * 20), "V2", address(USDT), address(WBNB), 18, 18, True)
     owner = address("0x" + "34" * 20)
-    report = {
+    report: dict[str, Any] = {
         "frozen": bool(getattr(sys, "frozen", False)),
         "synthetic": True,
         "resume": resume,
@@ -38,18 +49,20 @@ def run(app, directory, resume=False):
         "scenarios": [],
         "passed": False,
     }
-    errors, logs, trades = [], [], []
-    market = {"price": D(100), "offline": False, "sell_failure": False}
+    errors: list[str] = []
+    logs: list[str] = []
+    trades: list[Any] = []
+    market: dict[str, Any] = {"price": D(100), "offline": False, "sell_failure": False}
 
-    def forbidden(*a, **kw):
+    def forbidden(*a: Any, **kw: Any) -> None:
         raise RuntimeError("Network, wallet and signing disabled in position check")
 
-    def price(_):
+    def price(_: Any) -> Any:
         if market["offline"]:
             raise TimeoutError()
         return market["price"]
 
-    def quote(pool, amount, buy):
+    def quote(pool: Pool, amount: int, buy: Any) -> Any:
         if market["sell_failure"] and not buy:
             raise TimeoutError()
         return int(D(amount) / market["price"] if buy else D(amount) * market["price"])
@@ -69,7 +82,7 @@ def run(app, directory, resume=False):
         w.worker.log.connect(logs.append)
         w.worker.event.connect(lambda name, value: trades.append(value) if name == "trade_marker" else None)
 
-        def wait(predicate, timeout=12):
+        def wait(predicate: Callable[[], bool], timeout: float = 12) -> None:
             end = time.monotonic() + timeout
             while not predicate():
                 if time.monotonic() > end:
@@ -78,17 +91,18 @@ def run(app, directory, resume=False):
                 time.sleep(0.01)
             app.processEvents()
 
-        def snap(name):
+        def snap(name: str) -> None:
             w.banner.setText("СИНТЕТИЧЕСКАЯ ПРОВЕРКА · без сети, кошелька и реальных сделок")
             w.journal_toggle.setChecked(False)
             app.processEvents()
             w.grab().save(str(directory / (name + ".png")))
 
-        def select(mode):
+        def select(mode: str) -> None:
             w.mode.setCurrentText(mode)
-            w.worker.chain = SimpleNamespace(
+            fake_chain = SimpleNamespace(
                 price=price, quote=quote, verify_pool=lambda *a: pool, price_source="REPLAY"
             )
+            setattr(w.worker, "chain", fake_chain)
             w.worker.select_pool(pool)
             wait(lambda: w.selection_ready)
             w.params["amount"].setText("1")
@@ -97,7 +111,7 @@ def run(app, directory, resume=False):
             w.params["stop_loss"].setText("2")
             w.interval.setValue(0.1)
 
-        def start_buy():
+        def start_buy() -> Any:
             market["price"] = D(100)
             w.start.click()
             wait(lambda: w.running and w.worker.strategy.base == 100)
@@ -110,7 +124,7 @@ def run(app, directory, resume=False):
             assert w.metrics["position"].text() == f"{float(quantity):.8g}"
             return quantity
 
-        def stop():
+        def stop() -> None:
             w.stop.click()
             wait(lambda: not w.running and not w.busy and not w.worker.stop_event.is_set())
 
@@ -135,7 +149,7 @@ def run(app, directory, resume=False):
                 assert not w.selection_ready and not w.start.isEnabled()
                 select("LIVE")
                 w.worker.mode = "LIVE"
-                w.worker.live = SimpleNamespace(owner=owner)
+                setattr(w.worker, "live", SimpleNamespace(owner=owner))
                 w.worker.strategy.entry = D(w.worker.position()["entry"])
                 w.worker.status()
                 wait(lambda: w.locked and w.display_position > 0)
@@ -156,13 +170,14 @@ def run(app, directory, resume=False):
 
                 pending = [True]
 
-                def receipt(tx_hash):
+                def receipt(tx_hash: Any) -> Any:
                     if pending[0]:
                         raise TransactionNotFound("synthetic pending")
                     return {"transactionHash": Web3.to_bytes(hexstr=tx_hash), "status": 1, "blockNumber": 7}
 
-                w.worker.chain.check = lambda: 7
-                w.worker.chain.w3 = SimpleNamespace(eth=SimpleNamespace(get_transaction_receipt=receipt))
+                fake_chain = cast(SimpleNamespace, w.worker.chain)
+                fake_chain.check = lambda: 7
+                fake_chain.w3 = SimpleNamespace(eth=SimpleNamespace(get_transaction_receipt=receipt))
                 w.show_recovery()
                 w.check_receipts()
                 wait(lambda: not w.busy and len(errors) == 1)
@@ -173,9 +188,9 @@ def run(app, directory, resume=False):
                 wait(lambda: not w.busy and "Все записанные" in w.receipt_result.text())
                 assert w.locked and not w.start.isEnabled()
                 assert w.store.data["operation"]["transactions"][0]["status"] == "confirmed"
-                w.worker.chain.check = lambda **kw: 7
-                w.worker.chain.w3.eth.get_block = lambda n: {"hash": b"synthetic"}
-                w.worker.chain.balance_at = lambda *a: 10**16 - 1
+                fake_chain.check = lambda **kw: 7
+                fake_chain.w3.eth.get_block = lambda n: {"hash": b"synthetic"}
+                fake_chain.balance_at = lambda *a: 10**16 - 1
                 w.compare_saved_positions()
                 wait(lambda: not w.busy and "РАСХОЖДЕНИЕ" in w.position_comparison.text())
                 assert w.locked and w.store.data["positions"] == positions
