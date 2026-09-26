@@ -1,0 +1,43 @@
+[
+  {
+    "archive": "market-20260926-121435-aab50e1ce46a41669a23f50d4f7cc180-0.jsonl",
+    "anchor_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 23,
+      "Два снижения (legacy)": 2,
+      "Закрытие позиции": 2,
+      "Разрыв наблюдений": 1
+    },
+    "signal_mismatches": []
+  },
+  {
+    "archive": "market-20260926-121821-7cb875f21fbc4f1e93043019e5b05843-0.jsonl",
+    "anchor_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 152,
+      "Два снижения (legacy)": 39,
+      "Разрыв наблюдений": 14,
+      "Закрытие позиции": 1
+    },
+    "signal_mismatches": []
+  },
+  {
+    "archive": "market-20260926-122156-1ea063cfd4d84831bd3c830b68a107a5-0.jsonl",
+    "anchor_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 4,
+      "Закрытие позиции": 1
+    },
+    "signal_mismatches": []
+  },
+  {
+    "archive": "market-20260926-122233-f6e750da98d24c7ca86b49db89f8fcce-0.jsonl",
+    "anchor_changes": {
+      "Первое наблюдение": 1,
+      "Рост цены (legacy)": 82,
+      "Два снижения (legacy)": 27,
+      "Разрыв наблюдений": 1
+    },
+    "signal_mismatches": []
+  }
+]

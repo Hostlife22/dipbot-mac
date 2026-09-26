@@ -1,0 +1,381 @@
+[
+  {
+    "name": "cyc-trailing-0",
+    "passed": true,
+    "observed_seconds": 600.01,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": true,
+    "trades": {
+      "BUY": 1,
+      "SELL": 1
+    },
+    "closed_usd": "-0.1869462857786447355891306492",
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {
+          "BUY": 1,
+          "SELL": 1
+        },
+        "exits": {
+          "STOP_LOSS": 1
+        },
+        "open_position": false,
+        "natural_completed_cycles": 1,
+        "reentry_signal_gaps_seconds": [
+          69.38716063299944,
+          93.24272196400125
+        ],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [
+          "STOP_LOSS"
+        ],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 3644,
+        "distinct_prices": 174,
+        "gaps_over_limit": 11,
+        "gap_median_seconds": 0.10586231899651466,
+        "first_signal_replay": {
+          "t": 290.97317495400057,
+          "price": "2.19869340724691394092856323761082139648363406445680845624088179915301372895600E-7",
+          "block": 124119240
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124120-ff9ba04a56ea4ea5926c3a81057664c1-0.jsonl",
+        "sha256": "0fca23845b236c4d37e13aae5c1a5c3a87c26ad6ec813183e180810f7f9827ea"
+      }
+    ]
+  },
+  {
+    "name": "cyc-trailing-5",
+    "passed": false,
+    "observed_seconds": 600.01,
+    "errors": [
+      "HTTPError: операция прервана. Проверьте RPC, баланс и доступность пула"
+    ],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": false,
+    "trades": {
+      "BUY": 1,
+      "SELL": 1
+    },
+    "closed_usd": "-0.1091762819633422464911663575",
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {
+          "BUY": 1,
+          "SELL": 1
+        },
+        "exits": {
+          "TRAILING_STOP": 1
+        },
+        "open_position": false,
+        "natural_completed_cycles": 1,
+        "reentry_signal_gaps_seconds": [
+          82.14175029999751,
+          105.13614589099598
+        ],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [
+          "TRAILING_STOP"
+        ],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 2535,
+        "distinct_prices": 171,
+        "gaps_over_limit": 7,
+        "gap_median_seconds": 0.10450408299948322,
+        "first_signal_replay": {
+          "t": 290.98006338099367,
+          "price": "2.19869340724691394092856323761082139648363406445680845624088179915301372895600E-7",
+          "block": 124119240
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124120-00e54810900147709c82c0eed2477238-0.jsonl",
+        "sha256": "40b1aebc67498101a2f0bc20daef12697be6373bfe07839bb14374733689652d"
+      }
+    ]
+  },
+  {
+    "name": "cyc-trailing-5-rpc-fix",
+    "passed": true,
+    "observed_seconds": 600.0,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": true,
+    "trades": {},
+    "closed_usd": null,
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {},
+        "exits": {},
+        "open_position": false,
+        "natural_completed_cycles": 0,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 3440,
+        "distinct_prices": 1,
+        "gaps_over_limit": 9,
+        "gap_median_seconds": 0.11419225999998162,
+        "first_signal_replay": null,
+        "first_signal_matches": true,
+        "archive": "market-20260926-124936-25942d0f856646f6bbbacf647da60a3e-0.jsonl",
+        "sha256": "12f35a3e2d5f2bdd9fa9e4866480a4bb43a7a8779ff880346f5133635875e9b3"
+      }
+    ]
+  },
+  {
+    "name": "mushroom-trailing-0",
+    "passed": false,
+    "observed_seconds": null,
+    "errors": [
+      "HTTPError: операция прервана. Проверьте RPC, баланс и доступность пула"
+    ],
+    "mismatches": [],
+    "clean_stop": null,
+    "test_restarts": 0,
+    "automatic_running_at_end": null,
+    "trades": {},
+    "closed_usd": null,
+    "sessions": []
+  },
+  {
+    "name": "mushroom-trailing-0-retry",
+    "passed": true,
+    "observed_seconds": 600.01,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": true,
+    "trades": {
+      "BUY": 2,
+      "SELL": 2
+    },
+    "closed_usd": "0.337007390220720284371853524",
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {
+          "BUY": 2,
+          "SELL": 2
+        },
+        "exits": {
+          "TAKE_PROFIT": 2
+        },
+        "open_position": false,
+        "natural_completed_cycles": 2,
+        "reentry_signal_gaps_seconds": [
+          353.7399198350031
+        ],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [
+          "TAKE_PROFIT"
+        ],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 3503,
+        "distinct_prices": 506,
+        "gaps_over_limit": 14,
+        "gap_median_seconds": 0.11052163800559356,
+        "first_signal_replay": {
+          "t": 83.99490337200405,
+          "price": "1.35577939436213510842304388337853220028363702669732769829615041141244866373715E-7",
+          "block": 124119387
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124553-d4636a5b53f141ee8ec2bd52e4bd1442-0.jsonl",
+        "sha256": "1f7a803ded35df500cf07d95626149d9a2e821a02ba66eb93b38389d404d1b38"
+      }
+    ]
+  },
+  {
+    "name": "mushroom-trailing-5",
+    "passed": false,
+    "observed_seconds": 600.0,
+    "errors": [
+      "Web3RPCError: операция прервана. Проверьте RPC, баланс и доступность пула"
+    ],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": false,
+    "trades": {
+      "BUY": 1,
+      "SELL": 1
+    },
+    "closed_usd": "0.024091155864450405422317614",
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {
+          "BUY": 1,
+          "SELL": 1
+        },
+        "exits": {
+          "TRAILING_STOP": 1
+        },
+        "open_position": false,
+        "natural_completed_cycles": 1,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [
+          "TRAILING_STOP"
+        ],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 1043,
+        "distinct_prices": 105,
+        "gaps_over_limit": 5,
+        "gap_median_seconds": 0.1051871019990358,
+        "first_signal_replay": {
+          "t": 86.65379632200347,
+          "price": "1.66600974227968254466812757522678292057884527760076413794085391989522837991098E-7",
+          "block": 124119159
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124408-8d4ab53dac6541f982879fe1134762fd-0.jsonl",
+        "sha256": "a9952864cfc518735bccfa3ea857a50d883e84cc4d1d87ef833e21d7bfa0523d"
+      }
+    ]
+  },
+  {
+    "name": "mushroom-trailing-5-rpc-fix",
+    "passed": true,
+    "observed_seconds": 600.01,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": true,
+    "test_restarts": 0,
+    "automatic_running_at_end": true,
+    "trades": {
+      "BUY": 1,
+      "SELL": 1
+    },
+    "closed_usd": "0.206134322026179487271141264",
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {
+          "BUY": 1,
+          "SELL": 1
+        },
+        "exits": {
+          "TAKE_PROFIT": 1
+        },
+        "open_position": false,
+        "natural_completed_cycles": 1,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [
+          "TAKE_PROFIT"
+        ],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 3447,
+        "distinct_prices": 373,
+        "gaps_over_limit": 13,
+        "gap_median_seconds": 0.11166489150127745,
+        "first_signal_replay": {
+          "t": 278.2982456469981,
+          "price": "1.30312992313407278545327724881556912824529883213905483083379172219449724719650E-7",
+          "block": 124120314
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124936-303d42d92e5e473ea6d8bfb911b200b8-0.jsonl",
+        "sha256": "a25c53110bc5c2fca083d02dd6f4d62f555367d4a2f52460181d3ca9f3d18a18"
+      }
+    ]
+  },
+  {
+    "name": "sheep-trailing-0",
+    "passed": false,
+    "observed_seconds": null,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": null,
+    "test_restarts": 0,
+    "automatic_running_at_end": null,
+    "trades": {},
+    "closed_usd": null,
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {},
+        "exits": {},
+        "open_position": false,
+        "natural_completed_cycles": 0,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 732,
+        "distinct_prices": 3,
+        "gaps_over_limit": 3,
+        "gap_median_seconds": 0.10400533400388667,
+        "first_signal_replay": {
+          "t": 2.1959095149941277,
+          "price": "4.90802397047059693916365393157293666019047891851147297352191137745397361827603E-13",
+          "block": 124118599
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124120-e123278944264d9a9ea1017a79d3c24d-0.jsonl",
+        "sha256": "2fa1d3dbea74ce10d2e1eb5702e5f2f5b611be3960d62f65c1a98b2652bd4655"
+      }
+    ],
+    "excluded_reason": "Liquidity collapsed; operator interrupted, not a completed 10-minute test"
+  },
+  {
+    "name": "sheep-trailing-5",
+    "passed": false,
+    "observed_seconds": null,
+    "errors": [],
+    "mismatches": [],
+    "clean_stop": null,
+    "test_restarts": 0,
+    "automatic_running_at_end": null,
+    "trades": {},
+    "closed_usd": null,
+    "sessions": [
+      {
+        "consistent": true,
+        "errors": [],
+        "fills": {},
+        "exits": {},
+        "open_position": false,
+        "natural_completed_cycles": 0,
+        "reentry_signal_gaps_seconds": [],
+        "cooldown_seconds": 30.0,
+        "observed_natural_exits": [],
+        "limitations": "Recorded chronology only; no profitability, execution-price or Windows parity proof",
+        "observations": 747,
+        "distinct_prices": 3,
+        "gaps_over_limit": 4,
+        "gap_median_seconds": 0.1037421520013595,
+        "first_signal_replay": {
+          "t": 2.089864182002202,
+          "price": "4.90802397047059693916365393157293666019047891851147297352191137745397361827603E-13",
+          "block": 124118599
+        },
+        "first_signal_matches": true,
+        "archive": "market-20260926-124120-ac9970c88ae44c41a2245eddb93b0315-0.jsonl",
+        "sha256": "0467c49fd3b91180b62abf8160c244d3dd0ebfade3c16d6ee7cdcf4ff9975afa"
+      }
+    ],
+    "excluded_reason": "Liquidity collapsed; operator interrupted, not a completed 10-minute test"
+  }
+]

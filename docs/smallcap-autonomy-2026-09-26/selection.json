@@ -1,0 +1,125 @@
+{
+  "observed_at": 1790415673.243393,
+  "source": "DexScreener pairs API; GMGN unavailable HTTP403",
+  "gmgn_migrated_verified": false,
+  "pools": [
+    {
+      "chainId": "bsc",
+      "dexId": "pancakeswap",
+      "url": "https://dexscreener.com/bsc/0x4d1f45a24f13e44084c992a378e73d7b9d893b06",
+      "pairAddress": "0x4d1f45A24f13E44084c992a378e73D7b9D893b06",
+      "labels": [
+        "v2"
+      ],
+      "baseToken": {
+        "address": "0x47808f9F85A74B8CDc8dda6a27c4F3daD692f540",
+        "name": "属羊机器人",
+        "symbol": "属羊机器"
+      },
+      "quoteToken": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "name": "Wrapped BNB",
+        "symbol": "WBNB"
+      },
+      "priceNative": "0.0000003301",
+      "priceUsd": "0.0002544",
+      "txns": {
+        "m5": {
+          "buys": 78,
+          "sells": 75
+        },
+        "h1": {
+          "buys": 144,
+          "sells": 109
+        },
+        "h6": {
+          "buys": 144,
+          "sells": 109
+        },
+        "h24": {
+          "buys": 144,
+          "sells": 109
+        }
+      },
+      "volume": {
+        "h24": 70759.56,
+        "h6": 70759.56,
+        "h1": 70759.56,
+        "m5": 45413.66
+      },
+      "priceChange": {
+        "m5": -15.56,
+        "h1": 78.28,
+        "h6": 78.28,
+        "h24": 78.28
+      },
+      "liquidity": {
+        "usd": 79987.81,
+        "base": 156563897,
+        "quote": 52.09069
+      },
+      "fdv": 254468,
+      "marketCap": 254468,
+      "pairCreatedAt": 1790415100000
+    },
+    {
+      "chainId": "bsc",
+      "dexId": "pancakeswap",
+      "url": "https://dexscreener.com/bsc/0x3d49964e6a306d5722c0ed3abd1872003f7210c8",
+      "pairAddress": "0x3D49964E6A306D5722C0ED3ABD1872003f7210c8",
+      "labels": [
+        "v2"
+      ],
+      "baseToken": {
+        "address": "0x7c535895cFcBCEAa9dc8d1AE9C48576d52DD785c",
+        "name": "CYCLEChain",
+        "symbol": "CYC"
+      },
+      "quoteToken": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "name": "Wrapped BNB",
+        "symbol": "WBNB"
+      },
+      "priceNative": "0.0000002047",
+      "priceUsd": "0.0001578",
+      "txns": {
+        "m5": {
+          "buys": 80,
+          "sells": 65
+        },
+        "h1": {
+          "buys": 178,
+          "sells": 89
+        },
+        "h6": {
+          "buys": 178,
+          "sells": 89
+        },
+        "h24": {
+          "buys": 178,
+          "sells": 89
+        }
+      },
+      "volume": {
+        "h24": 40124.09,
+        "h6": 40124.09,
+        "h1": 40124.09,
+        "m5": 22178.49
+      },
+      "priceChange": {
+        "m5": 3.1,
+        "h1": 248,
+        "h6": 248,
+        "h24": 248
+      },
+      "liquidity": {
+        "usd": 35314.13,
+        "base": 108103014,
+        "quote": 23.681
+      },
+      "fdv": 157838,
+      "marketCap": 157838,
+      "pairCreatedAt": 1790415064000
+    }
+  ]
+}

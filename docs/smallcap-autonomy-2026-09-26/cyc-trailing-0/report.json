@@ -1,0 +1,150 @@
+{
+  "token": "0x7c535895cFcBCEAa9dc8d1AE9C48576d52DD785c",
+  "utc": "2026-09-26T09:41:14.922493+00:00",
+  "mode": "PAPER",
+  "frozen": false,
+  "transactions_sent": 0,
+  "checks": 7425,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "2.19869340724691394092856323761082139648363406445680845624088179915301372895600E-7",
+      "phase": "automatic_live_prices"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "1.84112870939353757220825406316716882452029604609557056875967913429200463121440E-7",
+      "phase": "automatic_live_prices"
+    }
+  ],
+  "test_restarts": 0,
+  "automatic_only": true,
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 3,
+    "STALE": 1,
+    "WAIT DIP": 3410,
+    "POSITION": 101,
+    "COOLDOWN": 198,
+    "STOPPING": 1
+  },
+  "price_sources": {
+    "BSC": 3711
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x3D49964E6A306D5722C0ED3ABD1872003f7210c8"
+  ],
+  "pool": "0x3D49964E6A306D5722C0ED3ABD1872003f7210c8",
+  "router": "V2",
+  "token_decimals": 18,
+  "sizing": {
+    "unit": "usd",
+    "reserve_bnb": "0.0001"
+  },
+  "quote_token": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+  "paper_policy": {
+    "gas_units": 0,
+    "latency_seconds": 0.25,
+    "fee_quote": "0.00001297538569333973452360871427"
+  },
+  "settings": {
+    "amount": "1",
+    "dip": "10",
+    "take_profit": "15",
+    "stop_loss": "15",
+    "slippage": "5",
+    "dynamic": "120",
+    "min_swaps": "0",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "legacy",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.0",
+    "max_block_age": 5.0,
+    "volatility_multiplier": "2.0"
+  },
+  "exit_policy": {
+    "continue_after_risk_exit": true,
+    "tp_sl_basis": "spot",
+    "trailing_pct": "0.0",
+    "max_hold_seconds": "0.0",
+    "cooldown_seconds": "30.0"
+  },
+  "adaptive_rpc": false,
+  "interval": 0.1,
+  "fee_usd_at_start": "0.01",
+  "effective_interval": 0.1,
+  "trade_views": [
+    {
+      "side": "BUY",
+      "detail": {
+        "quantity": "5880.458606203783705377",
+        "entry_gross_usd": "0.9999999999999992608",
+        "entry_fee_usd": "0.01000999104698387159558317871",
+        "entry_total_usd": "1.010009991046983132395583179",
+        "buy_price_usd": "0.0001700547639167149799152996306"
+      },
+      "closed_usd": "0",
+      "closed_count": 0,
+      "ui_details": "Средняя цена BUY (без доп. расходов): ≈ $0.000170055\nСредняя цена SELL (без доп. расходов): — (нет данных)\nОбмен на входе: ≈ $1\nРасходы входа: ≈ $0.01001\nВсего затрачено: ≈ $1.01001\nПолучено от продажи: — (нет данных)\nРасходы выхода: — (нет данных)\nРезультат закрытия: — (нет данных)\nКомиссия пула уже в суммах обмена; повторно не вычитается. Расходы PAPER — модель.",
+      "ui_open": "Открытая позиция, USD: — (нет свежей котировки продажи)",
+      "footer": "PAPER · BOT работает · Закрытый P&L: — (нет закрытых сделок) · по модели PAPER"
+    },
+    {
+      "side": "SELL",
+      "detail": {
+        "quantity": "5880.458606203783705377",
+        "entry_gross_usd": "0.9999999999999992608",
+        "entry_fee_usd": "0.01000999104698387159558317871",
+        "entry_total_usd": "1.010009991046983132395583179",
+        "buy_price_usd": "0.0001700547639167149799152996306",
+        "sell_price_usd": "0.0001416680845563428188521537075",
+        "exit_gross_usd": "0.83307330705375146821",
+        "exit_fee_usd": "0.01000960178541307140354747045",
+        "complete": true,
+        "net_usd": "-0.1869462857786447355891306492"
+      },
+      "closed_usd": "-0.1869462857786447355891306492",
+      "closed_count": 1,
+      "ui_details": "Средняя цена BUY (без доп. расходов): ≈ $0.000170055\nСредняя цена SELL (без доп. расходов): ≈ $0.000141668\nОбмен на входе: ≈ $1\nРасходы входа: ≈ $0.01001\nВсего затрачено: ≈ $1.01001\nПолучено от продажи: ≈ $0.833073\nРасходы выхода: ≈ $0.0100096\nРезультат закрытия: ≈ $-0.186946\nКомиссия пула уже в суммах обмена; повторно не вычитается. Расходы PAPER — модель.",
+      "ui_open": "Открытая позиция, USD: —",
+      "footer": "PAPER · BOT работает · Закрытый P&L: ≈ −$0.19 · по модели PAPER"
+    }
+  ],
+  "observed_seconds": 600.01,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "passed": true,
+  "router_fills": [
+    {
+      "amount_raw": 1296243486376480,
+      "received_raw": 5880458606203783705377,
+      "buy": true,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    },
+    {
+      "amount_raw": 5880458606203783705377,
+      "received_raw": 1079907842647747,
+      "buy": false,
+      "token_decimals": 18,
+      "quote_decimals": 18
+    }
+  ],
+  "rpc_methods": {
+    "eth_chainId": 6502,
+    "eth_getBlockByNumber": 5084,
+    "eth_getCode": 16,
+    "eth_call": 1383
+  },
+  "distinct_prices": 176,
+  "price_range": [
+    "3.84778594586359028185193776491457694247538904251807585000232005634055754905121E-13",
+    "3.09539263057404867980071117620784510417546857728470070547965971699561577448881E-7"
+  ]
+}

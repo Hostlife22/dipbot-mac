@@ -1,0 +1,83 @@
+{
+  "token": "0x7c535895cFcBCEAa9dc8d1AE9C48576d52DD785c",
+  "utc": "2026-09-26T09:49:31.156366+00:00",
+  "mode": "PAPER",
+  "frozen": false,
+  "transactions_sent": 0,
+  "checks": 6885,
+  "mismatches": [],
+  "errors": [],
+  "trades": [],
+  "test_restarts": 0,
+  "automatic_only": true,
+  "source": "live BSC RPC, no replay",
+  "ui_states": {
+    "IDLE": 3,
+    "STALE": 1,
+    "WAIT DIP": 3439,
+    "STOPPING": 1
+  },
+  "price_sources": {
+    "BSC": 3441
+  },
+  "candidates": [
+    "V2 / WBNB / 2500 · 0x3D49964E6A306D5722C0ED3ABD1872003f7210c8"
+  ],
+  "pool": "0x3D49964E6A306D5722C0ED3ABD1872003f7210c8",
+  "router": "V2",
+  "token_decimals": 18,
+  "sizing": {
+    "unit": "usd",
+    "reserve_bnb": "0.0001"
+  },
+  "quote_token": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+  "paper_policy": {
+    "gas_units": 0,
+    "latency_seconds": 0.25,
+    "fee_quote": "0.00001296562811985426633993283805"
+  },
+  "settings": {
+    "amount": "1",
+    "dip": "10",
+    "take_profit": "15",
+    "stop_loss": "15",
+    "slippage": "5",
+    "dynamic": "120",
+    "min_swaps": "0",
+    "max_roundtrip_loss": "3"
+  },
+  "signal_policy": {
+    "mode": "legacy",
+    "window_seconds": 60.0,
+    "rebound_pct": "0.0",
+    "max_block_age": 5.0,
+    "volatility_multiplier": "2.0"
+  },
+  "exit_policy": {
+    "continue_after_risk_exit": true,
+    "tp_sl_basis": "spot",
+    "trailing_pct": "5.0",
+    "max_hold_seconds": "0.0",
+    "cooldown_seconds": "30.0"
+  },
+  "adaptive_rpc": false,
+  "interval": 0.1,
+  "fee_usd_at_start": "0.01",
+  "effective_interval": 0.1,
+  "observed_seconds": 600.0,
+  "automatic_running_at_end": true,
+  "clean_stop": true,
+  "passed": true,
+  "router_fills": [],
+  "rpc_methods": {
+    "eth_chainId": 6169,
+    "eth_getBlockByNumber": 4792,
+    "eth_getCode": 8,
+    "eth_call": 1356
+  },
+  "distinct_prices": 1,
+  "price_range": [
+    "2.07662181914870075793765113258963865233315883918654578652825985919195325572466E-12",
+    "2.07662181914870075793765113258963865233315883918654578652825985919195325572466E-12"
+  ]
+}
