@@ -1,3 +1,5 @@
+from typing import Any, Callable, TypeVar, cast
+
 """Independent read-only price monitoring while the serial executor is occupied."""
 
 import threading
@@ -102,7 +104,10 @@ class MarketMonitor:
             self.thread.join(timeout=0.1)
 
 
-def monitor_execution(function):
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def monitor_execution(function: F) -> F:
     @wraps(function)
     def wrapped(worker, *args, **kwargs):
         if worker.mode == "DEMO" or not isinstance(worker.chain, Chain) or worker.pool is None:
@@ -119,4 +124,4 @@ def monitor_execution(function):
             worker.execution_monitor = None
             monitor.stop()
 
-    return wrapped
+    return cast(F, wrapped)

@@ -8,6 +8,8 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Generic, Mapping, TypedDict, TypeVar, cast
 
+from dipbot.domain.records import ExitRetry, OpenEstimate, RpcHealthRow, TradeDetail, UsdSummary
+
 
 class CommandKind(StrEnum):
     CONNECT = "connect"
@@ -103,24 +105,24 @@ class StatusPayload(TypedDict, total=False):
     waiting: str
     halt_reason: str
     quote_unavailable: bool
-    exit_retry: object
-    trade_detail: object
-    open_estimate: object
-    position_watch_error: object
-    rpc_health: object
-    exit_basis: object
-    exit_return: object
-    signal_mode: object
-    signal_notice: object
-    wait_reason: object
-    effective_dip: object
-    base_reason: object
-    base_age: object
-    paper_cost_model: object
-    historical_usd: object
-    pnl_quote: object
-    entry_notice: object
-    locked: object
+    exit_retry: ExitRetry | None
+    trade_detail: TradeDetail | None
+    open_estimate: OpenEstimate | None
+    position_watch_error: str
+    rpc_health: list[RpcHealthRow]
+    exit_basis: str
+    exit_return: str | None
+    signal_mode: str
+    signal_notice: str
+    wait_reason: str
+    effective_dip: str
+    base_reason: str
+    base_age: float | None
+    paper_cost_model: dict[str, object]
+    historical_usd: UsdSummary
+    pnl_quote: str
+    entry_notice: str
+    locked: bool
 
 
 @dataclass(frozen=True, slots=True)

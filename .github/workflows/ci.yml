@@ -51,7 +51,7 @@ jobs:
         run: |
           uv run --frozen ruff check dipbot tests tools launcher.py
           uv run --frozen ruff format --check dipbot tests tools launcher.py
-      - name: Type-check application contracts
+      - name: Type-check Worker, UI, RPC and execution
         run: uv run --frozen mypy
       - name: Run offline tests
         run: uv run --frozen pytest -q --junitxml=test-results.xml

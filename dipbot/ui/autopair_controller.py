@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QTableWidgetItem
+from PySide6.QtCore import QModelIndex
+from PySide6.QtWidgets import (
+    QTableWidgetItem,
+)
 
 from dipbot.market.chain import profiles
 from dipbot.persistence import preferences
@@ -11,7 +14,7 @@ if TYPE_CHECKING:
     from dipbot.ui.window import Window
 
 
-def market_changed(view: Window, *_):
+def market_changed(view: Window, *_: object) -> None:
     if not view.quote.currentText():
         return
     view.remember_amount()
@@ -20,7 +23,7 @@ def market_changed(view: Window, *_):
     view.invalidate_discovery()
 
 
-def invalidate_discovery(view: Window, *_, clear_pool=True):
+def invalidate_discovery(view: Window, *_: object, clear_pool: bool = True) -> None:
     view.auto_generation += 1
     view.worker.discovery_generation = view.auto_generation
     view.route_comparison.setText("Сравнение маршрутов ещё не выполнено")
@@ -35,13 +38,13 @@ def invalidate_discovery(view: Window, *_, clear_pool=True):
     view.update_controls()
 
 
-def schedule_autopair(view: Window, *_):
+def schedule_autopair(view: Window, *_: object) -> None:
     view.invalidate_discovery()
     if view.worker.chain is not None and not view.running and len(view.token.text().strip()) == 42:
         view.autopair_timer.start()
 
 
-def auto_discover(view: Window):
+def auto_discover(view: Window) -> None:
     if view.running or view.worker.chain is None:
         return
     if view.busy:
@@ -55,7 +58,7 @@ def auto_discover(view: Window):
     )
 
 
-def compare_routes(view: Window):
+def compare_routes(view: Window) -> None:
     reference = view.candidates.currentData()
     if reference is None:
         view.route_comparison.setText("Сначала найдите пулы через AutoPair")
@@ -73,26 +76,30 @@ def compare_routes(view: Window):
     )
 
 
-def select_pool(view: Window):
+def select_pool(view: Window) -> None:
     pool = view.candidates.currentData()
     if pool:
         view.send("select", pool=pool)
 
 
-def remove_profile(view: Window):
+def remove_profile(view: Window) -> None:
     row = view.table.currentRow()
-    if row >= 0:
-        view.send("remove_profile", symbol=view.table.item(row, 0).text(), wallet=view.wallet.text())
+    item = view.table.item(row, 0) if row >= 0 else None
+    if item is not None:
+        view.send("remove_profile", symbol=item.text(), wallet=view.wallet.text())
 
 
-def pair_clicked(view: Window, index):
+def pair_clicked(view: Window, index: QModelIndex) -> None:
     if view.busy or view.running:
         return
-    view.quote.setCurrentText(view.table.item(index.row(), 0).text())
+    item = view.table.item(index.row(), 0)
+    if item is None:
+        return
+    view.quote.setCurrentText(item.text())
     view.tabs.setCurrentIndex(0)
 
 
-def update_profiles(view: Window, dynamic=None):
+def update_profiles(view: Window, dynamic: dict[str, str] | None = None) -> None:
     pairs = profiles() | (dynamic if dynamic is not None else view.store.data.get("dynamic_profiles", {}))
     selected = view.quote.currentText() or "WBNB"
     blocked = view.quote.blockSignals(True)

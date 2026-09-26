@@ -37,8 +37,8 @@ MULTICALL_ABI = [
 @dataclass(frozen=True)
 class Resolution:
     state: str
-    candidates: tuple = ()
-    selected: object = None
+    candidates: tuple[Candidate, ...] = ()
+    selected: Candidate | None = None
     target: str = ""
     input_kind: str = "TOKEN"
 

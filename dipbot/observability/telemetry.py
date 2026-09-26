@@ -1,3 +1,5 @@
+from typing import Callable, ParamSpec, TypeVar
+
 """Bounded, process-local timing statistics. Never retain arguments or responses."""
 
 import math
@@ -54,10 +56,14 @@ class Timings:
 TIMINGS = Timings()
 
 
-def timed(name):
-    def decorate(function):
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def timed(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def decorate(function: Callable[P, R]) -> Callable[P, R]:
         @wraps(function)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
             with TIMINGS.measure(name):
                 return function(*args, **kwargs)
 

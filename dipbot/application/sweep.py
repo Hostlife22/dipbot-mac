@@ -1,6 +1,7 @@
+"""Sequential Sweep use case with explicit dependencies and durable operations."""
+
 from __future__ import annotations
 
-"""Sequential Sweep use case with explicit dependencies and durable operations."""
 from dipbot.application.errors import safe_error
 from dipbot.application.ports import (
     EventSink,
@@ -13,6 +14,7 @@ from dipbot.application.ports import (
     TradeExecutor,
 )
 from dipbot.domain.assets import WBNB
+from dipbot.domain.records import SweepReport
 from dipbot.domain.strategy import D, Strategy
 from dipbot.execution.errors import UncertainTransaction
 from dipbot.market.chain import Pool, address, profiles
@@ -45,7 +47,7 @@ class SweepService:
         self.position = position
 
     def run(self):
-        report = {
+        report: SweepReport = {
             "sold": [],
             "failed": [],
             "skipped": [],

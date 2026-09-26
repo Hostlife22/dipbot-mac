@@ -39,7 +39,7 @@ def test_stale_market_keeps_position_but_cannot_trigger_new_trade(tmp_path):
 
 
 def test_ui_exposes_block_age_separately_from_read_age(window, monkeypatch):
-    monkeypatch.setattr("dipbot.ui.window.time.time", lambda: 100)
+    monkeypatch.setattr("dipbot.ui.event_handlers.time.time", lambda: 100)
     window.on_event(
         "price_context",
         {

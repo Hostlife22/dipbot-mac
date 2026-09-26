@@ -88,9 +88,9 @@ def snapshot_minimum(amount: int, price: D, quote_decimals: int, token_decimals:
 class Strategy:
     def __init__(self, settings: Settings, policy=None, exit_policy=None):
         self.exit_policy = exit_policy or ExitPolicy()
-        self.entry_time = None
-        self.peak_price = None
-        self.cooldown_until = None
+        self.entry_time: float | None = None
+        self.peak_price: D | None = None
+        self.cooldown_until: float | None = None
         self.policy = policy or SignalPolicy()
         self.highs = deque()
         self.trough = None

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from PySide6.QtWidgets import QComboBox, QMessageBox
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFormLayout,
+    QLineEdit,
+    QMessageBox,
+)
 
 from dipbot.persistence import preferences
 from dipbot.persistence.vault import Vault
@@ -11,29 +16,29 @@ if TYPE_CHECKING:
     from dipbot.ui.window import Window
 
 
-def amount_map(view: Window):
+def amount_map(view: Window) -> dict[str, str]:
     return view.usd_pair_amounts if view.amount_currency == "usd" else view.pair_amounts
 
 
-def restore_amount(view: Window):
+def restore_amount(view: Window) -> None:
     default = "1" if view.amount_currency == "usd" else "0.02"
     view.params["amount"].setText(view.amount_map().get(view.amount_key, default))
 
 
-def amount_unit_changed(view: Window):
+def amount_unit_changed(view: Window) -> None:
     view.remember_amount()
     view.amount_currency = view.amount_unit.currentData()
     view.restore_amount()
 
 
-def remember_amount(view: Window):
+def remember_amount(view: Window) -> None:
     try:
         view.amount_map()[view.amount_key] = preferences.positive_amount(view.params["amount"].text())
     except ValueError:
         pass  # Invalid edits never replace a previously valid per-pair amount.
 
 
-def paper_policy(view: Window):
+def paper_policy(view: Window) -> dict[str, Any]:
     return {
         "gas_units": int(view.paper_gas.value()),
         "latency_seconds": view.paper_delay.value(),
@@ -41,11 +46,11 @@ def paper_policy(view: Window):
     }
 
 
-def entry_cost_policy(view: Window):
+def entry_cost_policy(view: Window) -> dict[str, Any]:
     return {"maximum_pct": str(view.cost_limit.value()), "roundtrip_gas": int(view.cost_gas.value())}
 
 
-def exit_policy(view: Window):
+def exit_policy(view: Window) -> dict[str, Any]:
     return {
         "continue_after_risk_exit": view.continue_after_exit.isChecked(),
         "tp_sl_basis": view.exit_basis.currentData(),
@@ -53,11 +58,11 @@ def exit_policy(view: Window):
     }
 
 
-def sizing_policy(view: Window):
+def sizing_policy(view: Window) -> dict[str, Any]:
     return {"unit": view.amount_unit.currentData(), "reserve_bnb": view.gas_reserve.text().strip()}
 
 
-def signal_policy(view: Window):
+def signal_policy(view: Window) -> dict[str, Any]:
     return {
         "mode": view.signal_mode.currentData(),
         "window_seconds": view.signal_window.value(),
@@ -67,13 +72,13 @@ def signal_policy(view: Window):
     }
 
 
-def save_wallet(view: Window):
+def save_wallet(view: Window) -> None:
     key = view.key.text().strip()
     view.key.clear()
     view.send("wallet", key=key)
 
 
-def load_rpc(view: Window):
+def load_rpc(view: Window) -> None:
     try:
         primary = Vault().get("rpc")
         backup = Vault().get("backup_rpc")
@@ -91,21 +96,23 @@ def load_rpc(view: Window):
         QMessageBox.warning(view, "Keychain", "Не удалось прочитать RPC из Keychain")
 
 
-def add_rpc_presets(view: Window, form, title, field, presets):
+def add_rpc_presets(
+    view: Window, form: QFormLayout, title: str, field: QLineEdit, presets: tuple[tuple[str, str], ...]
+) -> QComboBox:
     combo = QComboBox()
     for label, url in presets:
         combo.addItem(label, url)
     view.editable.append(combo)
     form.addRow(title, combo)
 
-    def selected(index):
+    def selected(index: int) -> None:
         url = combo.itemData(index)
         if url is not None:
             field.setText(url)
         else:
             field.setFocus()
 
-    def edited(text):
+    def edited(text: str) -> None:
         index = next((i for i, (_, url) in enumerate(presets) if url == text.strip()), len(presets) - 1)
         combo.blockSignals(True)
         combo.setCurrentIndex(index)
@@ -117,7 +124,7 @@ def add_rpc_presets(view: Window, form, title, field, presets):
     return combo
 
 
-def mode_changed(view: Window):
+def mode_changed(view: Window) -> None:
     mode = view.mode.currentText()
     descriptions = {
         "DEMO": "DEMO · Локальный рынок и виртуальный баланс. RPC и кошелёк не нужны.",

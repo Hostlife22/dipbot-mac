@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from typing import Any
+
+from web3.types import RPCEndpoint, RPCResponse
+
 """Bounded caching of network identity only; state and prices are never cached."""
 
 import threading
@@ -11,16 +17,16 @@ from dipbot.observability.telemetry import TIMINGS
 class BscHTTPProvider(HTTPProvider):
     network_check_interval = 30.0
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._network_lock = threading.Lock()
-        self._network_identity = None
+        self._network_identity: tuple[str, float, RPCResponse] | None = None
 
-    def invalidate_network(self):
+    def invalidate_network(self) -> None:
         with self._network_lock:
             self._network_identity = None
 
-    def make_request(self, method, params):
+    def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         if method == "eth_chainId":
             with self._network_lock:
                 cached = self._network_identity
@@ -29,7 +35,7 @@ class BscHTTPProvider(HTTPProvider):
                     and cached[0] == str(self.endpoint_uri)
                     and 0 <= time.monotonic() - cached[1] < self.network_check_interval
                 ):
-                    return dict(cached[2])
+                    return cached[2].copy()
         endpoint = str(self.endpoint_uri)
         started = time.monotonic()
         try:
@@ -65,6 +71,6 @@ class BscHTTPProvider(HTTPProvider):
         elif method == "eth_chainId":
             with self._network_lock:
                 self._network_identity = (
-                    (endpoint, started, dict(response)) if response.get("result") == "0x38" else None
+                    (endpoint, started, response.copy()) if response.get("result") == "0x38" else None
                 )
         return response

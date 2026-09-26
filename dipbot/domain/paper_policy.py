@@ -39,7 +39,7 @@ class PaperPolicy:
             "fee_quote": str(self.fee_quote),
         }
 
-    def operation_cost(self, gas_gwei, quote, rates):
+    def operation_cost(self, gas_gwei, quote, rates) -> D:
         """Fixed extra cost plus explicit gas-unit assumption at current FX."""
         from dipbot.domain.assets import WBNB
 

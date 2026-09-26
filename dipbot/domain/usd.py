@@ -23,7 +23,7 @@ def select_rate(rows, token):
     return max(candidates)[1]
 
 
-def price_text(value, rate=None, digits=8):
+def price_text(value, rate=None, digits=8) -> str:
     value = Decimal(str(value))
     if rate is not None:
         value *= rate

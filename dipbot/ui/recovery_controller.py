@@ -3,7 +3,10 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import (
+    QMessageBox,
+    QScrollArea,
+)
 
 from dipbot.execution.pending import LABELS as PENDING_LABELS
 
@@ -11,7 +14,7 @@ if TYPE_CHECKING:
     from dipbot.ui.window import Window
 
 
-def refresh_recovery(view: Window):
+def refresh_recovery(view: Window) -> None:
     operation = view.store.data.get("operation")
     positions = view.store.data.get("positions", {})
     signature = repr((operation, positions))
@@ -72,22 +75,24 @@ def refresh_recovery(view: Window):
     view.recovery_details.setText("\n".join(details))
 
 
-def compare_saved_positions(view: Window):
+def compare_saved_positions(view: Window) -> None:
     view.position_comparison.setText("Чтение балансов сохранённых позиций…")
     view.send("compare_positions")
 
 
-def check_receipts(view: Window):
+def check_receipts(view: Window) -> None:
     view.receipt_result.setText("Проверка receipts через RPC…")
     view.send("reconcile", gas=view.gas.text())
 
 
-def show_recovery(view: Window):
+def show_recovery(view: Window) -> None:
     view.tabs.setCurrentIndex(1)
-    view.tabs.widget(1).ensureWidgetVisible(view.recovery_group)
+    tab = view.tabs.widget(1)
+    if isinstance(tab, QScrollArea):
+        tab.ensureWidgetVisible(view.recovery_group)
 
 
-def prepare_saved_position(view: Window):
+def prepare_saved_position(view: Window) -> None:
     if view.running or view.busy or view.display_position > 0:
         return
     record = view.store.data.get("positions", {}).get(view.saved_positions.currentData())
@@ -106,7 +111,7 @@ def prepare_saved_position(view: Window):
     )
 
 
-def cancel_pending(view: Window):
+def cancel_pending(view: Window) -> None:
     if view.mode.currentText() != "LIVE":
         QMessageBox.information(
             view,
@@ -130,10 +135,10 @@ def cancel_pending(view: Window):
             f"Попытка отмены {plan['attempt']}/3: {plan['original_hash']}\nNonce {plan['nonce']}; перевод 0 BNB себе.\n"
             f"GAS {gas} gwei; комиссия до {fee} BNB.\n"
             "Исходная сделка может подтвердиться раньше отмены. Блокировка останется до сверки балансов. Продолжить?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        == QMessageBox.Yes
+        == QMessageBox.StandardButton.Yes
     ):
         view.send(
             "cancel_pending",
@@ -144,16 +149,16 @@ def cancel_pending(view: Window):
         )
 
 
-def unlock(view: Window):
+def unlock(view: Window) -> None:
     if (
         QMessageBox.question(
             view,
             "Сверка",
             "Вы проверили все receipts и фактические балансы?\n"
             "Кэш позиций будет сброшен. Остатки можно продать через SELL WALLET → BNB.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        == QMessageBox.Yes
+        == QMessageBox.StandardButton.Yes
     ):
         view.send("unlock", gas=view.gas.text())

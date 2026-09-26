@@ -1,3 +1,5 @@
+from dipbot.domain.records import TradeDetail
+
 """Presentation-only cash-flow snapshots. Pool fees are already inside swap amounts."""
 
 from decimal import Decimal as D
@@ -5,7 +7,7 @@ from decimal import Decimal as D
 from dipbot.execution.accounting import marked_value
 
 
-def entry_view(quantity, gross, fee_usd, rate, *, total_usd=None):
+def entry_view(quantity, gross, fee_usd, rate, *, total_usd=None) -> TradeDetail:
     gross_usd = marked_value(gross, rate) if gross is not None else None
     if total_usd is None and gross_usd is not None and fee_usd is not None:
         total_usd = str(D(gross_usd) + D(fee_usd))

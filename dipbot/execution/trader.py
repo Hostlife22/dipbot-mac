@@ -1,29 +1,48 @@
-from typing import Any
-
-from dipbot.execution.errors import UncertainTransaction
-from dipbot.observability.cycle_trace import mark
-from dipbot.observability.telemetry import TIMINGS, timed
-
 """Sequential execution, durable transaction intent, explicit receipt accounting."""
+
+from __future__ import annotations
+
 import time
+from collections.abc import Callable
+from typing import Any, cast
 
 from eth_account import Account
+from eth_typing import HexStr
 from web3 import Web3
+from web3.contract.contract import ContractFunction
 from web3.exceptions import ContractLogicError
+from web3.types import TxParams, TxReceipt, Wei
 
 from dipbot.domain.assets import V2_FACTORY, V2_ROUTER, V3_FACTORY, V3_ROUTER, WBNB
+from dipbot.domain.records import OperationRecord, TransactionRecord, TransactionRequest
 from dipbot.domain.strategy import D, minimum_out
-from dipbot.execution.accounting import marked_value, record_gas
+from dipbot.execution.accounting import RateBook, marked_value, record_gas
+from dipbot.execution.errors import UncertainTransaction
 from dipbot.market.chain import TOKEN_ABI, V2_ABI, V3_ABI, Chain, Pool, address, route_path
 from dipbot.market.routes import conversion_specs
+from dipbot.observability.cycle_trace import mark
+from dipbot.observability.telemetry import TIMINGS, timed
 from dipbot.persistence.dynamic import preference
-from dipbot.persistence.storage import Store
+from dipbot.persistence.ports import StateStore
 
 
 class LiveTrader:
     trade_router: str | None = None
+    broadcast_chain: Chain | None = None
+    rates: RateBook | None = None
+    stop_requested: Callable[[], bool] | None = None
+    reserve_wei: int = 0
+    converter_preference: dict[str, Any]
 
-    def __init__(self, chain: Chain, key: str, store: Store, gas_gwei: D, log, max_fee=D("0.005")):
+    def __init__(
+        self,
+        chain: Chain,
+        key: str,
+        store: StateStore,
+        gas_gwei: D,
+        log: Callable[[str], None],
+        max_fee: D = D("0.005"),
+    ) -> None:
         if not gas_gwei.is_finite() or not 0 < gas_gwei <= 1000:
             raise ValueError("GAS GWEI должен быть от 0 до 1000")
         self.chain, self.store, self.log = chain, store, log
@@ -31,13 +50,13 @@ class LiveTrader:
         self.owner = self.account.address
         self.gas_price = int(gas_gwei * 10**9)
         self.max_fee = int(max_fee * 10**18)
-        self.operation: dict[str, Any] | None = None
+        self.operation: OperationRecord | None = None
         self.chain.check()
         receipt_check = getattr(self.chain, "check_receipt_access", None)
         if receipt_check is not None:
             receipt_check()
 
-    def begin(self, description):
+    def begin(self, description: str) -> None:
         if self.store.data.get("operation"):
             raise UncertainTransaction("Есть незавершённая LIVE-операция. Нужна сверка транзакций и балансов")
         self.operation = {
@@ -49,7 +68,7 @@ class LiveTrader:
         self.store.data["operation"] = self.operation
         self.store.save()
 
-    def finish(self):
+    def finish(self) -> None:
         if self.operation is None:
             raise RuntimeError("Нет активной операции")
         previous = self.store.data.copy()
@@ -63,7 +82,7 @@ class LiveTrader:
             raise
         self.operation = None
 
-    def abort_entry_if_stopped(self, label):
+    def abort_entry_if_stopped(self, label: str) -> None:
         operation = self.operation
         entry = label == "BUY" or (
             label.startswith("APPROVE")
@@ -82,7 +101,7 @@ class LiveTrader:
         raise EntryRejected("STOP: BUY не подписан; завершённые approve сохранены в журнале")
 
     @timed("trader.send")
-    def send(self, function, label, value=0):
+    def send(self, function: ContractFunction, label: str, value: int = 0) -> TxReceipt:
         if self.operation is None:
             raise RuntimeError("Отправка вне записанной операции запрещена")
         self.abort_entry_if_stopped(label)
@@ -95,10 +114,10 @@ class LiveTrader:
         latest_nonce = w3.eth.get_transaction_count(self.owner, "latest")
         if nonce != latest_nonce:
             raise UncertainTransaction("У кошелька уже есть pending-транзакция. Дождитесь её подтверждения")
-        tx_base = {
+        tx_base: TxParams = {
             "from": self.owner,
-            "value": value,
-            "gasPrice": self.gas_price,
+            "value": Wei(value),
+            "gasPrice": Wei(self.gas_price),
             "nonce": nonce,
             "chainId": 56,
         }
@@ -111,8 +130,9 @@ class LiveTrader:
         if w3.eth.get_balance(self.owner) < value + gas * self.gas_price + reserve:
             raise ValueError("Недостаточно BNB для суммы, газа и настроенного резерва выхода")
         tx = function.build_transaction({**tx_base, "gas": gas})
+        tx_fields = dict(tx)
         if any(
-            type(tx.get(k)) is not int or tx[k] != v
+            type(tx_fields.get(k)) is not int or tx_fields[k] != v
             for k, v in {
                 "chainId": 56,
                 "nonce": nonce,
@@ -130,7 +150,7 @@ class LiveTrader:
             signed = self.account.sign_transaction(tx)
         mark(self, "signed", label=label)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
-        record = {
+        record: TransactionRecord = {
             "hash": local_hash,
             "label": label,
             "nonce": nonce,
@@ -138,7 +158,10 @@ class LiveTrader:
             "stage": "prepared",
             "prepared_at": int(time.time()),
             "broadcast_route": "custom" if broadcaster is not self.chain else "primary",
-            "request": {k: tx[k] for k in ("chainId", "nonce", "value", "gas", "gasPrice", "to")},
+            "request": cast(
+                TransactionRequest,
+                {k: tx_fields[k] for k in ("chainId", "nonce", "value", "gas", "gasPrice", "to")},
+            ),
         }
         header = getattr(self.chain, "checked_header", {})
         if type(header.get("number")) is int:
@@ -193,7 +216,7 @@ class LiveTrader:
         self.log(f"Подтверждено: {label}, блок {receipt['blockNumber']}")
         return receipt
 
-    def approve(self, token, spender, amount):
+    def approve(self, token: str, spender: str, amount: int) -> None:
         allowance = self.chain.call(token, TOKEN_ABI, "allowance", self.owner, spender)
         if allowance >= amount:
             return
@@ -202,7 +225,7 @@ class LiveTrader:
             self.send(contract.functions.approve(spender, 0), "APPROVE RESET")
         self.send(contract.functions.approve(spender, amount), "APPROVE EXACT AMOUNT")
 
-    def verify_router(self, pool):
+    def verify_router(self, pool: Pool) -> tuple[str, Any]:
         if pool.router == "V2":
             router, abi, factory, wrapped = V2_ROUTER, V2_ABI, V2_FACTORY, "WETH"
         else:
@@ -222,11 +245,11 @@ class LiveTrader:
         buy: bool,
         tolerance: D,
         *,
-        signal_minimum=None,
-        simulate=False,
-        deadline_seconds=30,
-        quote_reader=None,
-    ):
+        signal_minimum: int | None = None,
+        simulate: bool = False,
+        deadline_seconds: int = 30,
+        quote_reader: Callable[[Pool, int, bool], int] | None = None,
+    ) -> int:
         if signal_minimum is not None and (
             not buy or not isinstance(signal_minimum, int) or not 0 < signal_minimum < 2**256
         ):
@@ -291,15 +314,15 @@ class LiveTrader:
             raise UncertainTransaction("Сделка подтверждена, но изменение баланса ниже minOut. Нужна сверка")
         return received
 
-    def wrap(self, amount):
+    def wrap(self, amount: int) -> None:
         self.send(self.chain.contract(WBNB, TOKEN_ABI).functions.deposit(), "BNB → WBNB", value=amount)
 
-    def unwrap(self, amount):
+    def unwrap(self, amount: int) -> None:
         if self.chain.balance(WBNB, self.owner) < amount:
             raise ValueError("Недостаточно WBNB")
         self.send(self.chain.contract(WBNB, TOKEN_ABI).functions.withdraw(amount), "WBNB → BNB")
 
-    def conversion_route(self, src, dest, amount):
+    def conversion_route(self, src: str, dest: str, amount: int) -> list[Pool]:
         """Quote original candidate order; retain safe alternatives per tier."""
         src, dest = address(src), address(dest)
         if src == dest or not 0 < amount < 2**256:
@@ -338,7 +361,7 @@ class LiveTrader:
             raise ValueError("Нет маршрута Converter с round-trip loss ≤ 15% для этой суммы")
         return max(routes, key=lambda item: item[0])[1]
 
-    def convert(self, quote, amount, buy, slippage):
+    def convert(self, quote: str, amount: int, buy: bool, slippage: D) -> int:
         if not 0 < amount < 2**256 or not slippage.is_finite() or not 0 <= slippage <= 20:
             raise ValueError("Некорректная сумма / Slippage Converter")
         quote = address(quote)
@@ -393,13 +416,13 @@ class LiveTrader:
             self.unwrap(received)
         return received
 
-    def check_canonical(self, receipt):
+    def check_canonical(self, receipt: TxReceipt) -> None:
         if not hasattr(self.chain, "canonical_receipt"):
             return  # Small offline test doubles have no block provider.
         self.retry_read(lambda: self.chain.canonical_receipt(receipt))
 
     @staticmethod
-    def retry_read(read):
+    def retry_read(read: Callable[[], Any]) -> Any:
         for attempt in range(3):
             try:
                 return read()
@@ -410,18 +433,20 @@ class LiveTrader:
                     ) from None
                 time.sleep(0.2)
 
-    def balance_snapshot(self, token):
+    def balance_snapshot(self, token: str | None) -> tuple[int, Any]:
         if hasattr(self.chain, "balance_snapshot"):
-            return self.chain.balance_snapshot(token, self.owner)
+            return cast(tuple[int, Any], self.chain.balance_snapshot(token, self.owner))
         return (
             self.chain.balance(token, self.owner)
             if token is not None
             else self.chain.w3.eth.get_balance(self.owner)
         ), None
 
-    def balance_after(self, token, receipt, snapshot):
+    def balance_after(self, token: str | None, receipt: TxReceipt, snapshot: Any) -> int:
         if snapshot is not None:
-            return self.retry_read(lambda: self.chain.receipt_balance(token, self.owner, receipt, snapshot))
+            return cast(
+                int, self.retry_read(lambda: self.chain.receipt_balance(token, self.owner, receipt, snapshot))
+            )
         return (
             self.chain.balance(token, self.owner)
             if token is not None
@@ -429,9 +454,9 @@ class LiveTrader:
         )
 
     @staticmethod
-    def validate_receipt(receipt, tx_hash):
+    def validate_receipt(receipt: TxReceipt, tx_hash: str) -> None:
         try:
-            expected = Web3.to_bytes(hexstr=tx_hash)
+            expected = Web3.to_bytes(hexstr=HexStr(tx_hash))
             raw_hash = receipt["transactionHash"]
             if not isinstance(raw_hash, (str, bytes, bytearray)):
                 raise ValueError("receipt hash type")
@@ -444,9 +469,8 @@ class LiveTrader:
                 and type(receipt["blockNumber"]) is int
                 and receipt["blockNumber"] >= 0
                 and all(
-                    type(receipt[k]) is int and 0 <= receipt[k] < 2**256
-                    for k in ("gasUsed", "effectiveGasPrice")
-                    if k in receipt
+                    type(gas_value) is int and 0 <= gas_value < 2**256
+                    for gas_value in (receipt.get("gasUsed", 0), receipt.get("effectiveGasPrice", 0))
                 )
             )
         except (KeyError, TypeError, ValueError):
@@ -454,7 +478,7 @@ class LiveTrader:
         if not valid:
             raise UncertainTransaction("Некорректный receipt или другой hash; блокировка сохранена")
 
-    def reconcile(self):
+    def reconcile(self) -> str:
         from dipbot.execution.reconciliation import reconcile_receipts
 
-        return reconcile_receipts(self.chain, self.store, self.owner)
+        return str(reconcile_receipts(self.chain, self.store, self.owner))

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Protocol
+
+from dipbot.domain.records import OperationRecord, PositionRecord
+from dipbot.persistence.ports import StateStore as StateStore
 
 if TYPE_CHECKING:
     from dipbot.market.chain import Pool
@@ -12,14 +14,7 @@ if TYPE_CHECKING:
 
 LogSink = Callable[[str], None]
 EventSink = Callable[[str, object], None]
-PositionReader = Callable[[], dict[str, Any]]
-
-
-class StateStore(Protocol):
-    path: Path
-    data: dict[str, Any]
-
-    def save(self) -> None: ...
+PositionReader = Callable[[], PositionRecord]
 
 
 class SecretStore(Protocol):
@@ -46,7 +41,7 @@ class MarketReader(Protocol):
 
 class TradeExecutor(Protocol):
     owner: str
-    operation: dict[str, Any] | None
+    operation: OperationRecord | None
     trade_router: str | None
 
     def begin(self, description: str) -> None: ...

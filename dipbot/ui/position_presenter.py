@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import time
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from decimal import Decimal as D
+from typing import TYPE_CHECKING, Any
 
 from dipbot.domain.usd import price_text
 from dipbot.observability.telemetry import TIMINGS
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from dipbot.ui.window import Window
 
 
-def reset_price_display(view: Window):
+def reset_price_display(view: Window) -> None:
     view.market_block = view.market_block_timestamp = None
     view.market_rpc_source = "BSC"
     view.chart.clear()
@@ -29,7 +30,7 @@ def reset_price_display(view: Window):
     view.update_quote_age()
 
 
-def display_price(view: Window, value, digits=8):
+def display_price(view: Window, value: D | str | float | int | None, digits: int = 8) -> str:
     if value is None:
         return "—"
     if view.price_source in ("DEMO", "REPLAY"):
@@ -37,12 +38,12 @@ def display_price(view: Window, value, digits=8):
     return price_text(value, view.usd.current(), digits)
 
 
-def capture_usd_rates(view: Window):
+def capture_usd_rates(view: Window) -> None:
     for source in (view.usd, view.gas_usd):
         view.worker.rates.update(source.token, source.current(), source.received_at)
 
 
-def refresh_currency(view: Window):
+def refresh_currency(view: Window) -> None:
     if not hasattr(view, "usd") or not hasattr(view, "price_source"):
         return
     rate = view.usd.current() if view.price_source not in ("DEMO", "REPLAY") else None
@@ -63,12 +64,12 @@ def refresh_currency(view: Window):
     view.refresh_pnl()
 
 
-def refresh_trade_details(view: Window):
+def refresh_trade_details(view: Window) -> None:
     payload = getattr(view, "pnl_status", {})
     same = payload.get("mode") == view.mode.currentText() and view.mode.currentText() != "DEMO"
     detail = payload.get("trade_detail") if same else None
 
-    def usd(value):
+    def usd(value: Any) -> str:
         if value is None:
             return "— (нет данных)"
         return "≈ $" + price_text(Decimal(value), digits=6)
@@ -100,7 +101,7 @@ def refresh_trade_details(view: Window):
     age = time.monotonic() - estimate["at"] if estimate else None
     if not view.display_position:
         text = "Открытая позиция, USD: —"
-    elif estimate and 0 <= age <= 0.55 and not view.quote_unavailable:
+    elif estimate and age is not None and 0 <= age <= 0.55 and not view.quote_unavailable:
         text = "Оценка продажи: " + usd(estimate["value_usd"]) + " · P&L позиции: " + usd(estimate["pnl_usd"])
         text += " · без будущего газа SELL" if estimate["excludes_exit_gas"] else " · по модели PAPER"
         text += f" · {age:.1f} с назад"
@@ -114,7 +115,7 @@ def refresh_trade_details(view: Window):
     view.position_estimate.setText(text)
 
 
-def refresh_pnl(view: Window):
+def refresh_pnl(view: Window) -> None:
     payload = getattr(view, "pnl_status", None)
     if payload is None:
         return
@@ -180,7 +181,7 @@ def refresh_pnl(view: Window):
     )
 
 
-def update_state_badge(view: Window):
+def update_state_badge(view: Window) -> None:
     """Presentation of existing worker/UI states; never changes trading decisions."""
     tone = ""
     if view.stop_pending:
@@ -199,9 +200,13 @@ def update_state_badge(view: Window):
         text = "EXECUTING"
     elif view.running and getattr(view, "quote_unavailable", False):
         text, tone = "WAIT RPC", "warning"
-    elif view.running and view.last_quote_at is not None and time.monotonic() - view.last_quote_at > 0.55:
+    elif (
+        view.running
+        and view.last_quote_at is not None
+        and time.monotonic() - (view.last_quote_at or 0) > 0.55
+    ):
         text, tone = "STALE", "warning"
-    elif not view.running and (getattr(view, "halt_reason", "") or getattr(view, "ui_error", "")):
+    elif not view.running and (getattr(view, "halt_reason", None) or getattr(view, "ui_error", None)):
         text, tone = "ERROR", "danger"
     elif view.display_position > 0:
         text, tone = "POSITION", "positive"
@@ -219,7 +224,7 @@ def update_state_badge(view: Window):
     set_tone(view.strategy_status, tone)
 
 
-def update_strategy_status(view: Window):
+def update_strategy_status(view: Window) -> None:
     view.update_state_badge()
     if view.searching and not view.stop_pending:
         view.strategy_status.setText("Поиск · проверяется адрес, ликвидность и доступные маршруты")
@@ -284,7 +289,11 @@ def update_strategy_status(view: Window):
             else " · проверьте причину перед START"
         )
         text = "Остановлен из-за ошибки · " + view.halt_reason + action
-    elif view.running and view.last_quote_at is not None and time.monotonic() - view.last_quote_at > 0.55:
+    elif (
+        view.running
+        and view.last_quote_at is not None
+        and time.monotonic() - (view.last_quote_at or 0) > 0.55
+    ):
         text = "Котировка устарела · нет обновлений более 0,55 с"
     elif getattr(view, "entry_notice", "") and view.running:
         text = (
@@ -306,12 +315,12 @@ def update_strategy_status(view: Window):
             if view.mode.currentText() == "DEMO" or getattr(view, "selection_ready", False)
             else "Выберите рынок · раскройте AutoPair"
         )
-    fresh = view.last_quote_at is not None and time.monotonic() - view.last_quote_at <= 0.55
+    fresh = view.last_quote_at is not None and time.monotonic() - (view.last_quote_at or 0) <= 0.55
     if fresh and view.last_price is not None and view.last_price > 0:
         for key in ("TP", "SL") if view.display_position > 0 else ("DIP",) if view.running else ():
             if key == "DIP" and (
                 getattr(view, "wait_reason", "") in ("rebound", "cooldown", "warmup")
-                or getattr(view, "entry_notice", "")
+                or getattr(view, "entry_notice", None)
             ):
                 continue
             if key not in view.chart.levels:
@@ -334,7 +343,7 @@ def update_strategy_status(view: Window):
     )
 
 
-def update_quote_age(view: Window):
+def update_quote_age(view: Window) -> None:
     view.refresh_trade_details()
     # Pull at UI cadence: no unbounded signal queue while an RPC/receipt blocks the executor.
     monitor = view.worker.execution_monitor
@@ -366,13 +375,13 @@ def update_quote_age(view: Window):
         view.quote_age.setText("Котировок ещё нет")
         set_tone(view.quote_age, "")
         return
-    age = max(0, time.monotonic() - view.last_quote_at)
+    age = max(0, time.monotonic() - (view.last_quote_at or 0))
     source = {"DEMO": "локальная модель DEMO", "REPLAY": "повтор записанных цен"}.get(
         view.price_source, "BSC / RPC"
     )
     state = " · нет новых котировок > 0.55 с" if view.running and age > 0.55 else ""
     if view.chart.usd_rate is not None:
-        conversion = f"USD ≈ · курс {view.display_unit}/USD получен {time.monotonic() - view.usd.received_at:.0f} с назад (DEX Screener)"
+        conversion = f"USD ≈ · курс {view.display_unit}/USD получен {time.monotonic() - (view.usd.received_at or 0):.0f} с назад (DEX Screener)"
     elif view.price_source == "BSC":
         conversion = f"{view.display_unit} · USD недоступен / курс загружается"
     else:
@@ -392,7 +401,7 @@ def update_quote_age(view: Window):
     )
 
 
-def refresh_timings(view: Window):
+def refresh_timings(view: Window) -> None:
     if not view.timing_report.isVisible():
         return
     rows = TIMINGS.snapshot()
@@ -405,7 +414,7 @@ def refresh_timings(view: Window):
     )
 
 
-def update_controls(view: Window):
+def update_controls(view: Window) -> None:
     idle = not view.busy and not view.running and not view.stop_pending
     position_open = view.display_position > 0
     for widget in view.editable + view.actions:

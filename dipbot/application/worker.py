@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import queue
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import asdict
+from typing import Any, TypeVar, cast
 
 from PySide6.QtCore import QThread, Signal
 
@@ -9,98 +13,58 @@ from dipbot.application import commands, market_observation, positions
 from dipbot.application.errors import safe_error
 from dipbot.application.messages import Command, CommandKind, Event, EventKind, StatusPayload
 from dipbot.application.ports import StateStore
+from dipbot.application.state import Connections, MarketState, RecordingState, SessionState, StateAccess
 from dipbot.application.sweep import SweepService
 from dipbot.application.trade_view import entry_view
-from dipbot.domain.cost_policy import CostPolicy
 from dipbot.domain.entry_guard import EntryRejected
-from dipbot.domain.paper_policy import PaperPolicy
-from dipbot.domain.sizing import SizingPolicy
-from dipbot.domain.strategy import D, Settings, Strategy
+from dipbot.domain.records import PositionRecord, TradeDetail
+from dipbot.domain.strategy import D
 from dipbot.execution.accounting import (
     RateBook,
     closed_summary,
 )
-from dipbot.execution.paper import PaperTrader
-from dipbot.market.chain import Chain
+from dipbot.market.chain import Chain, Pool
 from dipbot.market.exit_reads import ExitReadCancelled
-from dipbot.market.head_feed import HeadSchedule
-from dipbot.market.rpc_health import RpcHealth
 from dipbot.observability.cycle_trace import mark
 
 
-class Worker(QThread):
+class Worker(QThread, StateAccess):
     log = Signal(str)
-    event = Signal(str, object)
+    event = Signal(str, object)  # type: ignore[assignment]  # Existing Qt signal API shadows QObject.event.
 
-    def __init__(self, store: StateStore):
+    def __init__(self, store: StateStore) -> None:
         super().__init__()
+        self.connections = Connections()
+        self.market = MarketState()
+        self.session = SessionState()
+        self.recording = RecordingState()
+        self.position_watch_error = ""
+        self.exit_return: str | None = None
         self.store = store
         self.commands: queue.Queue[Command] = queue.Queue()
         self.quit_event = threading.Event()
         self.stop_event = threading.Event()
-        self.chain = None
-        self.backup_chain = None
-        self.broadcast_chain = None
-        self.head_feed = None
-        self.gap_recovery = None
-        self.execution_monitor = None
         self.rates = RateBook()
-        self.sizing = SizingPolicy()
-        self.cost_policy = CostPolicy()
-        self.paper_policy = PaperPolicy(latency_seconds=0)
-        self.gas_gwei = D(".1")
-        self.requested_amount = None
-        self.paper_usd = {"value": D(0), "closed": 0, "missing": 0, "entry": None}
-        self.recorder = None
-        self.recorder_notice = False
-        self.head_schedule = HeadSchedule()
-        self.backup_until = 0.0
-        self.rpc_health = RpcHealth()
-        self.adaptive_rpc = False
-        self.last_market_header = None
-        self.backup_verified_pool = None
-        self.market_source = "BSC"
-        self.pool = None
-        self.mode = "DEMO"
-        self.running = False
-        self.strategy = Strategy(Settings())
-        self.paper = PaperTrader(D("2"))
-        self.paper_context = None
-        self.live = None
-        self.tick = 0
-        self.current_price = None
-        self.price_time = 0.0
-        self.interval = 0.1
-        self.discovery_generation = 0
-        self.pool_generation = None
-        self.quote_failures = 0
-        self.quote_unavailable = False
-        self.entry_retry_at = 0.0
-        self.entry_notice = ""
-        self.halt_reason = ""
-        self.exit_retry = None
-        self.trade_detail = None
-        self.open_estimate = None
 
-    def discovery_current(self, generation):
+    def discovery_current(self, generation: int | None) -> bool:
         return (generation is None or generation == self.discovery_generation) and not (
             self.stop_event.is_set() or self.quit_event.is_set()
         )
 
-    def discovery_emit(self, generation, name, value):
+    def discovery_emit(self, generation: int | None, name: str | EventKind, value: Any) -> None:
         if generation is None:
             self.emit_event(name, value)
         else:
             self.emit_event(EventKind.DISCOVERY_EVENT, (generation, name, value))
 
-    def emit_event(self, name, payload):
+    def emit_event(self, name: str | EventKind, payload: Any) -> None:
         message = Event.from_wire(name, payload)
         self.event.emit(message.kind.value, message.payload)
 
-    def submit(self, name, **data):
+    def submit(self, name: str, **data: Any) -> None:
         self.commands.put(Command.from_wire(name, data))
 
-    def run(self):
+    def run(self) -> None:
         try:
             self.run_loop()
         finally:
@@ -112,7 +76,7 @@ class Worker(QThread):
             if self.recorder is not None:
                 self.recorder.close()
 
-    def run_loop(self):
+    def run_loop(self) -> None:
         next_tick = time.monotonic()
         next_watch = 0.0
         while not self.quit_event.is_set():
@@ -129,7 +93,7 @@ class Worker(QThread):
             if name:
                 self.emit_event(EventKind.BUSY, True)
                 try:
-                    self.command(name, data)
+                    self.command(name, dict(data))
                 except ExitReadCancelled:
                     pass  # STOP below owns cancellation; do not report it as an RPC failure.
                 except Exception as exc:
@@ -199,8 +163,10 @@ class Worker(QThread):
                 recovery = self.gap_recovery
                 self.gap_recovery = None
                 if self.pool == recovery.pool:
+                    assert recovery.result is not None
                     self.record_market("backfill", **recovery.result)
                     result = recovery.result
+                    assert result is not None
                     detail = (
                         result["error_type"]
                         if result["error_type"]
@@ -235,6 +201,7 @@ class Worker(QThread):
                 poll_started = time.monotonic()
                 previous_head = self.head_schedule.last_head
                 if self.head_schedule.consume(head, poll_started):
+                    assert head is not None
                     if self.strategy.entry is None:
                         self.strategy.reset_anchor()
                     self.log.emit("Пропуск или смена ветви WebSocket: читается актуальное состояние HTTP")
@@ -254,7 +221,7 @@ class Worker(QThread):
                         )
                         source = self.backup_chain or self.chain
                         self.gap_recovery = GapRecovery(
-                            str(source.w3.provider.endpoint_uri), self.pool, start, head.number
+                            str(getattr(source.w3.provider, "endpoint_uri")), self.pool, start, head.number
                         ).start()
                     elif self.gap_recovery is not None:
                         self.log.emit(
@@ -290,7 +257,7 @@ class Worker(QThread):
                 next_tick = max(poll_started + delay, time.monotonic())
                 self.status()
 
-    def record_market(self, kind, **data):
+    def record_market(self, kind: str | None, **data: Any) -> None:
         if self.recorder is not None:
             self.recorder.record(kind, **data)
             if not self.recorder_notice and (self.recorder.dropped or self.recorder.error_type):
@@ -299,7 +266,15 @@ class Worker(QThread):
                     "Архив рынка неполный: ошибка записи или достигнут лимит; торговый журнал не затронут"
                 )
 
-    def record_quote(self, source, purpose, side, amount, output, reverse=None):
+    def record_quote(
+        self,
+        source: Chain | None,
+        purpose: str,
+        side: str,
+        amount: int,
+        output: int,
+        reverse: int | None = None,
+    ) -> None:
         mark(self, "quote")
         context = getattr(source, "quote_context", None) or {}
         self.record_market(
@@ -314,14 +289,14 @@ class Worker(QThread):
             pool=self.pool.address if self.pool else None,
         )
 
-    def paper_operation_cost(self):
-        return self.paper_policy.operation_cost(self.gas_gwei, self.pool.quote, self.rates)
+    def paper_operation_cost(self) -> D:
+        return self.paper_policy.operation_cost(self.gas_gwei, self.market.selected.quote, self.rates)
 
-    def current_trade_detail(self):
+    def current_trade_detail(self) -> TradeDetail | None:
         if self.mode == "LIVE" and self.position():
             pos = self.position()
             return entry_view(
-                D(pos["amount"]) / D(10) ** self.pool.token_decimals,
+                D(pos["amount"]) / D(10) ** self.market.selected.token_decimals,
                 pos.get("cost_quote"),
                 pos.get("entry_fees", {}).get("usd"),
                 pos.get("entry_rate"),
@@ -329,12 +304,12 @@ class Worker(QThread):
             )
         return self.trade_detail
 
-    def status(self):
+    def status(self) -> None:
         settings = self.strategy.settings
         wait_reason, signal_notice = self.strategy.entry_wait(time.monotonic())
         realized = str(self.paper.realized) if self.mode != "LIVE" else "—"
         if self.mode == "LIVE" and self.live and self.pool:
-            key = self.live.owner.lower() + ":" + self.pool.quote.lower()
+            key = self.live.owner.lower() + ":" + self.market.selected.quote.lower()
             realized = self.store.data.get("realized_quote", {}).get(key, "—")
         base, entry = self.strategy.base or D(0), self.strategy.entry or D(0)
         levels = (
@@ -364,7 +339,8 @@ class Worker(QThread):
             "position": str(self.paper.position)
             if self.mode != "LIVE"
             else str(
-                D(self.position().get("amount", 0)) / D(10) ** (self.pool.token_decimals if self.pool else 18)
+                D(self.position().get("amount", 0))
+                / D(10) ** (self.market.selected.token_decimals if self.pool else 18)
             ),
             "base": str(self.strategy.base or 0),
             "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
@@ -396,7 +372,7 @@ class Worker(QThread):
             "pnl_quote": (
                 self.paper_context[2]
                 if self.mode == "PAPER" and self.paper_context and len(self.paper_context) == 3
-                else self.pool.quote
+                else self.market.selected.quote
                 if self.mode != "DEMO" and self.pool
                 else ""
             ),
@@ -412,20 +388,20 @@ class Worker(QThread):
         }
         self.emit_event(EventKind.STATUS, payload)
 
-    def position_key(self):
+    def position_key(self) -> str:
         return f"{self.live.owner.lower()}:{self.pool.address.lower()}" if self.live and self.pool else ""
 
-    def position(self):
-        return self.store.data.get("positions", {}).get(self.position_key(), {})
+    def position(self) -> PositionRecord:
+        return cast(PositionRecord, self.store.data.get("positions", {}).get(self.position_key(), {}))
 
-    def set_position(self, amount, entry):
+    def set_position(self, amount: int, entry: D | int) -> None:
         positions = self.store.data.setdefault("positions", {})
         if amount:
             positions[self.position_key()] = {
                 **positions.get(self.position_key(), {}),
                 "amount": amount,
                 "entry": str(entry),
-                "pool": asdict(self.pool),
+                "pool": asdict(self.market.selected),
                 "opened_at": positions.get(self.position_key(), {}).get("opened_at", time.time()),
                 "peak_price": positions.get(self.position_key(), {}).get("peak_price", str(entry)),
             }
@@ -433,60 +409,60 @@ class Worker(QThread):
             positions.pop(self.position_key(), None)
         self.store.save()
 
-    def require_chain(self):
+    def require_chain(self) -> None:
         if self.chain is None:
             raise ValueError("Сначала подключите HTTP RPC")
 
-    def require_live(self):
+    def require_live(self) -> None:
         if self.mode != "LIVE" or self.live is None:
             raise ValueError("Нужен LIVE-режим и кошелёк в Keychain")
 
-    def configure(self, data):
+    def configure(self, data: dict[str, Any]) -> None:
         return commands.configure(self, data)
 
-    def command(self, name, data):
+    def command(self, name: str, data: dict[str, Any]) -> None:
         message = Command.from_wire(name, data)
-        return commands.command(self, message.kind, message.data())
+        return commands.command(self, message.kind, dict(message.data()))
 
-    def select_pool(self, pool, *, generation=None):
+    def select_pool(self, pool: Pool, *, generation: int | None = None) -> None:
         return commands.select_pool(self, pool, generation=generation)
 
-    def read_price(self, force_chain=False):
+    def read_price(self, force_chain: bool = False) -> D:
         return market_observation.read_price(self, force_chain)
 
-    def adaptive_market_price(self):
+    def adaptive_market_price(self) -> D:
         return market_observation.adaptive_market_price(self)
 
-    def market_price(self):
+    def market_price(self) -> D:
         return market_observation.market_price(self)
 
-    def backup_price(self):
+    def backup_price(self) -> D:
         return market_observation.backup_price(self)
 
-    def watchable_position(self):
+    def watchable_position(self) -> bool:
         return market_observation.watchable_position(self)
 
-    def watch_position(self):
+    def watch_position(self) -> None:
         return market_observation.watch_position(self)
 
-    def observe(self, read_only=False):
+    def observe(self, read_only: bool = False) -> None:
         return market_observation.observe(self, read_only)
 
-    def open_position(self):
+    def open_position(self) -> None:
         return positions.open_position(self)
 
-    def exit_read(self, read, *, stopping=False):
+    def exit_read(self, read: Callable[[Chain | None], T], *, stopping: bool = False) -> T:
         return positions.exit_read(self, read, stopping=stopping)
 
-    def close_position(self, reason):
+    def close_position(self, reason: str) -> None:
         return positions.close_position(self, reason)
 
-    def sweep_service(self):
+    def sweep_service(self) -> SweepService:
         """Bind the current connection and wallet when starting this use case."""
         return SweepService(
             store=self.store,
-            chain=self.chain,
-            live=self.live,
+            chain=self.connections.reader,
+            live=self.session.executor,
             strategy=self.strategy,
             rates=self.rates,
             stop_event=self.stop_event,
@@ -495,5 +471,8 @@ class Worker(QThread):
             position=self.position,
         )
 
-    def sweep(self):
-        return self.sweep_service().run()
+    def sweep(self) -> None:
+        self.sweep_service().run()
+
+
+T = TypeVar("T")
