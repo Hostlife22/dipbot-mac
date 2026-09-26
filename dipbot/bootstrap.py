@@ -13,6 +13,7 @@ import sys
 from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from dipbot.domain.strategy import Settings
 from dipbot.market.chain import profiles
 from dipbot.persistence.storage import Store, data_dir
 from dipbot.persistence.vault import Vault
@@ -32,6 +33,28 @@ def main() -> int:
     parser.add_argument("--market-paper-token", help="Isolated visible PAPER market audit token")
     parser.add_argument("--market-paper-pool", help="Canonical pool for market audit")
     parser.add_argument("--market-paper-output", help="New directory for market audit")
+    parser.add_argument(
+        "--market-paper-automatic-only",
+        action="store_true",
+        help="Observe natural PAPER signals without manual entry, injected faults or test restarts",
+    )
+    parser.add_argument(
+        "--market-paper-continue-after-sl",
+        action="store_true",
+        default=None,
+        help="Continue the isolated audit after a risk exit; does not change saved settings",
+    )
+    parser.add_argument("--market-paper-cooldown", type=float, default=None)
+    parser.add_argument(
+        "--market-paper-amount-usd", help="Virtual position size in USD for the isolated PAPER audit"
+    )
+    defaults = Settings()
+    for parameter in ("dip", "take_profit", "stop_loss", "slippage", "dynamic"):
+        parser.add_argument(
+            "--market-paper-" + parameter.replace("_", "-"),
+            default=str(getattr(defaults, parameter)),
+            help="PAPER audit setting; defaults to the application value",
+        )
     parser.add_argument("--smoke-test", action="store_true", help="Offline GUI startup test, temporary state")
     parser.add_argument("--display-check", help="Isolated read-only GUI audit directory")
     parser.add_argument("--display-replay", help="Recorded PAPER report with market_samples for GUI replay")
@@ -60,9 +83,18 @@ def main() -> int:
             Path(args.market_paper_output),
             args.acceptance_seconds,
             args.market_paper_pool,
-            exercise_recovery=True,
+            exercise_recovery=not args.market_paper_automatic_only,
+            automatic_only=args.market_paper_automatic_only,
             close_after=True,
             modern=args.market_paper_modern,
+            dip=args.market_paper_dip,
+            take_profit=args.market_paper_take_profit,
+            stop_loss=args.market_paper_stop_loss,
+            slippage=args.market_paper_slippage,
+            dynamic=args.market_paper_dynamic,
+            continue_after_sl=args.market_paper_continue_after_sl,
+            cooldown=args.market_paper_cooldown,
+            amount_usd=args.market_paper_amount_usd,
         )
         return result or 0
     if args.display_check:

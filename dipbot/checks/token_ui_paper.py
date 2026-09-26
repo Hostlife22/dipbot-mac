@@ -62,6 +62,8 @@ def run(
         raise ValueError("Autonomous audit cannot inject signals or restart the strategy")
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
         raise ValueError("Invalid PAPER fee model")
+    if amount_usd is not None and (not D(amount_usd).is_finite() or D(amount_usd) <= 0):
+        raise ValueError("PAPER USD amount must be finite and positive")
     directory.mkdir(parents=True, exist_ok=False)
     app_instance = QApplication.instance()
     assert app_instance is None or isinstance(app_instance, QApplication)
@@ -330,8 +332,6 @@ def run(
             report["token_decimals"] = pool.token_decimals
             w.market_toggle.setChecked(False)
             if amount_usd is not None:
-                if not D(amount_usd).is_finite() or not 0 < D(amount_usd) <= 1:
-                    raise ValueError("Audit USD amount must be in (0, 1]")
                 w.amount_unit.setCurrentIndex(w.amount_unit.findData("usd"))
                 w.params["amount"].setText(str(amount_usd))
             else:
