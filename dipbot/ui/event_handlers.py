@@ -25,28 +25,27 @@ if TYPE_CHECKING:
 
 def on_discovery_event(self: Window, payload: Any) -> bool:
     generation, event_name, value = payload
-    if generation == self.auto_generation:
+    if generation == self.presentation.auto_generation:
         if event_name == EventKind.ERROR:
             self.pool_label.setText("Ошибка RPC/проверки · повторите AutoPair или CHECK POOL")
         self.on_event(event_name, value)
     return False
-    return True
 
 
 def on_busy(self: Window, payload: bool) -> bool:
-    self.busy = payload
+    self.presentation.busy = payload
     if not payload:
-        self.searching = False
+        self.presentation.searching = False
     return True
 
 
 def on_exit_retry(self: Window, payload: ExitRetry | None) -> bool:
-    self.exit_retry = payload
+    self.presentation.exit_retry = payload
     return True
 
 
 def on_error(self: Window, payload: str) -> bool:
-    self.ui_error = str(payload)
+    self.presentation.ui_error = str(payload)
     self.journal_toggle.setChecked(True)
     self.footer.setText("ОШИБКА: " + payload)
     QMessageBox.warning(self, "Операция прервана", payload)
@@ -54,14 +53,14 @@ def on_error(self: Window, payload: str) -> bool:
 
 
 def on_price_context(self: Window, payload: PriceContext) -> bool:
-    self.same_block_cache = payload.get("same_block_cache", False)
-    if self.price_source != payload["source"]:
+    self.presentation.same_block_cache = payload.get("same_block_cache", False)
+    if self.presentation.price_source != payload["source"]:
         self.reset_price_display()
-    self.market_block = payload.get("block")
-    self.market_block_timestamp = payload.get("block_timestamp")
-    self.market_rpc_source = payload.get("rpc_source", "BSC")
-    self.price_source = payload["source"]
-    self.display_unit = (
+    self.presentation.market_block = payload.get("block")
+    self.presentation.market_block_timestamp = payload.get("block_timestamp")
+    self.presentation.market_rpc_source = payload.get("rpc_source", "BSC")
+    self.presentation.price_source = payload["source"]
+    self.presentation.display_unit = (
         "условных единиц (DEMO)"
         if payload["source"] == "DEMO"
         else next(
@@ -87,13 +86,13 @@ def on_price_context(self: Window, payload: PriceContext) -> bool:
 
 
 def on_price(self: Window, payload: str) -> bool:
-    if self.mode.currentText() != "DEMO" and not self.selection_ready:
+    if self.mode.currentText() != "DEMO" and not self.presentation.selection_ready:
         return False
-    self.last_price = Decimal(str(payload))
+    self.presentation.last_price = Decimal(str(payload))
     self.chart.add(payload)
     self.metrics["price"].setText(self.display_price(payload))
     self.metrics["price"].setToolTip(str(payload))
-    self.last_quote_at = time.monotonic()
+    self.presentation.last_quote_at = time.monotonic()
     self.update_quote_age()
     return True
 
@@ -145,7 +144,7 @@ def on_route_comparison(self: Window, payload: Any) -> bool:
 
 def on_pools(self: Window, payload: list[Pool]) -> bool:
     self.route_comparison.setText("Сравнение маршрутов ещё не выполнено")
-    self.selection_ready = False
+    self.presentation.selection_ready = False
     self.pool_input.clear()
     self.candidates.clear()
     self.pool_label.setText("Выберите проверенный маршрут" if payload else "Пул не выбран")
@@ -156,12 +155,12 @@ def on_pools(self: Window, payload: list[Pool]) -> bool:
 
 def on_selected(self: Window, payload: Pool) -> bool:
     self.reset_price_display()
-    self.display_unit = next(
+    self.presentation.display_unit = next(
         (name for name, addr in profiles().items() if addr.lower() == payload.quote.lower()),
         payload.quote,
     )
-    self.selection_ready = True
-    self.ui_error = ""
+    self.presentation.selection_ready = True
+    self.presentation.ui_error = ""
     self.remember_amount()
     self.router.blockSignals(True)
     self.quote.blockSignals(True)
@@ -171,11 +170,13 @@ def on_selected(self: Window, payload: Pool) -> bool:
     self.quote.setCurrentText(pair)
     self.router.blockSignals(False)
     self.quote.blockSignals(False)
-    self.amount_key = preferences.pair_key(payload.router, pair if pair != "ALL" else payload.quote.lower())
+    self.presentation.amount_key = preferences.pair_key(
+        payload.router, pair if pair != "ALL" else payload.quote.lower()
+    )
     self.restore_amount()
     self.pool_input.setText(payload.address)
     self.token.setText(payload.token)
-    self.pool_label.setText(payload.label + "\nБазовый актив исполнения: " + self.display_unit)
+    self.pool_label.setText(payload.label + "\nБазовый актив исполнения: " + self.presentation.display_unit)
     pair_label = pair if pair != "ALL" else f"{payload.quote[:8]}…{payload.quote[-6:]}"
     self.market_summary.setText(
         f"TARGET {payload.token[:8]}…{payload.token[-6:]} / {pair_label} · {payload.router} · пул {payload.address[:8]}…{payload.address[-6:]}"
@@ -279,8 +280,8 @@ def on_receipt_review(self: Window, payload: str) -> bool:
 
 def on_status(self: Window, payload: StatusPayload) -> bool:
     self.refresh_recovery()
-    self.quote_unavailable = payload.get("quote_unavailable", False)
-    self.exit_retry = payload.get("exit_retry")
+    self.presentation.quote_unavailable = payload.get("quote_unavailable", False)
+    self.presentation.exit_retry = payload.get("exit_retry")
     health = payload.get("rpc_health", [])
     self.rpc_health_label.setText(
         " · ".join(
@@ -292,9 +293,9 @@ def on_status(self: Window, payload: StatusPayload) -> bool:
             for row in health
         )
     )
-    self.signal_notice = payload.get("signal_notice", "")
-    self.wait_reason = payload.get("wait_reason", "")
-    self.entry_notice = payload.get("entry_notice", "")
+    self.presentation.signal_notice = payload.get("signal_notice", "")
+    self.presentation.wait_reason = payload.get("wait_reason", "")
+    self.presentation.entry_notice = payload.get("entry_notice", "")
     quote_exit = payload.get("exit_basis") == "quote" and Decimal(payload.get("position", "0")) > 0
     self.exit_status.setVisible(quote_exit)
     result = payload.get("exit_return")
@@ -311,22 +312,24 @@ def on_status(self: Window, payload: StatusPayload) -> bool:
             else " · без газа и token tax"
         )
     )
-    self.halt_reason = payload.get("halt_reason", "")
-    self.running, self.active_mode, self.locked = (
+    self.presentation.halt_reason = payload.get("halt_reason", "")
+    self.presentation.running, self.presentation.active_mode, self.presentation.locked = (
         payload["running"],
         payload["mode"],
         payload["locked"],
     )
-    if not self.running and not self.busy and not self.worker.stop_event.is_set():
-        self.stop_pending = False
+    if not self.presentation.running and not self.presentation.busy and not self.worker.stop_event.is_set():
+        self.presentation.stop_pending = False
     active = (
         payload["mode"] == self.mode.currentText()
         and (payload["running"] or float(payload["position"]) > 0)
-        and (self.mode.currentText() == "DEMO" or self.selection_ready)
+        and (self.mode.currentText() == "DEMO" or self.presentation.selection_ready)
     )
-    self.base_price = Decimal(payload["base"]) if active and Decimal(payload["base"]) > 0 else None
-    self.chart.reference_base = self.base_price
-    self.metrics["base"].setText(self.display_price(self.base_price))
+    self.presentation.base_price = (
+        Decimal(payload["base"]) if active and Decimal(payload["base"]) > 0 else None
+    )
+    self.chart.reference_base = self.presentation.base_price
+    self.metrics["base"].setText(self.display_price(self.presentation.base_price))
     age = payload.get("base_age")
     self.metrics["base"].setToolTip(
         payload.get("base_reason", "") + (f" · возраст {age:.1f} с" if age is not None else "")
@@ -335,7 +338,7 @@ def on_status(self: Window, payload: StatusPayload) -> bool:
     self.metrics["position"].setToolTip(payload["position"])
     levels = payload.get("levels", {}) if active else {}
     self.chart.levels = {key: value for key, value in levels.items() if float(value) > 0}
-    self.display_position = Decimal(payload["position"]) if active else Decimal(0)
+    self.presentation.display_position = Decimal(payload["position"]) if active else Decimal(0)
     self.update_strategy_status()
     self.chart.update()
     self.levels_label.setText(
@@ -346,7 +349,7 @@ def on_status(self: Window, payload: StatusPayload) -> bool:
             for key, title in [("DIP", "Вход DIP"), ("ENTRY", "ENTRY"), ("TP", "TP"), ("SL", "SL")]
         )
     )
-    self.pnl_status = dict(payload)
+    self.presentation.pnl_status = payload.copy()
     self.refresh_pnl()
     return True
 

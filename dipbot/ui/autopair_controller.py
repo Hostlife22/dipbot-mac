@@ -18,17 +18,17 @@ def market_changed(view: Window, *_: object) -> None:
     if not view.quote.currentText():
         return
     view.remember_amount()
-    view.amount_key = preferences.pair_key(view.router.currentText(), view.quote.currentText())
+    view.presentation.amount_key = preferences.pair_key(view.router.currentText(), view.quote.currentText())
     view.restore_amount()
     view.invalidate_discovery()
 
 
 def invalidate_discovery(view: Window, *_: object, clear_pool: bool = True) -> None:
-    view.auto_generation += 1
-    view.worker.discovery_generation = view.auto_generation
+    view.presentation.auto_generation += 1
+    view.worker.discovery_generation = view.presentation.auto_generation
     view.route_comparison.setText("Сравнение маршрутов ещё не выполнено")
     view.autopair_timer.stop()
-    view.selection_ready = False
+    view.presentation.selection_ready = False
     view.reset_price_display()
     view.candidates.clear()
     if clear_pool:
@@ -40,14 +40,18 @@ def invalidate_discovery(view: Window, *_: object, clear_pool: bool = True) -> N
 
 def schedule_autopair(view: Window, *_: object) -> None:
     view.invalidate_discovery()
-    if view.worker.chain is not None and not view.running and len(view.token.text().strip()) == 42:
+    if (
+        view.worker.chain is not None
+        and not view.presentation.running
+        and len(view.token.text().strip()) == 42
+    ):
         view.autopair_timer.start()
 
 
 def auto_discover(view: Window) -> None:
-    if view.running or view.worker.chain is None:
+    if view.presentation.running or view.worker.chain is None:
         return
-    if view.busy:
+    if view.presentation.busy:
         view.autopair_timer.start()
         return
     view.send(
@@ -90,7 +94,7 @@ def remove_profile(view: Window) -> None:
 
 
 def pair_clicked(view: Window, index: QModelIndex) -> None:
-    if view.busy or view.running:
+    if view.presentation.busy or view.presentation.running:
         return
     item = view.table.item(index.row(), 0)
     if item is None:

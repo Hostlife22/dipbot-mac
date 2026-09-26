@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
-from decimal import Decimal
 from decimal import Decimal as D
 from typing import Any
 
@@ -32,7 +31,6 @@ from PySide6.QtWidgets import (
 
 from dipbot.application.messages import EventKind
 from dipbot.application.worker import Worker
-from dipbot.domain.records import ExitRetry
 from dipbot.persistence import preferences
 from dipbot.persistence.storage import Store
 from dipbot.ui import (
@@ -44,27 +42,23 @@ from dipbot.ui import (
 )
 from dipbot.ui.chart import Chart
 from dipbot.ui.layout import build_about, build_bot, build_pairs, build_settings
+from dipbot.ui.presentation import PresentationAccess, PresentationState
 from dipbot.ui.theme import METRICS
 from dipbot.ui.ui_components import MetricLabel
 from dipbot.ui.usd_feed import UsdRate
 
 
-class Window(QMainWindow):
+class Window(QMainWindow, PresentationAccess):
     accounting_text: QPlainTextEdit
     actions: list[QPushButton]  # type: ignore[assignment]  # Historical widget list, not QWidget.actions().
     activity: QPlainTextEdit
     adaptive_rpc: QCheckBox
     age_timer: QTimer
-    _monitor_revision: tuple[int, int]
-    _recovery_signature: str
-    amount_currency: str
-    amount_key: str
     amount_unit: QComboBox
     autopair_timer: QTimer
     backup_rpc: QLineEdit
     backup_rpc_preset: QComboBox
     banner: QLabel
-    base_price: Decimal | None
     block_age_limit: QDoubleSpinBox
     buy: QPushButton
     candidates: QComboBox
@@ -73,49 +67,35 @@ class Window(QMainWindow):
     convert_amount: QLineEdit
     cost_gas: QDoubleSpinBox
     cost_limit: QDoubleSpinBox
-    display_position: Decimal
-    display_unit: str
     editable: list[QWidget]
-    entry_notice: str
     execution_bar: QWidget
     exit_basis: QComboBox
     exit_fields: dict[str, QDoubleSpinBox]
-    exit_retry: ExitRetry | None
     exit_status: QLabel
     footer: QLabel
     gas: QLineEdit
     gas_reserve: QLineEdit
     gas_usd: UsdRate
-    halt_reason: str
     interval: QDoubleSpinBox
     journal_toggle: QPushButton
     key: QLineEdit
-    last_price: Decimal | None
-    last_quote_at: float | None
     levels_label: QLabel
-    market_block: int | None
-    market_block_timestamp: int | None
-    market_rpc_source: str
     market_summary: MetricLabel
     market_toggle: QPushButton
     metric_captions: dict[str, QLabel]
     metrics: dict[str, QLabel]
     mode: QComboBox
     mode_badge: QLabel
-    pair_amounts: dict[str, str]
     paper_delay: QDoubleSpinBox
     paper_fee: QLineEdit
     paper_gas: QDoubleSpinBox
     params: dict[str, QLineEdit]
-    pnl_status: dict[str, Any]
     pool_input: QLineEdit
     pool_label: QLabel
     position_comparison: QLabel
     position_estimate: QLabel
-    price_source: str
     quote: QComboBox
     quote_age: QLabel
-    quote_unavailable: bool
     receipt_result: QLabel
     record_market: QCheckBox
     recovery_details: QLabel
@@ -126,14 +106,12 @@ class Window(QMainWindow):
     rpc: QLineEdit
     rpc_health_label: QLabel
     rpc_preset: QComboBox
-    same_block_cache: bool
     save_rpc: QCheckBox
     saved_positions: QComboBox
     sell: QPushButton
     send_rpc: QLineEdit
     signal_fields: dict[str, QDoubleSpinBox]
     signal_mode: QComboBox
-    signal_notice: str
     signal_rebound: QDoubleSpinBox
     signal_volatility: QDoubleSpinBox
     signal_window: QDoubleSpinBox
@@ -149,16 +127,14 @@ class Window(QMainWindow):
     token: QLineEdit
     trade_details: QLabel
     trade_toggle: QPushButton
-    ui_error: str
     usd: UsdRate
-    usd_pair_amounts: dict[str, str]
-    wait_reason: str
     wallet: QLineEdit
     worker: Worker
     ws_rpc: QLineEdit
 
     def __init__(self, store: Store | None = None) -> None:
         super().__init__()
+        self.presentation = PresentationState()
         self.store = store or Store()
         self.worker = Worker(self.store)
         self.worker.log.connect(self.log)

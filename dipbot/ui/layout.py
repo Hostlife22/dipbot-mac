@@ -78,8 +78,8 @@ def build_bot(self: Window) -> None:
     self.strategy_status.setToolTip(
         "Расстояния рассчитаны от последней цены до уровней сигнала, без учёта расходов."
     )
-    self.display_position = Decimal(0)
-    self.last_price = None
+    self.presentation.display_position = Decimal(0)
+    self.presentation.last_price = None
     layout.addWidget(self.strategy_status)
     self.chart = Chart()
     self.chart.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -118,15 +118,15 @@ def build_bot(self: Window) -> None:
         self.chart.toolTip()
         + " Маркеры BUY/SELL — рыночные цены, без расходов; цены исполнения показаны в деталях сделки."
     )
-    self.base_price = None
+    self.presentation.base_price = None
     self.usd = UsdRate(self)
     self.gas_usd = UsdRate(self)
     self.usd.changed.connect(self.capture_usd_rates)
     self.gas_usd.changed.connect(self.capture_usd_rates)
     self.usd.changed.connect(self.refresh_currency)
-    self.last_quote_at = None
-    self.display_unit = "условных единиц (DEMO)"
-    self.price_source = "DEMO"
+    self.presentation.last_quote_at = None
+    self.presentation.display_unit = "условных единиц (DEMO)"
+    self.presentation.price_source = "DEMO"
     self.age_timer = QTimer(self)
     self.age_timer.timeout.connect(self.update_quote_age)
     self.age_timer.start(250)

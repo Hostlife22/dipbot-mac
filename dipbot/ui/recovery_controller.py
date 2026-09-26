@@ -18,9 +18,9 @@ def refresh_recovery(view: Window) -> None:
     operation = view.store.data.get("operation")
     positions = view.store.data.get("positions", {})
     signature = repr((operation, positions))
-    if getattr(view, "_recovery_signature", None) == signature:
+    if view.presentation._recovery_signature == signature:
         return
-    view._recovery_signature = signature
+    view.presentation._recovery_signature = signature
     view.recovery_notice.setVisible(bool(operation or positions))
     view.recovery_notice.setText(
         f"Восстановление LIVE · сохранённых позиций: {len(positions)}"
@@ -93,7 +93,7 @@ def show_recovery(view: Window) -> None:
 
 
 def prepare_saved_position(view: Window) -> None:
-    if view.running or view.busy or view.display_position > 0:
+    if view.presentation.running or view.presentation.busy or view.presentation.display_position > 0:
         return
     record = view.store.data.get("positions", {}).get(view.saved_positions.currentData())
     if not record:

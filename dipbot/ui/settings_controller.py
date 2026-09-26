@@ -17,23 +17,29 @@ if TYPE_CHECKING:
 
 
 def amount_map(view: Window) -> dict[str, str]:
-    return view.usd_pair_amounts if view.amount_currency == "usd" else view.pair_amounts
+    return (
+        view.presentation.usd_pair_amounts
+        if view.presentation.amount_currency == "usd"
+        else view.presentation.pair_amounts
+    )
 
 
 def restore_amount(view: Window) -> None:
-    default = "1" if view.amount_currency == "usd" else "0.02"
-    view.params["amount"].setText(view.amount_map().get(view.amount_key, default))
+    default = "1" if view.presentation.amount_currency == "usd" else "0.02"
+    view.params["amount"].setText(view.amount_map().get(view.presentation.amount_key, default))
 
 
 def amount_unit_changed(view: Window) -> None:
     view.remember_amount()
-    view.amount_currency = view.amount_unit.currentData()
+    view.presentation.amount_currency = view.amount_unit.currentData()
     view.restore_amount()
 
 
 def remember_amount(view: Window) -> None:
     try:
-        view.amount_map()[view.amount_key] = preferences.positive_amount(view.params["amount"].text())
+        view.amount_map()[view.presentation.amount_key] = preferences.positive_amount(
+            view.params["amount"].text()
+        )
     except ValueError:
         pass  # Invalid edits never replace a previously valid per-pair amount.
 
@@ -151,9 +157,11 @@ def mode_changed(view: Window) -> None:
     view.banner.style().unpolish(view.banner)
     view.banner.style().polish(view.banner)
     if mode == "DEMO":
-        view.display_unit = "условных единиц (DEMO)"
+        view.presentation.display_unit = "условных единиц (DEMO)"
     elif hasattr(view, "quote"):
-        view.display_unit = view.quote.currentText() if view.quote.currentText() != "ALL" else "BASE"
+        view.presentation.display_unit = (
+            view.quote.currentText() if view.quote.currentText() != "ALL" else "BASE"
+        )
     if hasattr(view, "chart"):
         view.reset_price_display()
     if hasattr(view, "selection_ready"):
