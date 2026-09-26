@@ -9,7 +9,8 @@ from types import SimpleNamespace
 
 from PySide6.QtWidgets import QMessageBox
 from dipbot.market.chain import Chain, Pool, WBNB, USDT, address
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.domain.strategy import D
 from dipbot.execution.trader import LiveTrader
 from dipbot.execution.errors import UncertainTransaction

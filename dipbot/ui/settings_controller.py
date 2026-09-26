@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QComboBox, QMessageBox
 
-from dipbot.persistence.storage import Vault
+from dipbot.persistence.vault import Vault
 from dipbot.persistence import preferences
 
 

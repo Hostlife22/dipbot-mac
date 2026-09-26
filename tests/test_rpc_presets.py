@@ -23,7 +23,7 @@ def test_backup_can_be_disabled(window):
 
 
 def test_websocket_is_opt_in_and_loaded_from_keychain(window, monkeypatch):
-    from dipbot.persistence.storage import Vault
+    from dipbot.persistence.vault import Vault
     assert window.ws_rpc.text() == '' and window.worker.head_feed is None
     monkeypatch.setattr(Vault, 'get', lambda self, name: 'wss://example.invalid/synthetic' if name == 'ws_rpc' else None)
     window.load_rpc()

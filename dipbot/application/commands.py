@@ -6,7 +6,7 @@ import time
 from eth_account import Account
 
 from dipbot.market.chain import Chain, WBNB, address, profiles
-from dipbot.persistence.storage import Vault
+from dipbot.persistence.vault import Vault
 from dipbot.persistence import dynamic
 from dipbot.persistence import wallet_registry
 from dipbot.market.routes import seed_preference

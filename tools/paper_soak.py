@@ -14,7 +14,8 @@ import os
 from unittest.mock import patch
 from PySide6.QtCore import QCoreApplication
 from dipbot.market.chain import Chain, address
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.domain.strategy import Settings, D
 from dipbot.application.worker import Worker
 from dipbot.execution.trader import LiveTrader

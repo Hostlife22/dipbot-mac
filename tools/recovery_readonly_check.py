@@ -9,7 +9,8 @@ import tempfile
 from unittest.mock import patch
 from web3 import Web3
 from dipbot.market.chain import Chain, USDT, address
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.application.worker import Worker
 from dipbot.execution.errors import UncertainTransaction
 from dipbot.execution.recovery import compare_positions

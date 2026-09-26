@@ -12,7 +12,8 @@ from PySide6.QtCore import QTimer, Qt, QPoint
 from PySide6.QtTest import QTest
 from dipbot.ui.window import Window, STYLE
 from dipbot.application.worker import Worker
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.market.chain import Chain, Pool, WBNB, address
 from dipbot.ui.usd_feed import UsdRate
 from dipbot.execution.trader import LiveTrader

@@ -6,7 +6,8 @@ from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from dipbot.market.chain import profiles
-from dipbot.persistence.storage import Store, Vault, data_dir
+from dipbot.persistence.storage import Store, data_dir
+from dipbot.persistence.vault import Vault
 
 
 from dipbot.ui.theme import STYLE

@@ -21,7 +21,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPush
 
 from dipbot.market.chain import profiles, WBNB
 from dipbot.persistence.dynamic import catalog
-from dipbot.persistence.storage import Store, Vault, data_dir
+from dipbot.persistence.storage import Store, data_dir
+from dipbot.persistence.vault import Vault
 from dipbot.application.worker import Worker
 from dipbot.observability.telemetry import TIMINGS
 from dipbot.execution.pending import LABELS as PENDING_LABELS

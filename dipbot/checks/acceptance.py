@@ -13,7 +13,8 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QPushButton, QMessageBox, QScrollArea
 
 from dipbot.market.chain import Chain, USDT
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.execution.trader import LiveTrader
 
 

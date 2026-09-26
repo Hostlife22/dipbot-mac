@@ -4,7 +4,8 @@ import pytest
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
 from dipbot.ui.window import Window
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.application.worker import Worker
 from dipbot.execution.errors import UncertainTransaction
 from web3.exceptions import TransactionNotFound

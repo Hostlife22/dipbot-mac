@@ -16,7 +16,8 @@ from eth_account import Account
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
 from dipbot.ui.window import Window, STYLE
 from dipbot.market.chain import Chain, WBNB, USDT, V2_ROUTER, V3_ROUTER, address, profiles
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.execution.trader import LiveTrader
 from dipbot.domain.usd import select_rate
 

@@ -12,7 +12,8 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
 from dipbot.ui.window import Window, STYLE
 from dipbot.market.chain import Chain
-from dipbot.persistence.storage import Store, Vault
+from dipbot.persistence.storage import Store
+from dipbot.persistence.vault import Vault
 from dipbot.execution.trader import LiveTrader
 from dipbot.checks.read_only import guard_provider
 

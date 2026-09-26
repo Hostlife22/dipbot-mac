@@ -19,7 +19,8 @@ from eth_account import Account
 from web3.exceptions import Web3RPCError, BlockNotFound
 
 from dipbot.market.chain import Chain, Pool, WBNB, address, profiles
-from dipbot.persistence.storage import Store, Vault, SaveAfterReplaceError
+from dipbot.persistence.storage import Store, SaveAfterReplaceError
+from dipbot.persistence.vault import Vault
 from dipbot.persistence import dynamic
 from dipbot.persistence import wallet_registry
 from dipbot.market.routes import seed_preference
