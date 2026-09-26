@@ -13,8 +13,10 @@ def audit(header, events, expected_fills=None):
     position = bool(header.get('starts_with_position'))
     cooldown = float(header.get('exit_policy', {}).get('cooldown_seconds', 0))
     last_sell = None
+    last_sell_reason = None
     pending = None
     reentries = []
+    executed_reentries = []
     natural_cycles = 0
     natural_entry = False
     for event in events:
@@ -37,6 +39,10 @@ def audit(header, events, expected_fills=None):
                 natural_entry = pending == 'BUY'
                 if not natural_entry:
                     errors.append('BUY without recorded signal')
+                if last_sell is not None:
+                    executed_reentries.append({'previous_exit': last_sell_reason,
+                        'seconds_after_sell': event['t'] - last_sell,
+                        'natural_signal': natural_entry})
                 position = True
             elif side == 'SELL':
                 if not position:
@@ -51,6 +57,7 @@ def audit(header, events, expected_fills=None):
                 position = False
                 natural_entry = False
                 last_sell = event['t']
+                last_sell_reason = reason
             else:
                 errors.append('Unknown execution side')
             pending = None
@@ -60,6 +67,7 @@ def audit(header, events, expected_fills=None):
             'exits': dict(exits), 'open_position': position,
             'natural_completed_cycles': natural_cycles,
             'reentry_signal_gaps_seconds': reentries,
+            'executed_reentries': executed_reentries,
             'cooldown_seconds': cooldown,
             'observed_natural_exits': sorted(set(exits) - {'STOP', 'MANUAL'}),
             'limitations': 'Recorded chronology only; no profitability, execution-price or Windows parity proof'}

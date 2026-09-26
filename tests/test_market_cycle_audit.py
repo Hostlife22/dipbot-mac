@@ -31,3 +31,17 @@ def test_mismatched_journal_and_missing_signal_are_rejected():
     result = audit({}, [execution('BUY', 1), execution('SELL', 2, 'STOP')], {'BUY': 2})
     assert not result['consistent']
     assert len(result['errors']) == 2
+
+
+def test_rejected_signal_is_not_an_executed_reentry_after_sl():
+    events = [signal('BUY', 1), execution('BUY', 2),
+              signal('STOP_LOSS', 3), execution('SELL', 4, 'STOP_LOSS'),
+              signal('BUY', 35)]
+    header = {'exit_policy': {'cooldown_seconds': 30}}
+    result = audit(header, events)
+    assert result['consistent']
+    assert result['reentry_signal_gaps_seconds'] == [31]
+    assert result['executed_reentries'] == []
+    result = audit(header, events + [execution('BUY', 36)])
+    assert result['executed_reentries'] == [{'previous_exit': 'STOP_LOSS',
+        'seconds_after_sell': 32, 'natural_signal': True}]

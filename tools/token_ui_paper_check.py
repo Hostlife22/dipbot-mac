@@ -17,7 +17,7 @@ from dipbot.trader import LiveTrader
 from tools.read_only_probe import guard_provider
 
 
-def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc='', observe_manual_position=False, min_swaps='1', dip=None, slippage=None, dynamic=None, continue_after_sl=None, cooldown=None, trailing=None):
+def run(token, directory, seconds, pool_address=None, exercise_recovery=False, close_after=False, modern=False, amount_usd=None, automatic_only=False, fee_usd='0.01', adaptive_rpc=False, endpoint='https://bsc-dataseed.binance.org', take_profit='2', stop_loss='2', backup_rpc='', observe_manual_position=False, min_swaps='1', dip=None, slippage=None, dynamic=None, continue_after_sl=None, cooldown=None, trailing=None, preflight_fault=None):
     if automatic_only and (exercise_recovery or observe_manual_position):
         raise ValueError('Autonomous audit cannot inject signals or restart the strategy')
     if not D(fee_usd).is_finite() or not 0 <= D(fee_usd) <= 1:
@@ -30,6 +30,8 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
               'frozen': bool(getattr(sys, 'frozen', False)), 'transactions_sent': 0, 'checks': 0, 'mismatches': [], 'errors': [],
               'samples': [], 'trades': [], 'test_restarts': 0,
               'automatic_only': automatic_only, 'source': 'live BSC RPC, no replay'}
+    report['preflight_fault_requested'] = preflight_fault
+    report['rpc_failures'] = []
     logs, rpc, fills = [], [], []
     original_quote = Chain.paper_quote
     def paper_quote(chain, pool, amount, buy):
@@ -42,9 +44,47 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
     def init(chain, endpoint, **kwargs):
         original(chain, endpoint, **kwargs)
         rpc.append(guard_provider(chain.w3.provider))
+        request = chain.w3.provider.make_request
+        def observed_request(method, params):
+            def record(*, exc=None, response=None):
+                item = {'method': str(method), 'phase': phase[0], 'at': time.monotonic()}
+                if exc is not None:
+                    item['type'] = type(exc).__name__
+                    code = getattr(getattr(exc, 'response', None), 'status_code', None)
+                    if type(code) is int:
+                        item['http_status'] = code
+                error = response.get('error') if isinstance(response, dict) else None
+                code = error.get('code') if isinstance(error, dict) else None
+                if type(code) is int:
+                    item['rpc_code'] = code
+                if len(report['rpc_failures']) < 200:
+                    report['rpc_failures'].append(item)
+                else:
+                    report['rpc_failures_dropped'] = report.get('rpc_failures_dropped', 0)+1
+            try:
+                result = request(method, params)
+            except Exception as exc:
+                record(exc=exc)
+                raise
+            if isinstance(result, dict) and result.get('error'):
+                record(response=result)
+            return result
+        chain.w3.provider.make_request = observed_request
+    original_entry_quote = Chain.entry_quote
+    def entry_quote(chain, *args, **kwargs):
+        if preflight_fault and phase[0] == 'automatic_live_prices' and not report.get('preflight_fault_injected'):
+            report['preflight_fault_injected'] = {'kind': preflight_fault, 'at': time.monotonic(), 'synthetic': True}
+            if preflight_fault == 'http429':
+                from requests import Response
+                from requests.exceptions import HTTPError
+                response = Response(); response.status_code = 429
+                raise HTTPError('Synthetic PAPER preflight limit', response=response)
+            from web3.exceptions import Web3RPCError
+            raise Web3RPCError('Synthetic PAPER preflight limit', rpc_response={'error': {'code': -32005}})
+        return original_entry_quote(chain, *args, **kwargs)
     def forbidden(*a, **kw):
         raise RuntimeError('Wallet/LIVE disabled in PAPER test')
-    with patch.object(Chain, '__init__', init), patch.object(Chain, 'paper_quote', paper_quote), patch.object(Vault, 'get', forbidden), \
+    with patch.object(Chain, '__init__', init), patch.object(Chain, 'paper_quote', paper_quote), patch.object(Chain, 'entry_quote', entry_quote), patch.object(Vault, 'get', forbidden), \
          patch.object(Vault, 'save', forbidden), patch.object(LiveTrader, 'send', forbidden), \
          patch.object(QMessageBox, 'warning', lambda *a: report['errors'].append(a[2])):
         w = Window(Store(directory/'state.json'))
@@ -83,6 +123,11 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                         'chart':w.chart.values[-1] if w.chart.values else None,'raw':payload,
                         'source':w.price_source,'selected':w.selection_ready})
             elif kind == 'status':
+                if report.get('preflight_fault_injected'):
+                    if w.entry_notice:
+                        report['preflight_notice_seen'] = True
+                    elif report.get('preflight_notice_seen') and payload.get('running'):
+                        report['preflight_recovered_without_start'] = True
                 report.setdefault('ui_states', {})[w.metrics['state'].text()] = report.setdefault('ui_states', {}).get(w.metrics['state'].text(), 0) + 1
                 report['checks'] += 1
                 if payload.get('open_estimate') and D(payload['position']) > 0:
@@ -356,8 +401,9 @@ if __name__ == '__main__':
     parser.add_argument('--continue-after-sl', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--cooldown', type=float, help='Cooldown seconds; preserves selected signal mode')
     parser.add_argument('--trailing', type=float, help='Trailing percent; 0 disables it')
+    parser.add_argument('--preflight-fault', choices=('http429','rpc-limit'), help='Inject one labelled read-only preflight failure at a natural signal; no injected BUY')
     args=parser.parse_args()
     if args.automatic_only and args.exercise_recovery:
         parser.error('--automatic-only cannot include controlled STOP/restart or injected signals')
     raise SystemExit(run(args.token,args.output,args.seconds,args.pool,args.exercise_recovery,
-        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc,observe_manual_position=args.observe_manual_position,min_swaps=args.min_swaps,dip=args.dip,slippage=args.slippage,dynamic=args.dynamic,continue_after_sl=args.continue_after_sl,cooldown=args.cooldown,trailing=args.trailing))
+        close_after=args.close_after,modern=args.modern,amount_usd=args.amount_usd,automatic_only=args.automatic_only,fee_usd=args.fee_usd,adaptive_rpc=args.adaptive_rpc,endpoint=args.rpc,take_profit=args.take_profit,stop_loss=args.stop_loss,backup_rpc=args.backup_rpc,observe_manual_position=args.observe_manual_position,min_swaps=args.min_swaps,dip=args.dip,slippage=args.slippage,dynamic=args.dynamic,continue_after_sl=args.continue_after_sl,cooldown=args.cooldown,trailing=args.trailing,preflight_fault=args.preflight_fault))
