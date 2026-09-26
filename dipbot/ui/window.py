@@ -1,3 +1,7 @@
+from dipbot.ui import autopair_controller
+from dipbot.ui import settings_controller
+from dipbot.ui import recovery_controller
+from dipbot.ui import position_presenter
 from dipbot.ui.chart import Chart
 from dipbot.ui.layout import build_bot, build_settings, build_pairs, build_about
 import argparse
@@ -253,58 +257,28 @@ class Window(QMainWindow):
         self.activity.appendPlainText(datetime.now().strftime("%H:%M:%S") + "  " + message)
 
     def amount_map(self):
-        return self.usd_pair_amounts if self.amount_currency == 'usd' else self.pair_amounts
+        return settings_controller.amount_map(self)
 
     def restore_amount(self):
-        default = '1' if self.amount_currency == 'usd' else '0.02'
-        self.params['amount'].setText(self.amount_map().get(self.amount_key, default))
+        return settings_controller.restore_amount(self)
 
     def amount_unit_changed(self):
-        self.remember_amount()
-        self.amount_currency = self.amount_unit.currentData()
-        self.restore_amount()
+        return settings_controller.amount_unit_changed(self)
 
     def remember_amount(self):
-        try:
-            self.amount_map()[self.amount_key] = preferences.positive_amount(self.params["amount"].text())
-        except ValueError:
-            pass  # Invalid edits never replace a previously valid per-pair amount.
+        return settings_controller.remember_amount(self)
 
     def market_changed(self, *_):
-        if not self.quote.currentText():
-            return
-        self.remember_amount()
-        self.amount_key = preferences.pair_key(self.router.currentText(), self.quote.currentText())
-        self.restore_amount()
-        self.invalidate_discovery()
+        return autopair_controller.market_changed(self, *_)
 
     def invalidate_discovery(self, *_, clear_pool=True):
-        self.auto_generation += 1
-        self.worker.discovery_generation = self.auto_generation
-        self.route_comparison.setText("Сравнение маршрутов ещё не выполнено")
-        self.autopair_timer.stop()
-        self.selection_ready = False
-        self.reset_price_display()
-        self.candidates.clear()
-        if clear_pool:
-            self.pool_input.clear()
-        self.pool_label.setText("Пул не проверен · выполните AutoPair или CHECK POOL")
-        self.market_summary.setText(self.pool_label.text())
-        self.update_controls()
+        return autopair_controller.invalidate_discovery(self, clear_pool=clear_pool, *_)
 
     def schedule_autopair(self, *_):
-        self.invalidate_discovery()
-        if self.worker.chain is not None and not self.running and len(self.token.text().strip()) == 42:
-            self.autopair_timer.start()
+        return autopair_controller.schedule_autopair(self, *_)
 
     def auto_discover(self):
-        if self.running or self.worker.chain is None:
-            return
-        if self.busy:
-            self.autopair_timer.start()
-            return
-        self.send("discover", token=self.token.text().strip(), quote=self.quote.currentText(),
-                  router=self.router.currentText())
+        return autopair_controller.auto_discover(self)
 
     def send(self, name, **data):
         if self.busy:
@@ -323,35 +297,22 @@ class Window(QMainWindow):
         self.worker.submit(name, **data)
 
     def compare_routes(self):
-        reference = self.candidates.currentData()
-        if reference is None:
-            self.route_comparison.setText('Сначала найдите пулы через AutoPair')
-            return
-        self.route_comparison.setText('Сравнение на заданную сумму…')
-        self.send('compare_routes', reference=reference,
-            pools=[self.candidates.itemData(i) for i in range(self.candidates.count())],
-            amount=self.params['amount'].text().strip(), sizing=self.sizing_policy(),
-            maximum=self.params['max_roundtrip_loss'].text().strip(),
-            cost_policy=self.entry_cost_policy(), gas=self.gas.text().strip())
+        return autopair_controller.compare_routes(self)
 
     def paper_policy(self):
-        return {'gas_units':int(self.paper_gas.value()),'latency_seconds':self.paper_delay.value(),'fee_quote':self.paper_fee.text().strip()}
+        return settings_controller.paper_policy(self)
 
     def entry_cost_policy(self):
-        return {'maximum_pct':str(self.cost_limit.value()),'roundtrip_gas':int(self.cost_gas.value())}
+        return settings_controller.entry_cost_policy(self)
 
     def exit_policy(self):
-        return {'continue_after_risk_exit':self.continue_after_exit.isChecked(),
-                'tp_sl_basis':self.exit_basis.currentData(),
-                **{key: str(field.value()) for key, field in self.exit_fields.items()}}
+        return settings_controller.exit_policy(self)
 
     def sizing_policy(self):
-        return {'unit':self.amount_unit.currentData(), 'reserve_bnb':self.gas_reserve.text().strip()}
+        return settings_controller.sizing_policy(self)
 
     def signal_policy(self):
-        return {'mode': self.signal_mode.currentData(), 'window_seconds': self.signal_window.value(),
-                'rebound_pct': str(self.signal_rebound.value()), 'max_block_age': self.block_age_limit.value(),
-                'volatility_multiplier':str(self.signal_volatility.value())}
+        return settings_controller.signal_policy(self)
 
     def trade(self, command, **extra):
         mode = self.mode.currentText()
@@ -392,514 +353,85 @@ class Window(QMainWindow):
         self.update_controls()
 
     def select_pool(self):
-        pool = self.candidates.currentData()
-        if pool:
-            self.send("select", pool=pool)
+        return autopair_controller.select_pool(self)
 
     def save_wallet(self):
-        key = self.key.text().strip()
-        self.key.clear()
-        self.send("wallet", key=key)
+        return settings_controller.save_wallet(self)
 
     def refresh_recovery(self):
-        operation = self.store.data.get('operation')
-        positions = self.store.data.get('positions', {})
-        signature = repr((operation, positions))
-        if getattr(self, '_recovery_signature', None) == signature:
-            return
-        self._recovery_signature = signature
-        self.recovery_notice.setVisible(bool(operation or positions))
-        self.recovery_notice.setText(f'Восстановление LIVE · сохранённых позиций: {len(positions)}' +
-            (' · незавершённая операция · открыть' if operation else ' · открыть'))
-        details = ['Локальные записи, не подтверждённый текущий баланс. Торговля автоматически не запускается.']
-        if operation:
-            details.append('Кошелёк операции: ' + str(operation.get('wallet', 'не указан')))
-            for tx in operation.get('transactions', []):
-                details.append(str(tx.get('hash', 'hash не записан')) + ' · ' + str(tx.get('status', 'неизвестно')) + ' · ' +
-                    {'prepared': 'записана до отправки; отправка могла произойти',
-                     'submitted': 'RPC принял отправку; ожидается receipt',
-                     'receipt_validated': 'receipt проверен',
-                     'same_nonce_resolved': 'nonce занят подтверждённой альтернативой'}.get(tx.get('stage'), 'этап не записан'))
-                if tx.get('superseded_by'):
-                    details.append('Подтверждённая альтернатива: ' + str(tx['superseded_by']))
-                if tx.get('replaces'):
-                    details.append('Попытка отмены: ' + str(tx['replaces']))
-                if tx.get('broadcast_route') == 'custom':
-                    details.append('Маршрут отправки: отдельный RPC (endpoint хранится только в Keychain)')
-                review = tx.get('receipt_review')
-                if review:
-                    replacement = review.get('replacement_search', {})
-                    if replacement.get('hash'):
-                        details.append('Тот же nonce: ' + replacement['hash'] + ' · блок ' + str(replacement['block']))
-                    details.append(PENDING_LABELS.get(review.get('state'), 'Неизвестный результат сверки') +
-                                   ' · повторная отправка автоматически запрещена')
-            if not operation.get('transactions'):
-                details.append('Hash транзакции не записан; перед снятием блокировки проверьте балансы.')
-        selected = self.saved_positions.currentData()
-        self.saved_positions.clear()
-        for key, position in positions.items():
-            pool = position['pool']
-            amount = Decimal(position['amount']) / Decimal(10)**pool['token_decimals']
-            label = f"{key.split(':')[0]} · {pool['router']} · {pool['address']} · TARGET {amount}"
-            self.saved_positions.addItem(label, key)
-            details.append(label)
-        index = self.saved_positions.findData(selected)
-        if index >= 0:
-            self.saved_positions.setCurrentIndex(index)
-        self.recovery_details.setText('\n'.join(details))
+        return recovery_controller.refresh_recovery(self)
 
     def compare_saved_positions(self):
-        self.position_comparison.setText("Чтение балансов сохранённых позиций…")
-        self.send("compare_positions")
+        return recovery_controller.compare_saved_positions(self)
 
     def check_receipts(self):
-        self.receipt_result.setText("Проверка receipts через RPC…")
-        self.send("reconcile", gas=self.gas.text())
+        return recovery_controller.check_receipts(self)
 
     def show_recovery(self):
-        self.tabs.setCurrentIndex(1)
-        self.tabs.widget(1).ensureWidgetVisible(self.recovery_group)
+        return recovery_controller.show_recovery(self)
 
     def prepare_saved_position(self):
-        if self.running or self.busy or self.display_position > 0:
-            return
-        record = self.store.data.get('positions', {}).get(self.saved_positions.currentData())
-        if not record:
-            return
-        self.mode.setCurrentText('LIVE')
-        self.invalidate_discovery()
-        self.router.setCurrentText(record['pool']['router'])
-        self.token.setText(record['pool']['token'])
-        self.pool_input.setText(record['pool']['address'])
-        self.autopair_timer.stop()
-        self.market_toggle.setChecked(True)
-        self.tabs.setCurrentIndex(0)
-        self.log('Пул подготовлен. Подключите RPC и выполните CHECK POOL; сохранённая запись не заменяет проверку сети.')
+        return recovery_controller.prepare_saved_position(self)
 
     def load_rpc(self):
-        try:
-            primary = Vault().get("rpc")
-            backup = Vault().get('backup_rpc')
-            websocket = Vault().get('ws_rpc')
-            broadcaster = Vault().get('send_rpc')
-            if broadcaster is not None:
-                self.send_rpc.setText(broadcaster)
-            if websocket is not None:
-                self.ws_rpc.setText(websocket)
-            if primary is not None:
-                self.rpc.setText(primary)
-            if backup is not None:
-                self.backup_rpc.setText(backup)
-        except Exception:
-            QMessageBox.warning(self, "Keychain", "Не удалось прочитать RPC из Keychain")
+        return settings_controller.load_rpc(self)
 
     def add_rpc_presets(self, form, title, field, presets):
-        combo = QComboBox()
-        for label, url in presets:
-            combo.addItem(label, url)
-        self.editable.append(combo)
-        form.addRow(title, combo)
-        def selected(index):
-            url = combo.itemData(index)
-            if url is not None:
-                field.setText(url)
-            else:
-                field.setFocus()
-        def edited(text):
-            index = next((i for i,(_,url) in enumerate(presets) if url == text.strip()), len(presets)-1)
-            combo.blockSignals(True)
-            combo.setCurrentIndex(index)
-            combo.blockSignals(False)
-        combo.currentIndexChanged.connect(selected)
-        field.textChanged.connect(edited)
-        field.setText(presets[0][1])
-        return combo
+        return settings_controller.add_rpc_presets(self, form, title, field, presets)
 
     def balances(self):
         self.send("balance", wallet=self.wallet.text().strip())
 
     def cancel_pending(self):
-        if self.mode.currentText() != 'LIVE':
-            QMessageBox.information(self, 'Отмена pending', 'Переключитесь в LIVE: отмена отправляет реальную транзакцию и расходует газ.')
-            return
-        try:
-            from dipbot.execution.cancellation import cancellation_plan
-            plan = cancellation_plan(self.store.data.get('operation'), Decimal(self.gas.text()))
-        except Exception as exc:
-            QMessageBox.warning(self, 'Отмена недоступна', str(exc))
-            return
-        fee = Decimal(plan['maximum_fee_wei'])/Decimal(10)**18
-        gas = Decimal(plan['gas_price'])/Decimal(10)**9
-        if QMessageBox.question(self, 'Отмена pending',
-            f"Попытка отмены {plan['attempt']}/3: {plan['original_hash']}\nNonce {plan['nonce']}; перевод 0 BNB себе.\n"
-            f"GAS {gas} gwei; комиссия до {fee} BNB.\n"
-            'Исходная сделка может подтвердиться раньше отмены. Блокировка останется до сверки балансов. Продолжить?',
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
-            self.send('cancel_pending', mode='LIVE', gas=self.gas.text(),
-                expected_hash=plan['original_hash'], expected_gas_price=plan['gas_price'])
+        return recovery_controller.cancel_pending(self)
 
     def unlock(self):
-        if QMessageBox.question(self, "Сверка", "Вы проверили все receipts и фактические балансы?\n"
-            "Кэш позиций будет сброшен. Остатки можно продать через SELL WALLET → BNB.",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
-            self.send("unlock", gas=self.gas.text())
+        return recovery_controller.unlock(self)
 
     def remove_profile(self):
-        row = self.table.currentRow()
-        if row >= 0:
-            self.send("remove_profile", symbol=self.table.item(row, 0).text(), wallet=self.wallet.text())
+        return autopair_controller.remove_profile(self)
 
     def pair_clicked(self, index):
-        if self.busy or self.running:
-            return
-        self.quote.setCurrentText(self.table.item(index.row(), 0).text())
-        self.tabs.setCurrentIndex(0)
+        return autopair_controller.pair_clicked(self, index)
 
     def update_profiles(self, dynamic=None):
-        pairs = profiles() | (dynamic if dynamic is not None else self.store.data.get("dynamic_profiles", {}))
-        selected = self.quote.currentText() or "WBNB"
-        blocked = self.quote.blockSignals(True)
-        self.quote.clear()
-        self.quote.addItems(["ALL"] + sorted(pairs, key=str.casefold))
-        self.quote.setCurrentText(selected if selected == "ALL" or selected in pairs else "WBNB")
-        self.quote.blockSignals(blocked)
-        if hasattr(self, "amount_key") and selected != self.quote.currentText():
-            self.market_changed()
-        self.table.setRowCount(len(pairs))
-        for row, (symbol, token) in enumerate(sorted(pairs.items(), key=lambda x: x[0].casefold())):
-            for col, value in enumerate([symbol, token, "—"]):
-                self.table.setItem(row, col, QTableWidgetItem(value))
+        return autopair_controller.update_profiles(self, dynamic)
 
     def mode_changed(self):
-        mode = self.mode.currentText()
-        descriptions = {"DEMO": "DEMO · Локальный рынок и виртуальный баланс. RPC и кошелёк не нужны.",
-                        "PAPER": "PAPER · Реальная цена BSC, виртуальные сделки. Выберите пул и нажмите START.",
-                        "LIVE": "LIVE · Реальные средства. Укажите RPC, сохраните кошелёк и проверьте выбранный пул."}
-        self.banner.setText(descriptions[mode])
-        self.banner.setVisible(mode == 'LIVE')
-        self.mode_badge.setToolTip(descriptions[mode])
-        self.mode_badge.setText(mode + (" · реальные средства" if mode == "LIVE" else " · виртуальные сделки" if mode == "PAPER" else " · модель"))
-        self.mode_badge.setProperty('mode', mode)
-        self.mode_badge.style().unpolish(self.mode_badge)
-        self.mode_badge.style().polish(self.mode_badge)
-        self.banner.setProperty('mode', mode)
-        self.banner.style().unpolish(self.banner)
-        self.banner.style().polish(self.banner)
-        if mode == 'DEMO':
-            self.display_unit = 'условных единиц (DEMO)'
-        elif hasattr(self, 'quote'):
-            self.display_unit = self.quote.currentText() if self.quote.currentText() != 'ALL' else 'BASE'
-        if hasattr(self, 'chart'):
-            self.reset_price_display()
-        if hasattr(self, "selection_ready"):
-            self.update_controls()
-        if mode == "DEMO":
-            self.market_summary.setText("Рынок: DEMO · локальная модель")
-        elif hasattr(self, "pool_label"):
-            self.market_summary.setText(self.pool_label.text() if "DEMO" not in self.pool_label.text() else
-                                        "Рынок не выбран · AutoPair / CHECK POOL")
+        return settings_controller.mode_changed(self)
 
     def reset_price_display(self):
-        self.market_block = self.market_block_timestamp = None
-        self.market_rpc_source = "BSC"
-        self.chart.clear()
-        self.usd.set_token('')
-        self.gas_usd.set_token('')
-        self.base_price = None
-        self.last_quote_at = None
-        self.last_price = None
-        self.display_position = Decimal(0)
-        self.price_source = self.mode.currentText()
-        self.metrics['price'].setText('—')
-        self.metrics['base'].setText('—')
-        self.levels_label.setText('Вход DIP: — · ENTRY: — · TP: — · SL: —')
-        self.update_quote_age()
+        return position_presenter.reset_price_display(self)
 
     def display_price(self, value, digits=8):
-        if value is None:
-            return '—'
-        if self.price_source in ('DEMO', 'REPLAY'):
-            return f'{float(value):.{digits}g}'
-        return price_text(value, self.usd.current(), digits)
+        return position_presenter.display_price(self, value, digits)
 
     def capture_usd_rates(self):
-        for source in (self.usd, self.gas_usd):
-            self.worker.rates.update(source.token, source.current(), source.received_at)
+        return position_presenter.capture_usd_rates(self)
 
     def refresh_currency(self):
-        if not hasattr(self, 'usd') or not hasattr(self, 'price_source'):
-            return
-        rate = self.usd.current() if self.price_source not in ('DEMO', 'REPLAY') else None
-        self.chart.usd_rate = rate
-        self.chart.reference_base = self.base_price
-        unit = 'USD' if rate is not None else ('DEMO' if self.price_source == 'DEMO' else self.display_unit)
-        if len(unit) > 16:
-            unit = unit[:6] + '…' + unit[-4:]
-        self.metric_captions['price'].setText('ЦЕНА, ' + unit)
-        self.metric_captions['base'].setText('БАЗА DIP, ' + unit)
-        self.metrics['price'].setText(self.display_price(getattr(self, 'last_price', None)))
-        self.metrics['base'].setText(self.display_price(self.base_price))
-        if getattr(self, 'last_price', None) is not None:
-            self.metrics['price'].setToolTip(f'{self.last_price} {self.display_unit} / TARGET · USD — ориентировочный пересчёт')
-        self.chart.update()
-        self.refresh_pnl()
+        return position_presenter.refresh_currency(self)
 
     def refresh_trade_details(self):
-        payload = getattr(self, 'pnl_status', {})
-        same = payload.get('mode') == self.mode.currentText() and self.mode.currentText() != 'DEMO'
-        detail = payload.get('trade_detail') if same else None
-        def usd(value):
-            if value is None:
-                return '— (нет данных)'
-            return '≈ $' + price_text(Decimal(value), digits=6)
-        if detail:
-            rows = [('Средняя цена BUY (без доп. расходов)', 'buy_price_usd'),
-                    ('Средняя цена SELL (без доп. расходов)', 'sell_price_usd'),
-                    ('Обмен на входе', 'entry_gross_usd'), ('Расходы входа', 'entry_fee_usd'),
-                    ('Всего затрачено', 'entry_total_usd'), ('Получено от продажи', 'exit_gross_usd'),
-                    ('Расходы выхода', 'exit_fee_usd'), ('Результат закрытия', 'net_usd')]
-            self.trade_details.setText('\n'.join(label + ': ' + usd(detail.get(key)) for label, key in rows) +
-                '\nКомиссия пула уже в суммах обмена; повторно не вычитается. ' +
-                ('Расходы PAPER — модель.' if self.mode.currentText() == 'PAPER' else 'Расходы LIVE — записанный газ; неполный учёт не оценивается.') +
-                ('\nЧастичный/неполный выход: итог неизвестен.' if detail.get('complete') is False else ''))
-        else:
-            self.trade_details.setText('Нет данных об исполнении для выбранного режима/рынка')
-        estimate = payload.get('open_estimate') if same else None
-        age = time.monotonic()-estimate['at'] if estimate else None
-        if not self.display_position:
-            text = 'Открытая позиция, USD: —'
-        elif estimate and 0 <= age <= .55 and not self.quote_unavailable:
-            text = 'Оценка продажи: ' + usd(estimate['value_usd']) + ' · P&L позиции: ' + usd(estimate['pnl_usd'])
-            text += ' · без будущего газа SELL' if estimate['excludes_exit_gas'] else ' · по модели PAPER'
-            text += f' · {age:.1f} с назад'
-        else:
-            text = 'Открытая позиция, USD: — (нет свежей котировки продажи)'
-        if same and self.display_position and not payload.get('running'):
-            text += ' · наблюдение без автоторговли'
-            error = payload.get('position_watch_error')
-            if error:
-                text += ' · ' + error
-        self.position_estimate.setText(text)
+        return position_presenter.refresh_trade_details(self)
 
     def refresh_pnl(self):
-        payload = getattr(self, 'pnl_status', None)
-        if payload is None:
-            return
-        self.refresh_trade_details()
-        mode = self.mode.currentText()
-        text = f"{mode} · " + ('BOT работает' if self.running else 'BOT остановлен')
-        historical = payload.get('historical_usd') if mode != 'DEMO' and payload['mode'] == mode else None
-        if historical is not None:
-            value = historical.get('value')
-            if value is None:
-                result = '— (неполный USD-учёт)' if historical.get('missing') else '— (нет закрытых сделок)'
-            else:
-                usd = Decimal(value)
-                amount = format(abs(usd), '.2f') if abs(usd) >= Decimal('.01') or not usd else price_text(abs(usd), digits=4)
-                result = '≈ ' + ('−' if usd < 0 else '+' if usd > 0 else '') + '$' + amount
-            suffix = (' · по модели PAPER' if mode == 'PAPER' else
-                      ' · газ BUY/SELL учтён' if historical['includes_gas'] else ' · без газа')
-            self.footer.setText(text + ' · Закрытый P&L: ' + result + suffix + (' · LIVE LOCKED' if self.locked else ''))
-            self.footer.setToolTip('USD по сохранённым ориентировочным курсам на моменты исполнения (DEX Screener, возраст до 90 с). '
-                'Смена текущего курса не пересчитывает закрытый результат. LIVE: отслеживаемые позиции этого кошелька '
-                'с начала нового USD-учёта, включая учтённые закрытия Sweep и распределённый газ. Прочие расходы показаны отдельно в USD-учёте; старые неполные записи не восстанавливаются догадкой. '
-                f"Закрыто: {historical.get('closed', 0)}, неполных: {historical.get('missing', 0)}. PAPER учитывает заданную стоимость операций по модели; token tax не учтён.")
-            return
-        if payload['mode'] != mode or payload['realized'] == '—':
-            result = '—'
-        else:
-            value = Decimal(payload['realized'])
-            token = payload.get('pnl_quote', '').lower()
-            rate = (self.usd.current() if mode != 'DEMO' and self.price_source != 'REPLAY'
-                    and token and self.usd.token == token else None)
-            if rate is not None:
-                usd = value * rate
-                amount = format(abs(usd), '.2f') if abs(usd) >= Decimal('0.01') or not usd else price_text(abs(usd), digits=4)
-                result = '≈ ' + ('−' if usd < 0 else '+' if usd > 0 else '') + '$' + amount
-            else:
-                result = '— (USD недоступен)' if mode != 'DEMO' else '— (DEMO без USD)'
-        self.footer.setText(text + ' · Закрытый P&L: ' + result +
-                            ' · без газа' + (' · LIVE LOCKED' if self.locked else ''))
-        self.footer.setToolTip('Результат закрытых сделок. USD — пересчёт по текущему курсу базового актива, '
-                              'не исторический долларовый P&L. PAPER не учитывает газ и token tax.')
+        return position_presenter.refresh_pnl(self)
 
     def update_state_badge(self):
-        """Presentation of existing worker/UI states; never changes trading decisions."""
-        tone = ''
-        if self.stop_pending:
-            text, tone = 'STOPPING', 'warning'
-        elif getattr(self, 'exit_retry', None):
-            text, tone = 'EXIT RPC', 'warning'
-        elif self.locked and self.mode.currentText() == 'LIVE':
-            text, tone = 'LOCKED', 'danger'
-        elif self.searching:
-            text = 'SEARCH'
-        elif self.busy:
-            text = {'buy': 'BUYING', 'sell': 'SELLING', 'sweep': 'SWEEP',
-                    'convert': 'CONVERT'}.get(getattr(self, 'ui_command', ''), 'WAIT')
-        elif self.worker.execution_monitor is not None:
-            text = 'EXECUTING'
-        elif self.running and getattr(self, 'quote_unavailable', False):
-            text, tone = 'WAIT RPC', 'warning'
-        elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
-            text, tone = 'STALE', 'warning'
-        elif not self.running and (getattr(self, 'halt_reason', '') or getattr(self, 'ui_error', '')):
-            text, tone = 'ERROR', 'danger'
-        elif self.display_position > 0:
-            text, tone = 'POSITION', 'positive'
-        elif self.running:
-            text = {'rebound': 'REBOUND', 'cooldown': 'COOLDOWN',
-                    'warmup': 'WARMUP', 'baseline': 'BASELINE'}.get(getattr(self, 'wait_reason', ''), 'WAIT DIP')
-            tone = 'positive'
-        elif 'PENDING' in self.pool_label.text() and self.mode.currentText() != 'DEMO':
-            text, tone = 'PENDING', 'warning'
-        else:
-            text = 'IDLE'
-        self.metrics['state'].setText(text)
-        set_tone(self.metrics['state'], tone)
-        set_tone(self.strategy_status, tone)
+        return position_presenter.update_state_badge(self)
 
     def update_strategy_status(self):
-        self.update_state_badge()
-        if self.searching and not self.stop_pending:
-            self.strategy_status.setText('Поиск · проверяется адрес, ликвидность и доступные маршруты')
-            return
-        if getattr(self, 'ui_error', '') and not self.running and not self.stop_pending and not self.locked:
-            self.strategy_status.setText('Ошибка операции · ' + self.ui_error)
-            return
-        if not self.running and not self.busy and not self.stop_pending and not self.locked and not getattr(self, 'selection_ready', False) and self.mode.currentText() != 'DEMO':
-            self.strategy_status.setText(self.pool_label.text() if 'DEMO' not in self.pool_label.text() else 'Выберите рынок · раскройте AutoPair')
-            return
-        retry = getattr(self, 'exit_retry', None)
-        if retry:
-            remaining = max(0, retry['retry_at']-time.monotonic())
-            self.strategy_status.setText(('Останавливается · ' if self.stop_pending else '') + f"Позиция открыта, выход ожидает RPC · {retry['error']} · попытка {retry['attempt']}/{retry['limit']} через {remaining:.1f} с")
-            return
-        if self.stop_pending:
-            self.strategy_status.setText('Останавливается · ожидается завершение операции и закрытие позиции')
-            return
-        if self.busy and getattr(self, 'ui_command', '') in ('buy', 'sell', 'convert', 'sweep'):
-            self.strategy_status.setText({'buy': 'Покупка', 'sell': 'Продажа', 'convert': 'Конвертация', 'sweep': 'Продажа остатков'}[self.ui_command] + ' · ожидается результат исполнения')
-            return
-        if self.worker.execution_monitor is not None and self.mode.currentText() == self.worker.mode:
-            self.strategy_status.setText('Сделка выполняется · цена обновляется отдельно; ожидается результат исполнения')
-            return
-        if getattr(self, 'quote_unavailable', False) and self.running:
-            self.strategy_status.setText('Нет котировок · повтор чтения; ' +
-                ('позиция открыта, TP/SL временно недоступны' if self.display_position > 0 else 'новые входы запрещены'))
-            return
-        if self.locked and self.mode.currentText() == 'LIVE':
-            text = 'Требуется сверка LIVE · проверьте незавершённую операцию'
-        elif getattr(self, 'halt_reason', '') and not self.running:
-            action = (' · позиция сохранена; после устранения причины повторите SELL POSITION или STOP'
-                      if self.display_position > 0 else ' · проверьте причину перед START')
-            text = 'Остановлен из-за ошибки · ' + self.halt_reason + action
-        elif self.running and self.last_quote_at is not None and time.monotonic()-self.last_quote_at > .55:
-            text = 'Котировка устарела · нет обновлений более 0,55 с'
-        elif getattr(self, 'entry_notice', '') and self.running:
-            text = self.entry_notice if self.entry_notice.startswith('Пауза после выхода:') else 'Вход пропущен · ' + self.entry_notice
-        elif getattr(self, 'signal_notice', '') and self.running and not self.display_position:
-            text = self.signal_notice
-        elif self.display_position > 0:
-            text = 'Позиция открыта' + (' · автоматическая стратегия остановлена' if not self.running else '')
-        elif self.running:
-            text = 'Ждёт падения до DIP' if 'DIP' in self.chart.levels else 'Получает котировки · формирует базу DIP'
-        else:
-            text = 'Готов к запуску' if self.mode.currentText() == 'DEMO' or getattr(self, 'selection_ready', False) else 'Выберите рынок · раскройте AutoPair'
-        fresh = self.last_quote_at is not None and time.monotonic()-self.last_quote_at <= .55
-        if fresh and self.last_price is not None and self.last_price > 0:
-            for key in (('TP', 'SL') if self.display_position > 0 else ('DIP',) if self.running else ()):
-                if key == 'DIP' and (getattr(self, 'wait_reason', '') in ('rebound', 'cooldown', 'warmup') or getattr(self, 'entry_notice', '')):
-                    continue
-                if key not in self.chart.levels:
-                    continue
-                level = Decimal(str(self.chart.levels[key]))
-                distance = ((level-self.last_price) if key == 'TP' else (self.last_price-level))/self.last_price*100
-                text += f' · до {key}: {distance:.2f}%' if distance > 0 else f' · {key}: уровень достигнут'
-        if self.display_position > 0 and fresh:
-            entry = Decimal(str(self.chart.levels.get('ENTRY', 0)))
-            if entry > 0 and self.last_price is not None:
-                text += f' · цена от опорного входа: {(self.last_price / entry - 1) * 100:+.2f}% (не P&L)'
-        self.strategy_status.setText(text)
-        self.chart.setAccessibleName('График цены и уровней стратегии')
-        self.chart.setAccessibleDescription(' · '.join(
-            f'{key}: {self.display_price(value)}' for key, value in self.chart.levels.items()))
+        return position_presenter.update_strategy_status(self)
 
     def update_quote_age(self):
-        self.refresh_trade_details()
-        # Pull at UI cadence: no unbounded signal queue while an RPC/receipt blocks the executor.
-        monitor = self.worker.execution_monitor
-        if monitor is not None and self.mode.currentText() == self.worker.mode and self.selection_ready:
-            snapshot = monitor.snapshot()
-            current_block = getattr(self, 'market_block', None)
-            if (snapshot is not None and snapshot.pool.lower() == self.pool_input.text().lower()
-                    and (current_block is None or snapshot.block >= current_block)):
-                identity = (id(monitor), snapshot.revision)
-                if identity != getattr(self, '_monitor_revision', None):
-                    self._monitor_revision = identity
-                    self.on_event('price_context', {'source': 'BSC', 'quote': snapshot.quote,
-                        'block': snapshot.block, 'block_timestamp': snapshot.block_timestamp})
-                    self.on_event('price', str(snapshot.price))
-                    self.last_quote_at = snapshot.received_at
-        self.update_strategy_status()
-        self.refresh_currency()
-        if self.last_quote_at is None:
-            self.quote_age.setText('Котировок ещё нет')
-            set_tone(self.quote_age, '')
-            return
-        age = max(0, time.monotonic()-self.last_quote_at)
-        source = {'DEMO':'локальная модель DEMO', 'REPLAY':'повтор записанных цен'}.get(self.price_source, 'BSC / RPC')
-        state = ' · нет новых котировок > 0.55 с' if self.running and age > .55 else ''
-        if self.chart.usd_rate is not None:
-            conversion = f'USD ≈ · курс {self.display_unit}/USD получен {time.monotonic()-self.usd.received_at:.0f} с назад (DEX Screener)'
-        elif self.price_source == 'BSC':
-            conversion = f'{self.display_unit} · USD недоступен / курс загружается'
-        else:
-            conversion = self.display_unit
-        if getattr(self, 'market_block', None) is not None:
-            source += f' · блок {self.market_block}'
-            if self.market_block_timestamp is not None:
-                source += f' (возраст {max(0, time.time()-self.market_block_timestamp):.1f} с)'
-        if getattr(self, 'market_rpc_source', 'BSC') != 'BSC':
-            source += ' · резервный RPC'
-        if getattr(self, 'same_block_cache', False):
-            source += ' · тот же блок'
-        set_tone(self.quote_age, 'warning' if age > .55 else '')
-        self.quote_age.setToolTip(f'1 TARGET в {conversion} · {source}')
-        self.quote_age.setText(f'1 TARGET в {conversion} · {source} · последняя котировка {age:.1f} с назад{state}')
+        return position_presenter.update_quote_age(self)
 
     def refresh_timings(self):
-        if not self.timing_report.isVisible():
-            return
-        rows = TIMINGS.snapshot()
-        self.timing_report.setPlainText('\n'.join(
-            f"{name}: {row['p50_ms']:.1f} / {row['p95_ms']:.1f} / {row['p99_ms']:.1f} мс"
-            f" · {row['count']} вызовов · {row['errors']} ошибок"
-            for name, row in sorted(rows.items())))
+        return position_presenter.refresh_timings(self)
 
     def update_controls(self):
-        idle = not self.busy and not self.running and not self.stop_pending
-        position_open = self.display_position > 0
-        for widget in self.editable + self.actions:
-            widget.setEnabled(idle)
-        if position_open:
-            for widget in (self.mode, self.token, self.pool_input, self.router, self.quote, self.candidates):
-                widget.setEnabled(False)
-            blocked = {'AutoPair · найти пулы', 'CHECK POOL', 'Выбрать', 'ADD BASE',
-                       'Подключить', 'VERIFY WALLET AND SAVE · Keychain',
-                       'REMOVE выбранную пользовательскую базу'}
-            for button in self.actions:
-                if button.text() in blocked:
-                    button.setEnabled(False)
-        ready = self.mode.currentText() == "DEMO" or self.selection_ready
-        live_locked = self.mode.currentText() == 'LIVE' and self.locked
-        self.start.setEnabled(idle and ready and not live_locked)
-        self.buy.setEnabled(idle and ready and not position_open and not live_locked)
-        if self.searching and not self.running and not self.stop_pending and not position_open:
-            self.token.setEnabled(True)
-        self.sell.setEnabled(not self.busy and not self.stop_pending and position_open and not live_locked)
-        self.stop.setEnabled(True)
-        self.update_strategy_status()
+        return position_presenter.update_controls(self)
 
     def on_event(self, name, payload):
         if name == "discovery_event":
