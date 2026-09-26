@@ -1,6 +1,6 @@
 # Формальная модель Windows и Mac
 
-Артефакт: NRNF v1.4.14, hash и адреса в [PARITY_EVIDENCE.json](PARITY_EVIDENCE.json). Это реконструкция по машинному коду, не восстановленные Python-исходники. Трасс запущенного Windows нет. Новые исходники Mac основаны на `4f3e986`; разница с baseline описана в [PARITY_AUDIT_RU.md](PARITY_AUDIT_RU.md).
+Артефакт: NRNF v1.4.14, hash и адреса в [PARITY_EVIDENCE.json](https://github.com/Hostlife22/dipbot-mac/blob/89e3a4f/docs/PARITY_EVIDENCE.json). Это реконструкция по машинному коду, не восстановленные Python-исходники. Трасс запущенного Windows нет. Историческое сравнение Mac с baseline `4f3e986` описано в [PARITY_AUDIT_RU.md](https://github.com/Hostlife22/dipbot-mac/blob/89e3a4f/docs/PARITY_AUDIT_RU.md).
 
 ## Обозначения и цена
 
@@ -106,8 +106,8 @@ Expected для стратегии хранится в `tests/fixtures/parity/st
 
 ## Уточнение восстановления и STOP (2026-09-24)
 
-STOP проверяется до начала Converter и после RPC-подготовки каждого этапа Sweep. При пропуске непроданного target сохраняется entry. Sweep включает пулы сохранённых позиций текущего кошелька. START/BUY другого пула при сохранённой позиции того же кошелька отклоняется. Подробности и границы Windows-соответствия: [STATIC_RECOVERY_AUDIT_RU.md](STATIC_RECOVERY_AUDIT_RU.md).
+STOP проверяется до начала Converter и после RPC-подготовки каждого этапа Sweep. При пропуске непроданного target сохраняется entry. Sweep включает пулы сохранённых позиций текущего кошелька. START/BUY другого пула при сохранённой позиции того же кошелька отклоняется. Подробности и границы Windows-соответствия: [STATIC_RECOVERY_AUDIT_RU.md](https://github.com/Hostlife22/dipbot-mac/blob/89e3a4f/docs/STATIC_RECOVERY_AUDIT_RU.md).
 
 ## AutoPair и динамические профили
 
-Discovery теперь сортирует и группирует кандидатов по восстановленным правилам оригинала; ready-кандидаты имеют приоритет. PENDING не разрешает торговлю. Проверенные converter mode/fee хранятся отдельно для V2/V3 и используются в свежих котировках. Подробная спецификация и оставшиеся отличия: [AUTOPAIR_PARITY_RU.md](AUTOPAIR_PARITY_RU.md).
+Discovery теперь сортирует и группирует кандидатов по восстановленным правилам оригинала; ready-кандидаты имеют приоритет. PENDING не разрешает торговлю. Проверенные converter mode/fee хранятся отдельно для V2/V3 и используются в свежих котировках. Подробная спецификация и оставшиеся отличия: [AUTOPAIR_PARITY_RU.md](https://github.com/Hostlife22/dipbot-mac/blob/89e3a4f/docs/AUTOPAIR_PARITY_RU.md).

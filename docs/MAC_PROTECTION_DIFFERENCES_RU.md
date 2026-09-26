@@ -23,4 +23,4 @@
 
 После V3 swap Windows проверяет прирост WBNB `<= 0` в разобранной локальной ветви. Mac дополнительно требует фактический выход не ниже minOut и сохраняет журнал между swap и unwrap. Границы и сбои проверены в `tests/test_converter_stage_faults.py`.
 
-Windows `DynamicPairRegistry._load` в найденном Exception-handler очищает `_records` и записывает имя типа ошибки в `load_error`. Mac при неизвестной версии реестра отказывает в catalog/ADD/REMOVE, сохраняя память и файл; три сценария в `tests/test_catalog_commit_boundaries.py`. Это не доказательство Windows rollback после `_save`. [Адреса, доказательства и ограничения](UNWIND_CONVERTER_AUDIT_RU.md).
+Windows `DynamicPairRegistry._load` в найденном Exception-handler очищает `_records` и записывает имя типа ошибки в `load_error`. Mac при неизвестной версии реестра отказывает в catalog/ADD/REMOVE, сохраняя память и файл; три сценария в `tests/test_catalog_commit_boundaries.py`. Это не доказательство Windows rollback после `_save`. [Адреса, доказательства и ограничения](https://github.com/Hostlife22/dipbot-mac/blob/89e3a4f/docs/UNWIND_CONVERTER_AUDIT_RU.md).

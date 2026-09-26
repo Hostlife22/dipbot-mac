@@ -43,3 +43,6 @@ CUSTOMER_RELEASE*/
 .vscode/
 *.swp
 
+
+# Generated local verification reports and screenshots
+.local-artifacts/

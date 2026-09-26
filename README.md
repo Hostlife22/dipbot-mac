@@ -1,127 +1,39 @@
-<div align="center">
-
-[Единый аудит всех 12 областей](docs/COMPREHENSIVE_AUDIT_RU.md) и [намеренные отличия защит Mac](docs/MAC_PROTECTION_DIFFERENCES_RU.md). Исправлено расхождение публичного реестра и файла после ошибки синхронизации уже выполненной замены. Полный Windows-паритет не подтверждён.
-
-[Последний статический проход: unwind, V3 swap/unwrap и fallback профилей](docs/UNWIND_CONVERTER_AUDIT_RU.md).
-
 # DipBot Mac
 
-**Рабочее место для DIP-торговли в BSC на macOS**
+Компактный торговый терминал для BSC на macOS: PancakeSwap V2/V3, AutoPair, DIP-вход, TP/SL, trailing, Converter и Sweep. Python / PySide6, хранение ключей в macOS Keychain.
 
-PancakeSwap V2 / V3 · Python · PySide6 · macOS Keychain
+Независимая реализация по документации и статическому разбору Windows-бота. Полное совпадение с оригиналом и прибыльность стратегии не подтверждены.
 
-[![CI](https://github.com/Hostlife22/dipbot-mac/actions/workflows/ci.yml/badge.svg)](https://github.com/Hostlife22/dipbot-mac/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/Python-3.12–3.13-3776AB?logo=python&logoColor=white)
-![Status](https://img.shields.io/badge/status-experimental-orange)
-
-[Выпуск 25.09.2026](docs/RELEASE_2026_09_25_RU.md) · [Руководство](README_RU.md) · [Архитектура](docs/ARCHITECTURE_RU.md) · [Разработка](CONTRIBUTING.md) · [История изменений](CHANGELOG.md)
-
-</div>
-
-![DipBot Mac в режиме DEMO — синтетические котировки, без кошелька](docs/SCREENSHOT_DEMO.png)
-
-Независимая реализация по документации и статическому разбору NRNF DipBot v1.4.14. Исходники доступны в этом репозитории; Windows EXE и авторская лицензия для запуска не нужны.
-
-> **Экспериментальная версия.** LIVE отправляет реальные транзакции. Проверены локальные тесты, запуск macOS-приложения и чтение BSC; выполнены ограниченные LIVE-тесты V2/V3, Converter и Sweep (см. [результаты](docs/LIVE_ACCEPTANCE_RU.md)). Стратегия реконструирована и не подтверждена как точная копия оригинала. Подробности — в [отчёте проверки](docs/VALIDATION_RU.md).
-
-Дополнение: [crash-тесты и runtime-разбор](docs/CRASH_RUNTIME_AUDIT_RU.md), 262 теста; подготовлена отдельная Windows DPAPI-проверка.
-
-Предыдущий [статический аудит](docs/FULL_STATIC_AUDIT_RU.md): восстановление, Sweep, AutoPair, профили и настройки; 245 тестов и read-only BSC. Полное совпадение с Windows не подтверждено.
-
-[Проверка capa, FLOSS и полной Ghidra](docs/RE_TOOLING_RU.md): установленные инструменты, сопоставление семи функций и ограничения автоматического анализа.
-
-[Продолжение реверса и исправление Sweep](docs/SCOPED_RE_AUDIT_RU.md): ограниченный capa/FLOSS-проход завершён, прототипы Nuitka уточнены, 271 тест пройден.
-
-[Контексты Nuitka и расширенные проверки](docs/CALL_CONTEXT_AUDIT_RU.md): восемь прототипов, граф из 27 функций, 361 контекст FLOSS с ограничениями эмуляции, crash/Sweep-тесты и read-only Multicall.
-
-[Получатели Nuitka и диагностика FLOSS](docs/RECEIVER_AUDIT_RU.md): цепочки объектов и кандидаты методов, изоляция контекстов эмуляции, 290 тестов приложения и 6 тестов анализатора.
-
-[Вынесенные ветви и глобальные вызовы](docs/BRANCH_GLOBAL_AUDIT_RU.md): расширенный обход, inline-фабрики функций, условие очистки Sweep и диагностика объектов FLOSS.
-
-[Аргументы Trader/bot, неизвестные остатки и модель имён FLOSS](docs/STATE_ARGUMENT_AUDIT_RU.md): уточнены конструкции объектов, повтор AutoPair после REMOVE и ошибка отсутствующих настроек; 291 тест приложения и 13 тестов инструментов.
-
-## Возможности
-
-| Область | Реализовано |
-| --- | --- |
-| Рынок | Проверка канонических пулов PancakeSwap V2/V3, AutoPair, 42 базовых актива |
-| Торговля | Ручные BUY/SELL, автоматический DIP-вход, TP, Stop Loss, Dynamic |
-| Управление активами | Converter BNB ↔ base, Sweep зарегистрированных токенов |
-| Исполнение | Точечный approve, minOut, ожидание receipt, журнал перед отправкой |
-| Хранение | Ключ и опционально RPC в macOS Keychain, публичное состояние на диске |
-
-## Быстрый старт
-
-Нужны macOS и [uv](https://docs.astral.sh/uv/getting-started/installation/). Зависимости устанавливаются по `uv.lock`.
+## Запуск
 
 ```bash
-git clone https://github.com/Hostlife22/dipbot-mac.git
-cd dipbot-mac
 uv sync --frozen --python 3.12
 uv run --frozen python launcher.py
 ```
 
-Оставьте **DEMO** и нажмите **START BOT**: RPC, private key и средства не нужны. В подготовленном окружении можно запускать `START_MAC.command` двойным кликом.
-
-| Режим | Котировки | Сделки |
+| Режим | Котировки | Исполнение |
 | --- | --- | --- |
-| **DEMO** | Синтетическая локальная цена | Виртуальные |
-| **PAPER** | Настоящие данные BSC | Виртуальные |
-| **LIVE** | Настоящие данные BSC | Реальные |
+| DEMO | Синтетические | Виртуальное, без RPC и кошелька |
+| PAPER | Реальные BSC | Виртуальное, с ограничениями модели расходов |
+| LIVE | Реальные BSC | Реальные транзакции |
 
-Для PAPER/LIVE настройте RPC и выберите проверенный пул. **AMOUNT измеряется в базовом ERC-20 активе пула**, включая WBNB, а не обязательно в нативном BNB. Пошаговая настройка, поведение STOP и восстановление после ошибки — в [руководстве](README_RU.md).
+Начните с DEMO → START BOT. Для PAPER настройте RPC и выберите пул. Единица AMOUNT определяется выбранным режимом суммы: база пары или USD.
 
-## Сборка приложения
+## Документация
 
-```bash
-./BUILD_MAC.command
-open "dist/DipBot Mac.app"
-```
+- [Руководство пользователя](README_RU.md): настройка, управление, восстановление.
+- [Индекс документации](docs/README.md): архитектура, стратегия и ограничения проверки.
+- [Разработка](CONTRIBUTING.md), [инструкции агентам](AGENTS.md), [безопасность](SECURITY.md).
+- [Инструменты проверки](tools/README.md), [тесты](tests/README.md), [история изменений](CHANGELOG.md).
 
-Сборка использует архитектуру текущего Python-окружения. Локально проверен Intel x86_64; нативную arm64-сборку нужно создавать и проверять отдельно. Подпись — ad-hoc, без нотарификации Apple.
-
-Исходный Git-репозиторий не содержит `.app`, `.venv` и Windows-дистрибутив. Workflow [Build macOS](.github/workflows/build-macos.yml) можно запустить вручную в Actions: после успешных проверок он сохраняет отдельные ZIP-артефакты для Intel и Apple Silicon, а также SHA-256. Автоматической публикации релизов нет.
-
-## Разработка
+## Проверка и сборка
 
 ```bash
 uv sync --frozen --group dev
 uv run --frozen pytest -q
 QT_QPA_PLATFORM=offscreen uv run --frozen python launcher.py --smoke-test
+./BUILD_MAC.command
+open "dist/DipBot Mac.app"
 ```
 
-CI запускает тесты и GUI smoke test на macOS для обеих архитектур. В smoke test временный случайный ключ используется только для локальной проверки подписи; транзакции не отправляются и пользовательский Keychain не читается.
-
-```text
-dipbot/             Интерфейс, стратегия, BSC-клиент, исполнение и хранение
-tests/              Локальные тесты с заглушками исполнения
-tools/              Статический анализ Windows EXE
-docs/               Архитектура, разбор, отчёт проверки и DEMO-скриншот
-.github/            CI, сборка macOS, шаблоны issues и pull requests
-```
-
-## Документация
-
-- [Настройка, торговля и восстановление](README_RU.md)
-- [Архитектура и поток исполнения](docs/ARCHITECTURE_RU.md)
-- [Участие в разработке](CONTRIBUTING.md)
-- [Работа с чувствительными данными](SECURITY.md)
-- [Разбор nonce, known-transaction и receipt](docs/NONCE_RECOVERY_RU.md)
-- [Внутренние методы Sweep и перенесённая симуляция](docs/SWEEP_INTERNALS_RU.md)
-- [Уточнение REMOVE, ошибок Sweep и защищённого формата](docs/FOLLOWUP_PARITY_RU.md)
-- [Разбор AutoPair, ADD, Sweep и настроек](docs/WORKFLOW_PARITY_RU.md)
-- [Что удалось восстановить из оригинала](docs/REVERSE_ENGINEERING_RU.md)
-- [Что проверено и что осталось непроверенным](docs/VALIDATION_RU.md)
-
-
-[Продолжение: специальные методы и ошибки загрузки](docs/EXCEPTION_FOLLOWUP_RU.md): получатели `__exit__`, tuple-аргументы, повтор AutoPair из live-pair и требования к объектам FLOSS.
-
-[Общая константа Sweep и путь ошибки REMOVE](docs/SHARED_CONSTANTS_RU.md): подтверждён нулевой порог финального остатка и найден загрузчик общей таблицы Nuitka.
-
-[Пороги Sweep и цепочка защищённой записи](docs/STORAGE_SWEEP_FOLLOWUP_RU.md): проверки TARGET/BASE/quote, временный файл и восстановленные keyword-аргументы.
-
-[Round-trip floor и ошибка GUI REMOVE](docs/ROUNDTRIP_SAVE_RU.md): проверены дробные границы bps и дополнительные аргументы; 314 тестов приложения, 19 тестов инструментов.
-
-[Shutdown и исправление границ анализа](docs/SHUTDOWN_AUDIT_RU.md): ошибки optional Trader.close, закрытие GUI и пересчёт CFG после INT3; 318/20 тестов.
-
-[Ошибки после отправки и продолжение Sweep](docs/POST_SEND_AUDIT_RU.md): failed может следовать за уже подтверждённой сделкой; Mac сохраняет блокировку и журнал.
+Локально проверялась Intel-сборка с подписью ad-hoc. Нативная Apple Silicon-сборка и notarization требуют отдельной проверки. Результаты тестов и пределы подтверждённого поведения — в [текущем статусе](docs/CURRENT_STATUS_RU.md).

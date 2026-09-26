@@ -1,9 +1,0 @@
-{
-  "full_acceptance": false,
-  "real_transactions": 0,
-  "executed_reentry_after_sl": "not_observed",
-  "stable_natural_trailing_exit": "not_observed",
-  "preflight_recovery": "passed_with_labelled_synthetic_signal_and_HTTP429_on_live_quotes",
-  "current_rpc_failures": "17 actual HTTP429 observed in instrumented runs; continued without restart",
-  "historical_rpc_causes": "unknown: original codes not retained"
-}

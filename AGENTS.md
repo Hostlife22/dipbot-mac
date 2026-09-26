@@ -8,8 +8,8 @@ This repository contains the independent macOS application in `dipbot/`. The Win
 
 - `dipbot/`: UI, worker, strategy, BSC client, execution, storage and public profiles.
 - `tests/`: offline pytest tests with mocked HTTP and transaction submission.
-- `tools/inspect_release.py`: read-only, allowlisted extraction from a supplied EXE.
-- `docs/`: architecture, reverse-engineering evidence, validation and a synthetic DEMO screenshot.
+- `tools/`: reusable diagnostics and verification; see `tools/README.md`. Some tools submit LIVE transactions; do not batch-run them.
+- `docs/`: compact current documentation; begin with `docs/README.md` and `docs/CURRENT_STATUS_RU.md`.
 - `README_RU.md`: detailed user guide; `README.md`: repository landing page.
 
 ## Commands
@@ -31,3 +31,7 @@ Do not describe reconstructed rules as recovered source code or imply LIVE valid
 
 Never commit licenses, keys, seed phrases, credential-bearing RPC URLs, wallet state, generated bundles or local environments. Review the staged file list and diff. Use concise imperative commit subjects and describe behavior plus validation in PRs.
 
+
+## Documentation hygiene
+
+Keep current behavior in the user guide and current status. Historical evidence and retired reverse-analysis scripts are in Git at `89e3a4f`; they are not an active task list. Write generated reports/screenshots to ignored `.local-artifacts/` or `/tmp`. Preserve behavioral regression tests even when their names refer to earlier audits.

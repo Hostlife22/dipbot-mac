@@ -9,7 +9,6 @@ from dipbot.autopair import Candidate
 from dipbot.storage import Store
 from dipbot.worker import Worker
 from dipbot.trader import LiveTrader, UncertainTransaction
-from tools.audit_native import Decoder
 
 OWNER=address('0x'+'34'*20)
 TOKEN=address('0x'+'ab'*20)
@@ -17,11 +16,6 @@ BASE=address('0x'+'cd'*20)
 POOL=Pool(address('0x'+'12'*20),'V2',TOKEN,address(WBNB),18,18,True)
 
 
-def test_large_constants_decode_exactly():
-    # MSB-first base 2**31 limbs, independent fixture 2**62 + 2**31 + 3.
-    assert Decoder(b'g\x03\x01\x01\x03').read()==2**62+2**31+3
-    assert Decoder(b'G\x02\x01\x00').read()==-2**31
-    with pytest.raises(ValueError): Decoder(b'g\x04\x01').read()
 
 
 def test_multicall_encodes_pins_and_distinguishes_failed_reads():
