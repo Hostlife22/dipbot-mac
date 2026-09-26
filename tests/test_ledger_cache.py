@@ -1,8 +1,8 @@
 import json
 import pytest
-from dipbot.ledger_cache import Ledger
-from dipbot.storage import Store
-from dipbot.accounting import closed_summary
+from dipbot.persistence.ledger_cache import Ledger
+from dipbot.persistence.storage import Store
+from dipbot.execution.accounting import closed_summary
 
 
 def test_nested_mutations_never_save_stale_json(tmp_path):

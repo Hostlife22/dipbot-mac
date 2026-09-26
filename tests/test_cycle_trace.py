@@ -1,7 +1,7 @@
 from types import SimpleNamespace as NS
 import pytest
-from dipbot.cycle_trace import CycleTrace, signal_cycle
-from dipbot.trader import UncertainTransaction
+from dipbot.observability.cycle_trace import CycleTrace, signal_cycle
+from dipbot.execution.errors import UncertainTransaction
 from test_execution import trader, Function
 
 

@@ -1,7 +1,7 @@
 from decimal import Decimal as D
-from dipbot.replay import replay, ReplayCosts
-from dipbot.strategy import Settings
-from dipbot.signal_policy import SignalPolicy
+from dipbot.research.replay import replay, ReplayCosts
+from dipbot.domain.strategy import Settings
+from dipbot.domain.signal_policy import SignalPolicy
 
 
 def test_delayed_fill_does_not_take_profit_against_old_signal_price():

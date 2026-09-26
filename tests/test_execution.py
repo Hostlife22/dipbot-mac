@@ -6,10 +6,11 @@ from eth_account import Account
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 
-from dipbot.chain import WBNB, USDT, Pool, address
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot.strategy import D
+from dipbot.market.chain import WBNB, USDT, Pool, address
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.domain.strategy import D
 
 
 class Function:

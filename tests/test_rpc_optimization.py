@@ -4,17 +4,17 @@ from types import SimpleNamespace
 from dataclasses import replace
 import pytest
 from web3 import HTTPProvider
-from dipbot.rpc import BscHTTPProvider
-from dipbot.chain import Chain, WBNB, USDT, Pool, address
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.market.rpc import BscHTTPProvider
+from dipbot.market.chain import Chain, WBNB, USDT, Pool, address
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 
 
 @pytest.fixture
 def provider(monkeypatch):
     clock = {'now': 100., 'network': '0x38', 'error': False}
     calls = []
-    monkeypatch.setattr('dipbot.rpc.time.monotonic', lambda: clock['now'])
+    monkeypatch.setattr('dipbot.market.rpc.time.monotonic', lambda: clock['now'])
     def wire(self, method, payload):
         calls.append(method)
         request = json.loads(payload)
@@ -64,7 +64,7 @@ def test_block_freshness_still_checked_on_fast_path(monkeypatch, age):
     c=object.__new__(Chain)
     c.w3=SimpleNamespace(provider=None, eth=SimpleNamespace(chain_id=56,
         get_block=lambda _: {'number':10,'timestamp':100-age}))
-    monkeypatch.setattr('dipbot.chain.time.time',lambda:100)
+    monkeypatch.setattr('dipbot.market.chain.time.time',lambda:100)
     with pytest.raises(ValueError,match='устаревший'):
         c.check(force_network=False)
 
@@ -75,7 +75,7 @@ def test_v3_failed_multicall_never_produces_price(monkeypatch,liquidity,slot,mes
     def batch(chain, requests, block):
         assert block==123 and [r[2] for r in requests]==['liquidity','slot0']
         return [liquidity,slot]
-    monkeypatch.setattr('dipbot.discovery.batch',batch)
+    monkeypatch.setattr('dipbot.market.discovery.batch',batch)
     pool=Pool(address('0x'+'12'*20),'V3',address(USDT),address(WBNB),18,18,True,100)
     with pytest.raises(ValueError,match=message):c.price(pool)
 
@@ -83,7 +83,7 @@ def test_v3_failed_multicall_never_produces_price(monkeypatch,liquidity,slot,mes
 @pytest.mark.parametrize('duration,expected',[(.03,[0,.1,.2]),(.2,[0,.2,.4])])
 def test_scheduler_includes_request_time_without_backlog(tmp_path,monkeypatch,duration,expected):
     clock={'now':0.};starts=[]
-    monkeypatch.setattr('dipbot.worker.time.monotonic',lambda:clock['now'])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic',lambda:clock['now'])
     w=Worker(Store(tmp_path/'state.json'));w.running=True;w.interval=.1
     class Commands:
         def get(self,timeout):
@@ -108,7 +108,7 @@ def test_strict_check_forces_identity_but_price_checks_reuse_it(provider,monkeyp
             blocks.append(tag)
             return {'timestamp':100,'number':123}
     c=object.__new__(Chain);c.w3=SimpleNamespace(provider=p,eth=Eth())
-    monkeypatch.setattr('dipbot.chain.time.time',lambda:100)
+    monkeypatch.setattr('dipbot.market.chain.time.time',lambda:100)
     assert c.check()==c.check(force_network=False)==c.check()==123
     assert calls.count('eth_chainId')==2 and len(blocks)==3
     clock['network']='0x1'

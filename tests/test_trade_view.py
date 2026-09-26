@@ -1,7 +1,7 @@
 import time
 import pytest
 from decimal import Decimal as D
-from dipbot.trade_view import entry_view, exit_view
+from dipbot.application.trade_view import entry_view, exit_view
 from test_app_autopair_flow import window
 from test_audit_ui_modes import status
 
@@ -48,9 +48,9 @@ def test_ui_separates_closed_result_and_stale_open_estimate(window):
 @pytest.mark.parametrize('fx,fee',[('1','.01'),('775.31','.00001289973039563473123411720695')])
 def test_worker_breakdown_matches_paper_ledger(tmp_path,fx,fee):
     from types import SimpleNamespace
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
-    from dipbot.paper_policy import PaperPolicy
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
+    from dipbot.domain.paper_policy import PaperPolicy
     from test_autopair_dynamic import POOL
     w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL
     from dataclasses import replace
@@ -70,8 +70,8 @@ def test_worker_breakdown_matches_paper_ledger(tmp_path,fx,fee):
 
 def test_missing_legacy_live_cost_is_not_zero(tmp_path):
     from types import SimpleNamespace
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
     from test_autopair_dynamic import POOL
     w=Worker(Store(tmp_path/'state.json'));w.mode='LIVE';w.pool=POOL
     w.live=SimpleNamespace(owner='0x'+'34'*20)

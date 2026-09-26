@@ -1,8 +1,8 @@
 import time
 from decimal import Decimal as D
-from dipbot.strategy import Settings, Strategy
-from dipbot.signal_policy import SignalPolicy
-from dipbot.exit_policy import ExitPolicy
+from dipbot.domain.strategy import Settings, Strategy
+from dipbot.domain.signal_policy import SignalPolicy
+from dipbot.domain.exit_policy import ExitPolicy
 from test_app_autopair_flow import window
 from test_audit_ui_modes import status
 

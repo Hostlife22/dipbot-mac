@@ -3,9 +3,10 @@ from copy import deepcopy
 from dataclasses import replace
 from types import SimpleNamespace
 import pytest
-from dipbot import dynamic, preferences
-from dipbot.storage import Store
-from dipbot.worker import Worker
+from dipbot.persistence import dynamic
+from dipbot.persistence import preferences
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
 from tools.protected_format import decode, ProtectedFormatError
 from test_autopair_dynamic import POOL, route
 from test_phase3 import OWNER

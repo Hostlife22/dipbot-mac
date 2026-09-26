@@ -1,9 +1,9 @@
 from dataclasses import asdict,replace
 from decimal import Decimal as D
 from types import SimpleNamespace as NS
-from dipbot.accounting import record_sweep_exit,closed_summary
-from dipbot.storage import Store
-from dipbot.worker import Worker
+from dipbot.execution.accounting import record_sweep_exit,closed_summary
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
 from test_autopair_dynamic import POOL
 
 OWNER='0x'+'34'*20
@@ -41,9 +41,9 @@ def test_external_inventory_or_residual_cannot_fabricate_pnl(tmp_path):
 def test_residual_is_not_duplicated_across_pools_and_invalidates_basis(tmp_path):
     store=Store(tmp_path/'state.json');positions(store)
     worker=Worker(store);worker.live=NS(owner=OWNER)
-    assert worker._account_sweep_token(POOL.token,12)
+    assert worker.sweep_service()._account_sweep_token(POOL.token,12)
     rows=list(store.data['positions'].values())
     assert sum(r['amount'] for r in rows)==12
     assert all(r['entry_cost_usd'] is None and 'cost_quote' not in r for r in rows)
-    assert worker._account_sweep_token(POOL.token,0)
+    assert worker.sweep_service()._account_sweep_token(POOL.token,0)
     assert not store.data['positions']

@@ -2,16 +2,16 @@ from decimal import Decimal as D
 from types import SimpleNamespace
 import time
 import pytest
-from dipbot.sizing import SizingPolicy
-from dipbot.accounting import RateBook
-from dipbot.entry_guard import EntryRejected
-from dipbot.chain import WBNB
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.domain.sizing import SizingPolicy
+from dipbot.execution.accounting import RateBook
+from dipbot.domain.entry_guard import EntryRejected
+from dipbot.market.chain import WBNB
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from test_autopair_dynamic import POOL
 from test_execution import trader,Function
 from test_app_autopair_flow import window
-from dipbot.strategy import Settings
+from dipbot.domain.strategy import Settings
 
 
 def test_usd_size_recalculates_and_missing_rate_blocks():

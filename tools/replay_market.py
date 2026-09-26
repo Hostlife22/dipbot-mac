@@ -5,10 +5,10 @@ from decimal import Decimal as D
 import json
 from pathlib import Path
 
-from dipbot.replay import replay, ReplayCosts, pool_fee_bps
-from dipbot.signal_policy import SignalPolicy
-from dipbot.exit_policy import ExitPolicy
-from dipbot.strategy import Settings
+from dipbot.research.replay import replay, ReplayCosts, pool_fee_bps
+from dipbot.domain.signal_policy import SignalPolicy
+from dipbot.domain.exit_policy import ExitPolicy
+from dipbot.domain.strategy import Settings
 
 
 def load(path, *, all_events=False):

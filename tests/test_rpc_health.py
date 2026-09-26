@@ -3,9 +3,9 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-from dipbot.rpc_health import RpcHealth
-from dipbot.storage import Store
-from dipbot.worker import Worker
+from dipbot.market.rpc_health import RpcHealth
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
 from test_autopair_dynamic import POOL
 
 

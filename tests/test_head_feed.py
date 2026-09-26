@@ -3,7 +3,7 @@ import threading
 import time
 from types import SimpleNamespace
 import pytest
-from dipbot.head_feed import HeadFeed, HeadSchedule
+from dipbot.market.head_feed import HeadFeed, HeadSchedule
 
 
 def head(n, h=None, parent=None):
@@ -91,10 +91,10 @@ def test_local_websocket_subscription_reconnect_and_shutdown():
 
 def test_worker_deferred_reads_do_not_busy_spin_and_feed_stops(tmp_path, monkeypatch):
     import queue
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
     clock = [0.0]
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: clock[0])
     worker = Worker(Store(tmp_path/'state.json')); worker.running = True; worker.mode = 'PAPER'
     feed = HeadFeed('wss://example.invalid'); feed.connected = True; feed.accept(head(1), now=0)
     stopped = []

@@ -1,7 +1,7 @@
 from decimal import Decimal as D
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
-from dipbot.strategy import Settings, Strategy
+from dipbot.domain.strategy import Settings, Strategy
 
 
 def test_market_and_mode_changes_clear_quotes(window):
@@ -53,7 +53,7 @@ def test_quote_source_change_discards_preview_and_age_is_visible(window, monkeyp
     assert not w.chart.values
     w.on_event('price','1')
     w.running = True
-    monkeypatch.setattr('dipbot.app.time.monotonic',lambda:w.last_quote_at+2)
+    monkeypatch.setattr('dipbot.ui.window.time.monotonic',lambda:w.last_quote_at+2)
     w.update_quote_age()
     assert 'локальная модель DEMO' in w.quote_age.text()
     assert '2.0 с назад' in w.quote_age.text() and '> 0.55' in w.quote_age.text()
@@ -72,7 +72,7 @@ def test_strategy_distances_and_stale_quote(window, monkeypatch):
     assert 'Позиция открыта' in w.strategy_status.text()
     assert 'до TP: 2.00%' in w.strategy_status.text()
     assert 'до SL: 2.00%' in w.strategy_status.text()
-    monkeypatch.setattr('dipbot.app.time.monotonic', lambda: w.last_quote_at+1)
+    monkeypatch.setattr('dipbot.ui.window.time.monotonic', lambda: w.last_quote_at+1)
     w.update_quote_age()
     assert 'устарела' in w.strategy_status.text()
     assert 'до TP' not in w.strategy_status.text()

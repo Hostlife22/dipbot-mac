@@ -4,8 +4,8 @@ import sys
 
 import pytest
 
-from dipbot.telemetry import Timings
-from dipbot.diagnostics import Diagnostics
+from dipbot.observability.telemetry import Timings
+from dipbot.observability.diagnostics import Diagnostics
 
 
 def test_bounded_percentiles_and_lifetime_errors():
@@ -54,7 +54,7 @@ def test_diagnostics_redacts_exception_and_tracks_exit(tmp_path):
 def test_process_termination_leaves_unclean_marker(tmp_path):
     code = '''
 import os, sys
-from dipbot.diagnostics import Diagnostics
+from dipbot.observability.diagnostics import Diagnostics
 Diagnostics(sys.argv[1])
 os._exit(7)
 '''
@@ -70,8 +70,8 @@ os._exit(7)
 def test_checkpoint_survives_abrupt_process_exit(tmp_path):
     code = '''
 import os, sys
-from dipbot.diagnostics import Diagnostics
-from dipbot.telemetry import TIMINGS
+from dipbot.observability.diagnostics import Diagnostics
+from dipbot.observability.telemetry import TIMINGS
 d = Diagnostics(sys.argv[1])
 TIMINGS.record('synthetic.read', .123)
 d.checkpoint()

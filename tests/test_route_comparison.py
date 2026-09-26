@@ -2,10 +2,10 @@ from dataclasses import replace
 from decimal import Decimal as D
 from types import SimpleNamespace as NS
 import pytest
-from dipbot.route_comparison import compare
-from dipbot.cost_policy import CostPolicy
-from dipbot.accounting import RateBook
-from dipbot.entry_guard import EntryRejected
+from dipbot.market.route_comparison import compare
+from dipbot.domain.cost_policy import CostPolicy
+from dipbot.execution.accounting import RateBook
+from dipbot.domain.entry_guard import EntryRejected
 from test_autopair_dynamic import POOL
 
 

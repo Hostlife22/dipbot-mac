@@ -2,9 +2,9 @@
 from types import SimpleNamespace as NS
 import threading
 import pytest
-from dipbot.app import Window, QMessageBox
-from dipbot import preferences
-from dipbot.storage import Store
+from dipbot.ui.window import Window, QMessageBox
+from dipbot.persistence import preferences
+from dipbot.persistence.storage import Store
 
 
 def window_fixture(tmp_path, monkeypatch, *, busy=False, running=False, stopped=False):
@@ -76,9 +76,9 @@ def test_direct_application_quit_joins_worker_before_qt_cleanup(tmp_path):
 import sys, time
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
-from dipbot.app import Window
-from dipbot.storage import Store
-from dipbot.worker import Worker
+from dipbot.ui.window import Window
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
 
 def slow_run(self):
     while not self.quit_event.wait(.01):

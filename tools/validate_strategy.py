@@ -3,9 +3,9 @@ import argparse
 from decimal import Decimal as D
 import json
 from pathlib import Path
-from dipbot.strategy import Settings
-from dipbot.replay import ReplayCosts, pool_fee_bps
-from dipbot.validation import walk_forward
+from dipbot.domain.strategy import Settings
+from dipbot.research.replay import ReplayCosts, pool_fee_bps
+from dipbot.research.validation import walk_forward
 from tools.replay_market import load
 
 

@@ -1,8 +1,8 @@
 from dataclasses import replace
 import pytest
-from dipbot.chain import (Chain, Pool, WBNB, USDT, V2_FACTORY, V3_FACTORY, ZERO, profiles,
+from dipbot.market.chain import (Chain, Pool, WBNB, USDT, V2_FACTORY, V3_FACTORY, ZERO, profiles,
                           address, V3_ABI, QUOTER_ABI)
-from dipbot.strategy import D
+from dipbot.domain.strategy import D
 from web3 import Web3
 
 POOL = address("0x" + "12"*20)
@@ -27,7 +27,7 @@ def test_v2_price_with_different_decimals_both_orientations():
 
 
 def test_v3_q96_price_both_orientations(monkeypatch):
-    monkeypatch.setattr("dipbot.discovery.batch", lambda chain, requests, block: [
+    monkeypatch.setattr("dipbot.market.discovery.batch", lambda chain, requests, block: [
         chain.call(addr, abi, name, *args, block=block) for addr, abi, name, args in requests])
     c = fake_chain(sqrt=2*2**96)
     p = Pool(POOL, "V3", WBNB, USDT, 18, 18, True, 500)

@@ -1,6 +1,6 @@
 import pytest
-from dipbot import preferences
-from dipbot.storage import Store
+from dipbot.persistence import preferences
+from dipbot.persistence.storage import Store
 
 
 def values():

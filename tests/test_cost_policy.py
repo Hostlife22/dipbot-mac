@@ -2,10 +2,10 @@ from dataclasses import replace
 from decimal import Decimal as D
 import time
 import pytest
-from dipbot.accounting import RateBook
-from dipbot.chain import WBNB, USDT
-from dipbot.cost_policy import CostPolicy
-from dipbot.entry_guard import EntryQuote, EntryRejected
+from dipbot.execution.accounting import RateBook
+from dipbot.market.chain import WBNB, USDT
+from dipbot.domain.cost_policy import CostPolicy
+from dipbot.domain.entry_guard import EntryQuote, EntryRejected
 from test_autopair_dynamic import POOL
 
 
@@ -34,8 +34,8 @@ def test_invalid_model(data):
 
 
 def test_cost_policy_preferences_survive_restart(tmp_path):
-    from dipbot import preferences
-    from dipbot.storage import Store
+    from dipbot.persistence import preferences
+    from dipbot.persistence.storage import Store
     store=Store(tmp_path/'state.json')
     value=preferences.from_windows_ui({})
     value['entry_cost_policy']=CostPolicy(D('1.5'),500000).export()

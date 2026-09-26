@@ -5,22 +5,10 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
-from dipbot.chain import Chain, WBNB, USDT, address, POOL_ABI
-from dipbot.discovery import discover, resolve, MULTICALL, batch, request
+from dipbot.market.chain import Chain, WBNB, USDT, address, POOL_ABI
+from dipbot.market.discovery import discover, resolve, MULTICALL, batch, request
 
-ALLOWED = {'eth_chainId','eth_getBlockByNumber','eth_getCode','eth_call','eth_getLogs','eth_getBlockByHash'}
-
-
-def guard_provider(provider):
-    calls = Counter()
-    original = provider.make_request
-    def read_only(method, params):
-        if method not in ALLOWED:
-            raise RuntimeError('Non-read RPC method blocked: '+method)
-        calls[method] += 1
-        return original(method, params)
-    provider.make_request = read_only
-    return calls
+from dipbot.checks.read_only import guard_provider
 
 
 def probe(endpoint):

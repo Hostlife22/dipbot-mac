@@ -1,7 +1,7 @@
 from copy import deepcopy
 import pytest
-from dipbot.storage import Store
-from dipbot.trader import UncertainTransaction
+from dipbot.persistence.storage import Store
+from dipbot.execution.errors import UncertainTransaction
 from test_execution import trader, Function
 
 

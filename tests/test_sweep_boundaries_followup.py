@@ -1,9 +1,9 @@
 from dataclasses import replace
 import pytest
-from dipbot import wallet_registry
-from dipbot.autopair import Candidate
-from dipbot.discovery import Resolution
-from dipbot.storage import Store
+from dipbot.persistence import wallet_registry
+from dipbot.market.autopair import Candidate
+from dipbot.market.discovery import Resolution
+from dipbot.persistence.storage import Store
 from test_expanded_scenarios import multi_worker
 from test_recovery_audit import POOL
 
@@ -31,7 +31,7 @@ def test_registered_target_changes_route_and_keeps_failed_other(tmp_path):
     w, other, balances, sent, reports = multi_worker(tmp_path)
     wallet_registry.register(w.store, w.live.owner, POOL, 'WBNB')
     wallet_registry.register(w.store, w.live.owner, other, 'WBNB')
-    from dipbot.chain import address
+    from dipbot.market.chain import address
     alternate = replace(POOL, address=address('0x'+'cd'*20))
     verified = []
     def verify(addr, token):
@@ -69,7 +69,7 @@ def test_stop_during_preflight_quote_does_not_begin(tmp_path):
 
 
 def test_pending_operation_blocks_sweep_even_zero_cleanup(tmp_path):
-    from dipbot.trader import UncertainTransaction
+    from dipbot.execution.errors import UncertainTransaction
     w, other, balances, sent, reports = multi_worker(tmp_path)
     w.store.data['operation'] = {'transactions':[{'status':'pending'}]}
     w.store.save()
@@ -80,7 +80,7 @@ def test_pending_operation_blocks_sweep_even_zero_cleanup(tmp_path):
 
 
 def test_zero_target_failure_after_replace_keeps_visible_file_state(tmp_path):
-    from dipbot.storage import SaveAfterReplaceError
+    from dipbot.persistence.storage import SaveAfterReplaceError
     w, other, balances, sent, reports = multi_worker(tmp_path)
     balances[POOL.token] = 0
     save = w.store.save

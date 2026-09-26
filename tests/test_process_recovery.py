@@ -3,18 +3,19 @@ import subprocess
 import sys
 import os
 import pytest
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, UncertainTransaction
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
 
 SCRIPT = r'''
 import os,sys
 from types import SimpleNamespace
 from eth_account import Account
 from web3 import Web3
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader
-from dipbot.strategy import D
-from dipbot.chain import WBNB,address
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.domain.strategy import D
+from dipbot.market.chain import WBNB,address
 store=Store(sys.argv[1]);boundary=sys.argv[2]
 class Function:
  def estimate_gas(self,tx):return 21000
@@ -54,7 +55,7 @@ def test_abrupt_exit_retains_durable_operation(tmp_path,boundary,exitcode,count,
     ('signed',74,1),('broadcast',71,2),('receipt',72,2)])
 def test_cancel_process_death_keeps_original_and_any_prepared_replacement(tmp_path,boundary,exitcode,count):
     injection = r'''
-from dipbot.cancellation import cancel_pending
+from dipbot.execution.cancellation import cancel_pending
 original_hash='0x'+'12'*32
 t.operation['transactions']=[{'hash':original_hash,'nonce':0,'status':'pending',
     'request':{'chainId':56,'nonce':0,'gasPrice':100000000}}]

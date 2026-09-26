@@ -1,6 +1,6 @@
 from decimal import Decimal as D
 import pytest
-from dipbot.replay import pool_fee_bps, ReplayCosts
+from dipbot.research.replay import pool_fee_bps, ReplayCosts
 
 
 @pytest.mark.parametrize('tier,bps',[(100,1),(500,5),(2500,25),(10000,100)])

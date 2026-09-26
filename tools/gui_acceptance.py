@@ -16,13 +16,13 @@ from dataclasses import replace
 from PySide6.QtWidgets import QApplication, QPushButton, QMessageBox, QScrollArea
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from dipbot.app import Window, STYLE
-from dipbot.chain import Chain, Pool, USDT, WBNB, address
-from dipbot.storage import Store
-from dipbot.autopair import Candidate
-from dipbot.discovery import Resolution
-from dipbot.trader import LiveTrader
-from tools.read_only_probe import guard_provider
+from dipbot.ui.window import Window, STYLE
+from dipbot.market.chain import Chain, Pool, USDT, WBNB, address
+from dipbot.persistence.storage import Store
+from dipbot.market.autopair import Candidate
+from dipbot.market.discovery import Resolution
+from dipbot.execution.trader import LiveTrader
+from dipbot.checks.read_only import guard_provider
 
 
 def run(endpoint, output):
@@ -149,8 +149,8 @@ def run(endpoint, output):
             child = subprocess.run([sys.executable, '-c', """
 import sys
 from PySide6.QtWidgets import QApplication
-from dipbot.app import Window
-from dipbot.storage import Store
+from dipbot.ui.window import Window
+from dipbot.persistence.storage import Store
 app=QApplication([])
 w=Window(Store(sys.argv[1]))
 assert w.quote.currentText() == 'GUI_TEST'

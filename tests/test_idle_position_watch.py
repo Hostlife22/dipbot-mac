@@ -3,8 +3,8 @@ from decimal import Decimal as D
 from types import SimpleNamespace
 from unittest.mock import Mock
 import pytest
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from test_autopair_dynamic import POOL
 
 

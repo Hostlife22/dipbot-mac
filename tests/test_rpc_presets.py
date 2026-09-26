@@ -1,5 +1,5 @@
 from test_app_autopair_flow import window
-from dipbot.rpc_presets import MAIN, BACKUP
+from dipbot.market.rpc_presets import MAIN, BACKUP
 
 
 def test_public_defaults_require_explicit_connect(window):
@@ -23,7 +23,7 @@ def test_backup_can_be_disabled(window):
 
 
 def test_websocket_is_opt_in_and_loaded_from_keychain(window, monkeypatch):
-    from dipbot.storage import Vault
+    from dipbot.persistence.storage import Vault
     assert window.ws_rpc.text() == '' and window.worker.head_feed is None
     monkeypatch.setattr(Vault, 'get', lambda self, name: 'wss://example.invalid/synthetic' if name == 'ws_rpc' else None)
     window.load_rpc()

@@ -7,8 +7,8 @@ import tempfile
 import time
 from decimal import Decimal as D
 from types import SimpleNamespace
-from dipbot.accounting import record_close, record_gas, closed_summary, expense_summary
-from dipbot.storage import Store
+from dipbot.execution.accounting import record_close, record_gas, closed_summary, expense_summary
+from dipbot.persistence.storage import Store
 
 
 def realistic_ledger(store, count):

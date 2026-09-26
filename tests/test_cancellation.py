@@ -4,9 +4,11 @@ from eth_account import Account
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 import pytest
-from dipbot.cancellation import cancellation_plan, cancel_pending
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, UncertainTransaction, reconcile_receipts
+from dipbot.execution.cancellation import cancellation_plan, cancel_pending
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.execution.reconciliation import reconcile_receipts
 
 H='0x'+'12'*32
 

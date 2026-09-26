@@ -1,10 +1,10 @@
 """Offline scenarios: no wallet, signing, or network."""
 from types import SimpleNamespace
 import pytest
-from dipbot.worker import Worker
-from dipbot.storage import Store
-from dipbot.strategy import D, Settings, Strategy
-from dipbot.trader import UncertainTransaction
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D, Settings, Strategy
+from dipbot.execution.errors import UncertainTransaction
 from test_autopair_dynamic import POOL
 from test_worker import config
 
@@ -13,7 +13,7 @@ from test_worker import config
 def test_preflight_rpc_failure_never_executes_or_reuses_old_signal(tmp_path, monkeypatch, code):
     from web3.exceptions import Web3RPCError
     clock = [10.0]
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: clock[0])
     w = Worker(Store(tmp_path/'state.json'))
     w.mode = 'PAPER'; w.pool = POOL; w.running = True
     calls = []
@@ -46,7 +46,7 @@ def test_preflight_rpc_failure_never_executes_or_reuses_old_signal(tmp_path, mon
 
 def test_rejected_dip_cools_down_reads_prices_and_requires_new_signal(tmp_path, monkeypatch):
     clock = [10.0]
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock[0])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: clock[0])
     w = Worker(Store(tmp_path/'state.json'))
     w.strategy = Strategy(Settings(dip=D(3), take_profit=D(2), stop_loss=D(2)))
     w.mode = 'PAPER'; w.pool = POOL; w.running = True

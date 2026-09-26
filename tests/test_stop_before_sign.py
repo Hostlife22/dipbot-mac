@@ -1,9 +1,9 @@
 import pytest
 from types import SimpleNamespace as NS
 from test_execution import trader,Function
-from dipbot.entry_guard import EntryRejected
-from dipbot.trader import UncertainTransaction
-from dipbot.storage import Store
+from dipbot.domain.entry_guard import EntryRejected
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.persistence.storage import Store
 
 
 def test_stop_after_confirmed_approve_never_signs_buy(trader):
@@ -49,7 +49,7 @@ def test_stop_does_not_cancel_the_sell_needed_to_exit(trader):
 
 def test_manual_entry_cancel_is_stop_not_error_dialog(tmp_path):
     import queue
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     w=Worker(Store(tmp_path/'state.json'))
     events=[];w.event.connect(lambda name,value:events.append((name,value)))
     calls=[0]

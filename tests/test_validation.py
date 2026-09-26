@@ -1,7 +1,7 @@
 from copy import deepcopy
 from decimal import Decimal as D
-from dipbot.strategy import Settings
-from dipbot.validation import walk_forward
+from dipbot.domain.strategy import Settings
+from dipbot.research.validation import walk_forward
 
 
 def samples():

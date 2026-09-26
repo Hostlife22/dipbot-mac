@@ -1,7 +1,7 @@
 from types import SimpleNamespace as NS
 from dataclasses import replace
 import pytest
-from dipbot.chain import Chain, StaleBlock
+from dipbot.market.chain import Chain, StaleBlock
 from test_autopair_dynamic import POOL
 POOL = replace(POOL, router="V2", fee=0)
 
@@ -56,7 +56,7 @@ def test_v3_multicall_is_reused_only_for_identical_header(monkeypatch):
     def batch(chain,requests,block):
         reads.append(block)
         return [100, (2**96,)]
-    monkeypatch.setattr('dipbot.discovery.batch',batch)
+    monkeypatch.setattr('dipbot.market.discovery.batch',batch)
     pool=replace(POOL,router='V3',fee=500)
     c.price(pool)
     c.price(pool)

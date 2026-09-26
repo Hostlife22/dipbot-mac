@@ -51,6 +51,21 @@ jobs:
         run: uv run --frozen pytest -q --junitxml=test-results.xml
       - name: Smoke-test GUI and local signing
         run: uv run --frozen python launcher.py --smoke-test
+      - name: Verify installed wheel without repository tools
+        run: |
+          uv build --wheel --out-dir "$RUNNER_TEMP/dipbot-wheel"
+          uv pip install --no-deps --target "$RUNNER_TEMP/dipbot-installed" "$RUNNER_TEMP"/dipbot-wheel/*.whl
+          .venv/bin/python -I - "$RUNNER_TEMP/dipbot-installed" <<'PYTHON'
+          import sys
+          sys.path.insert(0, sys.argv[1])
+          sys.modules.update(tools=None, tests=None)
+          import dipbot
+          assert dipbot.__file__.startswith(sys.path[0])
+          from dipbot.checks.token_ui_paper import run
+          from dipbot.app import main
+          sys.argv = ['dipbot', '--smoke-test']
+          raise SystemExit(main())
+          PYTHON
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

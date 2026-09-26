@@ -1,8 +1,8 @@
 from collections import Counter
 from types import SimpleNamespace
 
-from dipbot.app import Window
-from dipbot.chain import address
+from dipbot.ui.window import Window
+from dipbot.market.chain import address
 from test_expanded_scenarios import multi_worker
 from test_recovery_audit import POOL
 
@@ -60,11 +60,11 @@ def test_partial_report_is_visible_in_window_log():
 
 def test_catalog_target_sold_by_converter_clears_position(tmp_path):
     from dataclasses import replace
-    from dipbot.chain import USDT
-    from dipbot.discovery import Resolution
-    from dipbot import wallet_registry
-    from dipbot.storage import Store
-    from dipbot.strategy import D
+    from dipbot.market.chain import USDT
+    from dipbot.market.discovery import Resolution
+    from dipbot.persistence import wallet_registry
+    from dipbot.persistence.storage import Store
+    from dipbot.domain.strategy import D
     from test_recovery_audit import setup_worker
     worker = setup_worker(tmp_path)
     worker.set_position(0, 0)
@@ -89,8 +89,8 @@ def test_catalog_target_sold_by_converter_clears_position(tmp_path):
 
 def test_already_zero_catalog_target_reconciles_stale_position(tmp_path):
     from dataclasses import replace
-    from dipbot.chain import USDT
-    from dipbot.strategy import D
+    from dipbot.market.chain import USDT
+    from dipbot.domain.strategy import D
     from test_recovery_audit import setup_worker
     worker = setup_worker(tmp_path)
     worker.set_position(0, 0)

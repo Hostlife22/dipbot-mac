@@ -1,7 +1,7 @@
 from types import SimpleNamespace as NS
 import pytest
 from web3 import Web3
-from dipbot.trader import UncertainTransaction
+from dipbot.execution.errors import UncertainTransaction
 from test_execution import trader,Function
 
 

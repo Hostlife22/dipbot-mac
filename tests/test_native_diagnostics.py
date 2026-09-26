@@ -4,7 +4,7 @@ import json
 import subprocess
 import threading
 import pytest
-from dipbot import diagnostics
+from dipbot.observability import diagnostics
 
 
 def test_macos_native_count_does_not_retain_command(monkeypatch):

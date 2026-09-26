@@ -1,8 +1,8 @@
 from dataclasses import asdict
 import json
-from dipbot.market_tape import MarketTape
-from dipbot.strategy import Settings
-from dipbot.signal_policy import SignalPolicy
+from dipbot.research.market_tape import MarketTape
+from dipbot.domain.strategy import Settings
+from dipbot.domain.signal_policy import SignalPolicy
 from tools.compare_paper_runs import compare, inspect
 
 

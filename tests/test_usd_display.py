@@ -3,7 +3,7 @@ import time
 import pytest
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
-from dipbot.usd import select_rate, price_text
+from dipbot.domain.usd import select_rate, price_text
 
 
 def test_usd_rate_uses_base_address_and_liquid_bsc_pair():

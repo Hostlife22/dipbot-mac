@@ -7,7 +7,7 @@ import pytest
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
 from test_audit_ui_modes import status
-from dipbot.theme import STYLE
+from dipbot.ui.theme import STYLE
 
 
 def test_stale_quote_changes_badge_without_mutating_strategy(window):

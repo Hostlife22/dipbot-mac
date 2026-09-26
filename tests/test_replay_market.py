@@ -1,8 +1,8 @@
 from decimal import Decimal as D
 import pytest
-from dipbot.replay import replay,ReplayCosts
-from dipbot.strategy import Settings
-from dipbot.signal_policy import SignalPolicy
+from dipbot.research.replay import replay,ReplayCosts
+from dipbot.domain.strategy import Settings
+from dipbot.domain.signal_policy import SignalPolicy
 
 
 def samples(prices):

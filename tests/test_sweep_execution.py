@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Pool, WBNB, USDT, address, V2_ROUTER, V3_ROUTER
-from dipbot.wallet_registry import base_router
-from dipbot.trader import LiveTrader
-from dipbot.strategy import D
+from dipbot.market.chain import Pool, WBNB, USDT, address, V2_ROUTER, V3_ROUTER
+from dipbot.persistence.wallet_registry import base_router
+from dipbot.execution.trader import LiveTrader
+from dipbot.domain.strategy import D
 
 
 @pytest.mark.parametrize('catalogs,expected', [
@@ -24,7 +24,7 @@ def test_missing_base_profile_cannot_use_unrelated_router():
 @pytest.mark.parametrize('version',['V2','V3'])
 @pytest.mark.parametrize('failure',[False,True])
 def test_sweep_simulates_exact_sell_after_approval_before_send(monkeypatch,version,failure):
-    import dipbot.trader as module
+    import dipbot.execution.trader as module
     monkeypatch.setattr(module.time,'time',lambda:1000)
     pool=Pool(address('0x'+'12'*20),version,address(USDT),address(WBNB),18,18,False,500 if version=='V3' else 0)
     trader=object.__new__(LiveTrader);trader.owner=address('0x'+'34'*20)

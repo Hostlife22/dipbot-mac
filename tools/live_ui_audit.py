@@ -14,11 +14,11 @@ from unittest.mock import patch
 import requests
 from eth_account import Account
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
-from dipbot.app import Window, STYLE
-from dipbot.chain import Chain, WBNB, USDT, V2_ROUTER, V3_ROUTER, address, profiles
-from dipbot.storage import Store, Vault
-from dipbot.trader import LiveTrader
-from dipbot.usd import select_rate
+from dipbot.ui.window import Window, STYLE
+from dipbot.market.chain import Chain, WBNB, USDT, V2_ROUTER, V3_ROUTER, address, profiles
+from dipbot.persistence.storage import Store, Vault
+from dipbot.execution.trader import LiveTrader
+from dipbot.domain.usd import select_rate
 
 
 def reserve_cost_usd(previous, gas_wei, value_wei, fx):
@@ -110,8 +110,8 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
          patch.object(LiveTrader,'send',budgeted_send), \
          patch.object(QMessageBox,'question',lambda *a:QMessageBox.Yes), \
          patch.object(QMessageBox,'warning',lambda *a:report['errors'].append(a[2])), \
-         (patch('dipbot.worker.profiles', lambda: {'WBNB': WBNB}) if sweep_mode else nullcontext()), \
-         (patch('dipbot.dynamic.catalog', lambda store, router: {'WBNB':WBNB}) if multi else nullcontext()):
+         (patch('dipbot.application.sweep.profiles', lambda: {'WBNB': WBNB}) if sweep_mode else nullcontext()), \
+         (patch('dipbot.persistence.dynamic.catalog', lambda store, router: {'WBNB':WBNB}) if multi else nullcontext()):
         w=Window(Store(directory/('state-exit-retry.json' if exit_retry else sweep_state if sweep_mode else 'state.json')))
         if sweep_mode:
             assert not w.store.data.get('operation') and not w.store.data.get('positions'), 'Unfinished Sweep audit'
@@ -232,8 +232,8 @@ def run(key_path, directory, resume=False, sweep_only=False, sweep_multi=False, 
                     assert chain.balance(WBNB,account.address) == 0
                     assert w.worker.position() and not w.store.data.get('operation')
                     capture('sweep_route_partial')
-                    from dipbot.autopair import Candidate
-                    from dipbot.discovery import Resolution
+                    from dipbot.market.autopair import Candidate
+                    from dipbot.market.discovery import Resolution
                     candidate = Candidate(v3, 'WBNB', True, 1)
                     with patch.object(w.worker.chain, 'resolve_address',
                                       return_value=Resolution('RESOLVED',(candidate,),candidate)):

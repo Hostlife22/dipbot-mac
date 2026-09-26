@@ -1,8 +1,8 @@
 from decimal import Decimal as D
 import pytest
-from dipbot.strategy import Settings, Strategy
-from dipbot.signal_policy import SignalPolicy
-from dipbot import preferences
+from dipbot.domain.strategy import Settings, Strategy
+from dipbot.domain.signal_policy import SignalPolicy
+from dipbot.persistence import preferences
 from test_preferences import values
 
 

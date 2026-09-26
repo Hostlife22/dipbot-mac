@@ -1,8 +1,8 @@
 """Native static arithmetic model versus actual Mac route selection, no RPC."""
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Pool, address, WBNB, USDT
-from dipbot.trader import LiveTrader
+from dipbot.market.chain import Pool, address, WBNB, USDT
+from dipbot.execution.trader import LiveTrader
 from tools.native_models import roundtrip_loss_bps
 
 

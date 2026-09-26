@@ -1,9 +1,10 @@
 from types import SimpleNamespace as NS
 import pytest
 from web3.exceptions import TransactionNotFound
-from dipbot.pending import inspect_missing
-from dipbot.trader import reconcile_receipts, UncertainTransaction
-from dipbot.storage import Store
+from dipbot.execution.pending import inspect_missing
+from dipbot.execution.reconciliation import reconcile_receipts
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.persistence.storage import Store
 
 OWNER = '0x'+'12'*20
 HASH = '0x'+'34'*32
@@ -71,7 +72,7 @@ def test_reorg_never_confirms_external_replacement():
 
 
 def test_nonce_search_is_bounded_and_missing_is_not_dropped():
-    from dipbot.pending import find_nonce_replacement
+    from dipbot.execution.pending import find_nonce_replacement
     c = chain(5,5);calls=[]
     def block(height, **kwargs):
         calls.append(height)

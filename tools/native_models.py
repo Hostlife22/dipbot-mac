@@ -17,7 +17,7 @@ def converter_preview(expected, slippage_pct, router):
 
 
 def registry_key(router, token):
-    from dipbot.chain import address
+    from dipbot.market.chain import address
     return router.strip().upper(), address(token).lower()
 
 

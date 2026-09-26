@@ -1,6 +1,6 @@
 """Persist exact journal values and retain the old file on serialization failure."""
 import pytest
-from dipbot.storage import Store
+from dipbot.persistence.storage import Store
 
 
 def test_roundtrip_legacy_json_and_large_raw_values(tmp_path):

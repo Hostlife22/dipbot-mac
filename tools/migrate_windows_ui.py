@@ -6,7 +6,7 @@ state. Output is created exclusively; existing files are never overwritten.
 import argparse
 import json
 from pathlib import Path
-from dipbot.preferences import from_windows_ui
+from dipbot.persistence.preferences import from_windows_ui
 
 
 def convert(source, output):

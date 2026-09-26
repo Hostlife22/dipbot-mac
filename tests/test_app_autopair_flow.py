@@ -4,10 +4,10 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from types import SimpleNamespace
 import pytest
 from PySide6.QtWidgets import QApplication
-from dipbot.app import Window, QMessageBox
-from dipbot.worker import Worker
-from dipbot.storage import Store, SaveAfterReplaceError
-from dipbot import dynamic
+from dipbot.ui.window import Window, QMessageBox
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store, SaveAfterReplaceError
+from dipbot.persistence import dynamic
 from test_autopair_dynamic import POOL, TARGET, BASE, route
 
 
@@ -128,8 +128,8 @@ def test_remove_after_replace_error_refreshes_visible_state(window):
 
 @pytest.mark.parametrize('raw', [TARGET, POOL.address])
 def test_address_resolution_to_trading_selection(window, raw):
-    from dipbot.discovery import Resolution
-    from dipbot.autopair import Candidate
+    from dipbot.market.discovery import Resolution
+    from dipbot.market.autopair import Candidate
     w = window
     w.mode.setCurrentText('PAPER')
     seen = []

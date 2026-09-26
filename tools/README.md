@@ -14,6 +14,6 @@
 | Совместимость и публичные данные | `inspect_release`, `migrate_windows_ui`, `windows_dpapi_probe` |
 | Вспомогательные модели для тестов | `native_models`, `protected_format` — импортируемые модули |
 
-`windows_dpapi_probe` проверяет системный DPAPI только на Windows. Проверки fork требуют локального узла; PAPER/read-only требуют RPC. `token_ui_paper_check` также вызывается приложением: не удаляйте его как одноразовый скрипт.
+`windows_dpapi_probe` проверяет системный DPAPI только на Windows. Проверки fork требуют локального узла; PAPER/read-only требуют RPC. `token_ui_paper_check` — CLI-обёртка; реализация для приложения находится в `dipbot/checks/token_ui_paper.py`. Общий read-only guard находится в `dipbot/checks/read_only.py`.
 
 Вывод прогонов направляйте в `.local-artifacts/` или `/tmp`, без секретов. Старые анализаторы Nuitka/Ghidra/FLOSS и промежуточные отчёты доступны в Git на `89e3a4f`; они не нужны для запуска Mac-приложения.

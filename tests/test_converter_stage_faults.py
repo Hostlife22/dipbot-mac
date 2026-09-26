@@ -1,10 +1,10 @@
 """Offline V3 swap/unwrap boundaries with real signing and durable transaction records."""
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import ETH, WBNB, address
-from dipbot.strategy import D
-from dipbot.storage import Store
-from dipbot.trader import UncertainTransaction
+from dipbot.market.chain import ETH, WBNB, address
+from dipbot.domain.strategy import D
+from dipbot.persistence.storage import Store
+from dipbot.execution.errors import UncertainTransaction
 from test_execution import trader, Function
 from test_parity_audit import pool
 

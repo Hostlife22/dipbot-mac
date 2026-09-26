@@ -1,6 +1,6 @@
 """Explicit differences, not an assertion of full Windows equivalence."""
 import pytest
-from dipbot.strategy import D, minimum_out
+from dipbot.domain.strategy import D, minimum_out
 from tools.native_models import converter_preview
 
 

@@ -1,7 +1,7 @@
 from decimal import Decimal as D
-from dipbot.volatility import RollingVolatility
-from dipbot.strategy import Strategy,Settings
-from dipbot.signal_policy import SignalPolicy
+from dipbot.domain.volatility import RollingVolatility
+from dipbot.domain.strategy import Strategy,Settings
+from dipbot.domain.signal_policy import SignalPolicy
 
 
 def test_rolling_sigma_matches_independent_batch_calculation_and_expiry():

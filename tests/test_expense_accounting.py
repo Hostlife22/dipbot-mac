@@ -1,5 +1,5 @@
-from dipbot.accounting import expense_summary
-from dipbot.storage import Store
+from dipbot.execution.accounting import expense_summary
+from dipbot.persistence.storage import Store
 
 OWNER='synthetic_owner'
 

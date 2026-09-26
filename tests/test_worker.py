@@ -2,10 +2,10 @@ from dataclasses import asdict
 from types import SimpleNamespace
 import pytest
 
-from dipbot.worker import Worker, safe_error
-from dipbot.storage import Store
-from dipbot.strategy import D
-from dipbot.chain import Pool, WBNB, USDT, address
+from dipbot.application.worker import Worker, safe_error
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
+from dipbot.market.chain import Pool, WBNB, USDT, address
 
 
 def config(mode="DEMO"):

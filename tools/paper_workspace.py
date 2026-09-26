@@ -4,11 +4,11 @@ from pathlib import Path
 import time
 from unittest.mock import patch
 from PySide6.QtWidgets import QApplication
-from dipbot.app import Window, STYLE
-from dipbot.chain import Chain
-from dipbot.storage import Store, Vault
-from dipbot.trader import LiveTrader
-from tools.read_only_probe import guard_provider
+from dipbot.ui.window import Window, STYLE
+from dipbot.market.chain import Chain
+from dipbot.persistence.storage import Store, Vault
+from dipbot.execution.trader import LiveTrader
+from dipbot.checks.read_only import guard_provider
 
 
 def main(token, pool, directory):

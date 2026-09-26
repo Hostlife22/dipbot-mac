@@ -3,9 +3,11 @@ from dataclasses import asdict
 import pytest
 from web3 import Web3
 from eth_abi.exceptions import DecodingError
-from dipbot import discovery, preferences, wallet_registry
-from dipbot.chain import WBNB, USDT, address, POOL_ABI
-from dipbot.strategy import Settings, D
+from dipbot.market import discovery
+from dipbot.persistence import preferences
+from dipbot.persistence import wallet_registry
+from dipbot.market.chain import WBNB, USDT, address, POOL_ABI
+from dipbot.domain.strategy import Settings, D
 from tools.native_models import converter_preview, registry_key, purpose_entropy
 
 
@@ -80,7 +82,7 @@ def test_synthetic_dpapi_purpose_domains_are_separate():
 
 
 def test_read_only_rpc_guard_blocks_writes_before_provider():
-    from tools.read_only_probe import guard_provider
+    from dipbot.checks.read_only import guard_provider
     calls=[]
     provider=SimpleNamespace(make_request=lambda method,params:calls.append(method) or {'result':'0x38'})
     counts=guard_provider(provider)

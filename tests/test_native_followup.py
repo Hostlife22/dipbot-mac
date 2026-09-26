@@ -1,10 +1,10 @@
 import json
 from types import SimpleNamespace
 import pytest
-from dipbot import dynamic
-from dipbot.worker import Worker
-from dipbot.storage import Store
-from dipbot.trader import UncertainTransaction
+from dipbot.persistence import dynamic
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.execution.errors import UncertainTransaction
 from tools.protected_format import encode, decode, ProtectedFormatError
 from test_autopair_dynamic import POOL, route
 from test_phase3 import OWNER

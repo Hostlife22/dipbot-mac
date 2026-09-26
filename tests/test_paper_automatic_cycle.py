@@ -1,9 +1,9 @@
 """Deterministic PAPER signal-to-execution checks; no market-parity claim."""
 from types import SimpleNamespace
 import pytest
-from dipbot.worker import Worker
-from dipbot.storage import Store
-from dipbot.strategy import D
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
 from test_worker import config
 from test_recovery_audit import POOL
 
@@ -13,7 +13,7 @@ from test_recovery_audit import POOL
 def test_paper_dip_signal_executes_buy_then_exit(tmp_path, monkeypatch, exit_price, reason, stopped):
     worker = Worker(Store(tmp_path/'state.json'))
     clock = {'now': 1.0, 'price': D('1')}
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock['now'])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: clock['now'])
     worker.pool = POOL
     worker.chain = SimpleNamespace(verify_pool=lambda *args: POOL, price=lambda _: clock['price'])
     events = []
@@ -42,7 +42,7 @@ def test_paper_dip_signal_executes_buy_then_exit(tmp_path, monkeypatch, exit_pri
 def test_paper_gap_resets_base_without_buy(tmp_path, monkeypatch):
     worker = Worker(Store(tmp_path/'state.json')); worker.pool = POOL
     state = {'time': 1.0, 'price': D('1')}
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: state['time'])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: state['time'])
     worker.chain = SimpleNamespace(verify_pool=lambda *args: POOL, price=lambda _: state['price'])
     worker.command('start', config('PAPER') | {'token': POOL.token, 'pool': POOL.address})
     worker.observe()
@@ -61,7 +61,7 @@ def test_worker_autonomous_exit_cooldown_and_second_dip(tmp_path, monkeypatch, r
     """Synthetic prices, real Worker execution; no START after the first command."""
     worker = Worker(Store(tmp_path/'state.json'))
     clock = {'now': 1.0, 'price': D(100)}
-    monkeypatch.setattr('dipbot.worker.time.monotonic', lambda: clock['now'])
+    monkeypatch.setattr('dipbot.application.worker.time.monotonic', lambda: clock['now'])
     worker.pool = POOL
     worker.chain = SimpleNamespace(verify_pool=lambda *args: POOL, price=lambda _: clock['price'])
     data = config('PAPER') | {'token': POOL.token, 'pool': POOL.address,

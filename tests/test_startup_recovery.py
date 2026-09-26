@@ -3,10 +3,10 @@ from types import SimpleNamespace
 import pytest
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
-from dipbot.app import Window
-from dipbot.storage import Store, Vault
-from dipbot.worker import Worker
-from dipbot.trader import UncertainTransaction
+from dipbot.ui.window import Window
+from dipbot.persistence.storage import Store, Vault
+from dipbot.application.worker import Worker
+from dipbot.execution.errors import UncertainTransaction
 from web3.exceptions import TransactionNotFound
 from web3 import Web3
 

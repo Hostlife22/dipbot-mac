@@ -8,11 +8,11 @@ from pathlib import Path
 import tempfile
 from unittest.mock import patch
 from web3 import Web3
-from dipbot.chain import Chain, USDT, address
-from dipbot.storage import Store, Vault
-from dipbot.worker import Worker
-from dipbot.trader import UncertainTransaction
-from dipbot.recovery import compare_positions
+from dipbot.market.chain import Chain, USDT, address
+from dipbot.persistence.storage import Store, Vault
+from dipbot.application.worker import Worker
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.execution.recovery import compare_positions
 
 
 def run(output):

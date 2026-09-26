@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Chain
-from dipbot.market_tape import MarketTape
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.market.chain import Chain
+from dipbot.research.market_tape import MarketTape
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from test_autopair_dynamic import POOL
 from test_market_tape import read
 

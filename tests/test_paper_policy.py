@@ -2,11 +2,11 @@ from dataclasses import replace
 from decimal import Decimal as D
 from types import SimpleNamespace as NS
 import pytest
-from dipbot.paper_policy import PaperPolicy
-from dipbot.trader import PaperTrader
-from dipbot.storage import Store
-from dipbot.worker import Worker
-from dipbot.entry_guard import EntryRejected
+from dipbot.domain.paper_policy import PaperPolicy
+from dipbot.execution.paper import PaperTrader
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.domain.entry_guard import EntryRejected
 from test_autopair_dynamic import POOL
 
 
@@ -82,8 +82,8 @@ def test_stop_during_router_quote_prevents_virtual_fill(tmp_path):
 
 def test_gas_model_uses_fresh_base_and_native_fx_without_pool_fee_double_count():
     import time
-    from dipbot.accounting import RateBook
-    from dipbot.chain import WBNB
+    from dipbot.execution.accounting import RateBook
+    from dipbot.market.chain import WBNB
     rates = RateBook();now = time.monotonic()
     rates.update(POOL.quote, D(2), now);rates.update(WBNB, D(800), now)
     p = PaperPolicy(gas_units=200000, fee_quote=D('.001'))
@@ -93,7 +93,7 @@ def test_gas_model_uses_fresh_base_and_native_fx_without_pool_fee_double_count()
 
 
 def test_missing_fx_cannot_become_free_gas():
-    from dipbot.accounting import RateBook
+    from dipbot.execution.accounting import RateBook
     with pytest.raises(TimeoutError):
         PaperPolicy(gas_units=200000).operation_cost(D('.1'),POOL.quote,RateBook())
 
@@ -105,7 +105,7 @@ def test_invalid_gas_units_are_rejected(value):
 
 def test_worker_gas_model_charges_both_fills(tmp_path):
     import time
-    from dipbot.chain import WBNB
+    from dipbot.market.chain import WBNB
     w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
     w.paper_policy=PaperPolicy(0,D('.001'),200000)
     w.rates.update(POOL.quote,D(2),time.monotonic())
@@ -121,7 +121,7 @@ def test_worker_gas_model_charges_both_fills(tmp_path):
 
 def test_gas_fx_expiring_during_quote_prevents_fill(tmp_path):
     import time
-    from dipbot.chain import WBNB
+    from dipbot.market.chain import WBNB
     w=Worker(Store(tmp_path/'state.json'));w.mode='PAPER';w.pool=POOL;w.current_price=D(1)
     w.paper_policy=PaperPolicy(0,D(0),200000)
     w.rates.update(POOL.quote,D(2),time.monotonic())

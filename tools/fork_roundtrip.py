@@ -14,9 +14,9 @@ import time
 
 from eth_account import Account
 import requests
-from dipbot.chain import Chain, WBNB, address
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader
+from dipbot.market.chain import Chain, WBNB, address
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
 
 READ_METHODS = frozenset({
     'eth_chainId','eth_gasPrice','net_version','eth_blockNumber','eth_getBlockByNumber','eth_getBlockByHash',
@@ -168,7 +168,7 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False)
                 report['roundtrip_local_transactions']=report.pop('local_transactions')
     except Exception as exc:
         report['failure_type']=type(exc).__name__
-        from dipbot.worker import safe_error
+        from dipbot.application.worker import safe_error
         report['failure_detail']=safe_error(exc)
         response=getattr(exc,'rpc_response',None)
         if isinstance(response,dict) and isinstance(response.get('error'),dict):

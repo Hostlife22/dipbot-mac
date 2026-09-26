@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 import pytest
 from hexbytes import HexBytes
-from dipbot.chain import Chain
+from dipbot.market.chain import Chain
 
 
 def test_receipt_access_rejects_read_restricted_endpoint_before_live():

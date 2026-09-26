@@ -1,5 +1,5 @@
 """Keep Mac accounting conservative when a Sweep report has no known residuals."""
-from dipbot.storage import Store
+from dipbot.persistence.storage import Store
 from test_expanded_scenarios import multi_worker, POOL
 
 

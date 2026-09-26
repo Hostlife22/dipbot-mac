@@ -1,9 +1,9 @@
 from decimal import Decimal as D
 from types import SimpleNamespace
 import time
-from dipbot.accounting import RateBook,operation_fees,record_close,closed_summary
-from dipbot.chain import WBNB
-from dipbot.storage import Store
+from dipbot.execution.accounting import RateBook,operation_fees,record_close,closed_summary
+from dipbot.market.chain import WBNB
+from dipbot.persistence.storage import Store
 from test_autopair_dynamic import POOL
 from test_app_autopair_flow import window
 from test_execution import trader,Function
@@ -11,7 +11,7 @@ from test_execution import trader,Function
 
 def test_rates_expire_and_saved_marks_are_immutable(monkeypatch):
     now=[10.]
-    monkeypatch.setattr('dipbot.accounting.time.monotonic',lambda:now[0])
+    monkeypatch.setattr('dipbot.execution.accounting.time.monotonic',lambda:now[0])
     book=RateBook();book.update(WBNB,D(800),10)
     mark=book.snapshot(WBNB)
     book.update(WBNB,D(900),10)
@@ -70,7 +70,7 @@ def test_historical_footer_does_not_change_with_current_rate(window):
 
 def test_invalid_receipt_gas_is_not_accepted_as_financial_data(trader):
     import pytest
-    from dipbot.trader import UncertainTransaction
+    from dipbot.execution.errors import UncertainTransaction
     trader.begin('BUY')
     wait=trader.chain.w3.eth.wait_for_transaction_receipt
     trader.chain.w3.eth.wait_for_transaction_receipt=lambda *a,**k: wait(*a,**k)|{'gasUsed':'21000','effectiveGasPrice':10**8}

@@ -2,8 +2,9 @@
 import os
 import stat
 import pytest
-from dipbot.storage import Store, SaveAfterReplaceError
-from dipbot.trader import LiveTrader, UncertainTransaction
+from dipbot.persistence.storage import Store, SaveAfterReplaceError
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
 from test_execution import trader, Function
 
 

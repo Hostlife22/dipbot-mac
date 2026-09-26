@@ -1,9 +1,9 @@
 import json
 from dataclasses import asdict
 from pathlib import Path
-from dipbot.market_tape import MarketTape
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.research.market_tape import MarketTape
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from test_worker import config
 
 

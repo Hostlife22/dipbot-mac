@@ -1,5 +1,5 @@
 from types import SimpleNamespace as NS
-from dipbot.gap_recovery import GapRecovery
+from dipbot.market.gap_recovery import GapRecovery
 from test_activity import setup
 
 

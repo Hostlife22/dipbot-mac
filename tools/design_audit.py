@@ -10,12 +10,12 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QScrollArea, QLabel
 from PySide6.QtCore import QTimer, Qt, QPoint
 from PySide6.QtTest import QTest
-from dipbot.app import Window, STYLE
-from dipbot.worker import Worker
-from dipbot.storage import Store, Vault
-from dipbot.chain import Chain, Pool, WBNB, address
-from dipbot.usd import UsdRate
-from dipbot.trader import LiveTrader
+from dipbot.ui.window import Window, STYLE
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store, Vault
+from dipbot.market.chain import Chain, Pool, WBNB, address
+from dipbot.ui.usd_feed import UsdRate
+from dipbot.execution.trader import LiveTrader
 
 
 def run(output):
@@ -91,7 +91,7 @@ def run(output):
         seed();status(entry_notice='Недостаточная активность: 0 Swap, нужно минимум 1; пауза 5 с, затем новый сигнал DIP')
         geometry();snap('wait-activity')
         seed()
-        from dipbot.trade_view import entry_view, exit_view
+        from dipbot.application.trade_view import entry_view, exit_view
         detail=exit_view(entry_view(Decimal(1000000),Decimal(1),'.01',{'usd':'1'}),
                          Decimal(1000000),Decimal('1.0059'),'.01',{'usd':'1'})
         status(trade_detail=detail)
@@ -143,7 +143,7 @@ def run(output):
         status(running=False,locked=True);snap('live-locked');assert not w.start.isEnabled()
         w.show_recovery();events();snap('recovery')
         # UI-only profile creation/removal, no worker execution or chain mutation.
-        from dipbot import dynamic
+        from dipbot.persistence import dynamic
         from dataclasses import replace
         custom=replace(pool,quote=address('0x'+'ab'*20))
         conversion=[replace(pool,token=custom.quote)]

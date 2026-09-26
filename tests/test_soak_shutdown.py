@@ -1,8 +1,8 @@
 from types import SimpleNamespace as NS
 from pathlib import Path
 from PySide6.QtCore import QCoreApplication
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from tools.paper_soak import stop_workers,recording_health
 from test_worker import config
 

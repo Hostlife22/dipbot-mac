@@ -2,10 +2,11 @@
 from copy import deepcopy
 from pathlib import Path
 from decimal import Decimal as D
-from dipbot.chain import USDT, WBNB, address
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot.worker import Worker
+from dipbot.market.chain import USDT, WBNB, address
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.application.worker import Worker
 
 
 def audit(chain, account, directory, pool, amount, results=None):

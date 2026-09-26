@@ -1,0 +1,1 @@
+"""Domain components for DipBot."""

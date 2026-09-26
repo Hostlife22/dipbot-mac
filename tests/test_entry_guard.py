@@ -2,10 +2,10 @@ from decimal import Decimal as D
 from types import SimpleNamespace
 import pytest
 
-from dipbot.chain import Chain
-from dipbot.entry_guard import assess, EntryRejected
-from dipbot.storage import Store
-from dipbot.worker import Worker
+from dipbot.market.chain import Chain
+from dipbot.domain.entry_guard import assess, EntryRejected
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
 from test_autopair_dynamic import POOL
 
 

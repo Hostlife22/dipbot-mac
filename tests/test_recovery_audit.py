@@ -2,11 +2,11 @@
 from dataclasses import asdict
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Pool, WBNB, USDT, address
-from dipbot.storage import Store
-from dipbot.strategy import D
-from dipbot.worker import Worker
-from dipbot.trader import UncertainTransaction
+from dipbot.market.chain import Pool, WBNB, USDT, address
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
+from dipbot.application.worker import Worker
+from dipbot.execution.errors import UncertainTransaction
 
 OWNER = address('0x' + '34'*20)
 POOL = Pool(address('0x'+'12'*20), 'V2', address('0x'+'56'*20), address(WBNB), 18, 18, True)
@@ -97,7 +97,7 @@ def test_restart_does_not_allow_buy_in_other_pool(tmp_path):
 
 
 def test_add_profile_uses_whole_path_quotes(tmp_path, monkeypatch):
-    from dipbot.trader import LiveTrader
+    from dipbot.execution.trader import LiveTrader
     worker = Worker(Store(tmp_path/'state.json'))
     worker.pool = Pool(POOL.address, 'V2', POOL.token, address('0x'+'ab'*20), 18, 18, True)
     calls = []

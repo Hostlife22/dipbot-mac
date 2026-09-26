@@ -2,7 +2,7 @@ from decimal import Decimal as D
 import threading
 import time
 from types import SimpleNamespace
-from dipbot.market_monitor import MarketMonitor, MarketSnapshot
+from dipbot.market.market_monitor import MarketMonitor, MarketSnapshot
 from test_autopair_dynamic import POOL
 from test_app_autopair_flow import window
 

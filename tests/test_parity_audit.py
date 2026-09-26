@@ -1,10 +1,11 @@
 """Expected results from native call sites or independent safety invariants."""
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Chain, Pool, WBNB, USDT, ETH, address
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot.storage import Store
-from dipbot.strategy import D
+from dipbot.market.chain import Chain, Pool, WBNB, USDT, ETH, address
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
 
 
 def pool(token, quote, version='V3', fee=500, ident='12'):
@@ -65,7 +66,7 @@ def test_converter_tries_safe_alternative_after_best_quote_fails_roundtrip():
 @pytest.mark.parametrize('buy', [True, False])
 def test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped(version, buy, monkeypatch):
     # Native execution branches: 0x141e7ca84 / 0x141e7dc88 / 0x141e7ff8c.
-    import dipbot.trader as module
+    import dipbot.execution.trader as module
     monkeypatch.setattr(module.time, 'time', lambda: 1000)
     hops = ([pool(USDT, WBNB, version), pool(ETH, USDT, version, ident='13')] if buy else
             [pool(USDT, ETH, version), pool(WBNB, USDT, version, ident='13')])
@@ -108,7 +109,7 @@ def test_converter_native_funding_atomic_swap_and_only_new_wbnb_unwrapped(versio
 
 
 def test_pending_stop_is_not_erased_by_queued_buy(tmp_path):
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     worker = Worker(Store(tmp_path / 'state.json'))
     worker.stop_event.set()
     worker.configure = lambda _: None
@@ -121,7 +122,7 @@ def test_pending_stop_is_not_erased_by_queued_buy(tmp_path):
 
 import json
 from pathlib import Path
-from dipbot.strategy import Strategy, Settings
+from dipbot.domain.strategy import Strategy, Settings
 
 VECTORS = json.loads((Path(__file__).parent / 'fixtures/parity/strategy.json').read_text())
 
@@ -146,7 +147,7 @@ def test_invalid_price_never_creates_signal(prices):
 
 
 def test_mixed_or_broken_converter_route_cannot_reach_quote():
-    from dipbot.chain import route_path
+    from dipbot.market.chain import route_path
     with pytest.raises(ValueError, match='Смешанный'):
         route_path([pool(USDT, WBNB, 'V2'), pool(ETH, USDT, 'V3')])
     with pytest.raises(ValueError, match='Разрыв'):
@@ -155,7 +156,7 @@ def test_mixed_or_broken_converter_route_cannot_reach_quote():
 
 def test_multihop_abi_selector_is_exact_input_not_single():
     from web3 import Web3
-    from dipbot.chain import V3_ABI, route_path
+    from dipbot.market.chain import V3_ABI, route_path
     path = route_path([pool(USDT, WBNB), pool(ETH, USDT, ident='13')])[1]
     encoded = Web3().eth.contract(abi=V3_ABI).functions.exactInput(
         (path, address('0x'+'34'*20), 1060, 100, 196))._encode_transaction_data()
@@ -164,7 +165,7 @@ def test_multihop_abi_selector_is_exact_input_not_single():
 
 @pytest.mark.parametrize('stage', ['configure', 'read'])
 def test_stop_during_manual_buy_preparation_cancels_before_position(stage, tmp_path):
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     worker = Worker(Store(tmp_path / 'state.json'))
     def config(_):
         if stage == 'configure': worker.stop_event.set()
@@ -179,7 +180,7 @@ def test_stop_during_manual_buy_preparation_cancels_before_position(stage, tmp_p
 
 def test_worker_waits_for_buy_then_stop_closes_once_and_discards_queued_buy(tmp_path):
     # Controlled synchronous analogue of receipt callback while UI requests STOP.
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     worker = Worker(Store(tmp_path / 'state.json'))
     events = []
     worker.configure = lambda _: None
@@ -202,7 +203,7 @@ def test_worker_waits_for_buy_then_stop_closes_once_and_discards_queued_buy(tmp_
 
 
 def test_confirmed_sell_failed_price_does_not_resurrect_position(tmp_path):
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     worker = Worker(Store(tmp_path / 'state.json'))
     worker.mode = 'LIVE'
     worker.pool = pool(USDT, WBNB)
@@ -221,7 +222,7 @@ def test_confirmed_sell_failed_price_does_not_resurrect_position(tmp_path):
 
 def test_original_converter_candidates_preference_bridge_fee_and_sell_reversal():
     # Native _buy_route_candidates, bridge constants both 100 at 0x141e840c1.
-    from dipbot.routes import conversion_specs
+    from dipbot.market.routes import conversion_specs
     aapl = address('0x431a3bee82e2ca41e49895cbece5bb0f76a89b7a')
     specs = conversion_specs(WBNB, aapl)
     assert specs[0] == ('V3', (address(WBNB),address(USDT),aapl), (100,2500))

@@ -10,10 +10,11 @@ import time
 from decimal import Decimal as D
 from eth_account import Account
 from web3 import Web3
-from dipbot.chain import Chain
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, reconcile_receipts
-from dipbot.cancellation import cancellation_plan, cancel_pending
+from dipbot.market.chain import Chain
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.reconciliation import reconcile_receipts
+from dipbot.execution.cancellation import cancellation_plan, cancel_pending
 
 
 def run(binary, output):

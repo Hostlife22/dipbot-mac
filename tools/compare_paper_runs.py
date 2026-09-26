@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 import statistics
 
-from dipbot.strategy import Settings, Strategy
-from dipbot.signal_policy import SignalPolicy
+from dipbot.domain.strategy import Settings, Strategy
+from dipbot.domain.signal_policy import SignalPolicy
 from tools.replay_market import load
 from tools.market_cycle_audit import audit
 

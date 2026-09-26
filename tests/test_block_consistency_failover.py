@@ -2,11 +2,12 @@ from dataclasses import replace
 from types import SimpleNamespace as NS
 from hexbytes import HexBytes
 import pytest
-from dipbot.chain import Chain
-from dipbot.storage import Store
-from dipbot.worker import Worker
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot.strategy import D
+from dipbot.market.chain import Chain
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.domain.strategy import D
 from test_autopair_dynamic import POOL
 from test_execution import trader, Function
 
@@ -49,7 +50,7 @@ def test_post_send_canonical_failure_keeps_pending_no_resend(trader, monkeypatch
         checks.append(receipt)
         raise ValueError('reorg')
     trader.chain.canonical_receipt=check
-    monkeypatch.setattr('dipbot.trader.time.sleep',lambda _:None)
+    monkeypatch.setattr('dipbot.execution.trader.time.sleep',lambda _:None)
     trader.begin('BUY')
     with pytest.raises(UncertainTransaction):trader.send(Function(),'BUY')
     assert len(checks)==3
@@ -63,7 +64,7 @@ def test_read_retry_recovers_without_executing_any_transaction(monkeypatch):
         attempts.append(1)
         if len(attempts)<3:raise TimeoutError()
         return 123
-    monkeypatch.setattr('dipbot.trader.time.sleep',lambda _:None)
+    monkeypatch.setattr('dipbot.execution.trader.time.sleep',lambda _:None)
     assert LiveTrader.retry_read(read)==123 and len(attempts)==3
 
 

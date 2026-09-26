@@ -4,9 +4,9 @@ from types import SimpleNamespace
 import pytest
 from test_app_autopair_flow import window
 from test_autopair_dynamic import POOL
-from dipbot.app import QMessageBox
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.ui.window import QMessageBox
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 from test_worker import config
 
 

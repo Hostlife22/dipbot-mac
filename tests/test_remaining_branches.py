@@ -2,15 +2,15 @@
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
-from dipbot import dynamic
-from dipbot.storage import Store
-from dipbot.worker import Worker
-from dipbot.trader import UncertainTransaction
+from dipbot.persistence import dynamic
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.execution.errors import UncertainTransaction
 from tools.protected_format import encode, decode, ProtectedFormatError
 from test_autopair_dynamic import POOL, route
 from test_phase3 import OWNER
 from test_execution import trader, Function
-from dipbot.strategy import D
+from dipbot.domain.strategy import D
 from test_recovery_audit import sweep_worker, POOL as HELD
 
 

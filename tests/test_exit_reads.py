@@ -3,11 +3,11 @@ import time
 import pytest
 from requests import Response
 from requests.exceptions import HTTPError
-from dipbot.exit_reads import retry_read, ExitReadCancelled
-from dipbot.worker import Worker
-from dipbot.storage import Store
-from dipbot.strategy import D
-from dipbot.trader import UncertainTransaction
+from dipbot.market.exit_reads import retry_read, ExitReadCancelled
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
+from dipbot.execution.errors import UncertainTransaction
 from test_autopair_dynamic import POOL
 from test_app_autopair_flow import window
 from test_audit_ui_modes import status
@@ -191,7 +191,7 @@ def test_stop_retains_rpc_reason_and_countdown(window):
 
 def test_missing_block_retries_before_generic_rpc_code_filter():
     from web3.exceptions import BlockNotFound, Web3RPCError
-    from dipbot.exit_reads import retry_read, transient
+    from dipbot.market.exit_reads import retry_read, transient
     error = BlockNotFound('block not available on backend', rpc_response={'error':{'code':-32000}})
     assert isinstance(error, Web3RPCError) and transient(error)
     attempts = []

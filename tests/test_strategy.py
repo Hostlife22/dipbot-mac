@@ -1,6 +1,6 @@
 import pytest
-from dipbot.strategy import D, Settings, Strategy, raw_amount, minimum_out, snapshot_minimum
-from dipbot.trader import PaperTrader
+from dipbot.domain.strategy import D, Settings, Strategy, raw_amount, minimum_out, snapshot_minimum
+from dipbot.execution.paper import PaperTrader
 
 
 def test_dip_take_profit_reanchor():

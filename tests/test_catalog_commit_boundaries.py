@@ -4,8 +4,9 @@ import os
 import stat
 
 import pytest
-from dipbot import dynamic, preferences
-from dipbot.storage import Store, SaveAfterReplaceError
+from dipbot.persistence import dynamic
+from dipbot.persistence import preferences
+from dipbot.persistence.storage import Store, SaveAfterReplaceError
 from test_autopair_dynamic import POOL, route
 
 
@@ -60,7 +61,7 @@ def test_public_state_matches_visible_file_after_write_failure(tmp_path, monkeyp
 
 
 def test_durability_message_does_not_expose_underlying_error():
-    from dipbot.worker import safe_error
+    from dipbot.application.worker import safe_error
     message=safe_error(SaveAfterReplaceError('https://synthetic.invalid/private-credential'))
     assert 'Файл заменён' in message
     assert 'synthetic' not in message and 'credential' not in message

@@ -1,12 +1,12 @@
 from dataclasses import replace
 from types import SimpleNamespace
 import pytest
-from dipbot.autopair import Candidate, choose
-from dipbot.chain import Chain, Pool, WBNB, USDT, ETH, address, ZERO
-from dipbot.storage import Store
-from dipbot.worker import Worker
-from dipbot.routes import conversion_specs
-from dipbot import dynamic
+from dipbot.market.autopair import Candidate, choose
+from dipbot.market.chain import Chain, Pool, WBNB, USDT, ETH, address, ZERO
+from dipbot.persistence.storage import Store
+from dipbot.application.worker import Worker
+from dipbot.market.routes import conversion_specs
+from dipbot.persistence import dynamic
 
 BASE = address('0x'+'ab'*20)
 TARGET = address('0x'+'cd'*20)
@@ -62,7 +62,7 @@ def test_worker_invalidates_previous_selection_and_obeys_resolution(tmp_path, ou
         if outcome=='timeout': raise TimeoutError()
         if outcome=='stop': worker.stop_event.set()
         return [candidate(outcome!='pending', 0 if outcome=='pending' else 100)]
-    from dipbot.discovery import Resolution
+    from dipbot.market.discovery import Resolution
     def resolve(raw,catalogs):
         rows=discover()
         state,selected=choose(rows)
@@ -135,7 +135,7 @@ def test_invalid_registry_blocks_use(tmp_path,bad):
 
 
 def test_preferred_dynamic_bridge_reaches_live_route_builder(tmp_path):
-    from dipbot.trader import LiveTrader
+    from dipbot.execution.trader import LiveTrader
     store=Store(tmp_path/'state.json');path=route('via_eth_v3')
     dynamic.upsert(store,POOL,path,100)
     helper=object.__new__(LiveTrader);helper.store=store;helper.trade_router='V3'
@@ -145,7 +145,7 @@ def test_preferred_dynamic_bridge_reaches_live_route_builder(tmp_path):
 
 
 def test_original_sort_breaks_equal_liquidity_ties_by_fee_then_address():
-    from dipbot.autopair import ordered
+    from dipbot.market.autopair import ordered
     a=candidate(score=100,fee=2500)
     b=candidate(score=100,fee=500)
     c=replace(b,pool=replace(b.pool,address=address('0x'+'01'*20)))
@@ -154,7 +154,7 @@ def test_original_sort_breaks_equal_liquidity_ties_by_fee_then_address():
 
 
 def test_changed_router_cannot_execute_previous_selection(tmp_path):
-    from dipbot.strategy import Settings
+    from dipbot.domain.strategy import Settings
     from dataclasses import asdict
     worker=Worker(Store(tmp_path/'state.json'));worker.pool=POOL
     worker.chain=SimpleNamespace()

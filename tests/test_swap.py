@@ -1,8 +1,9 @@
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import Pool, WBNB, USDT, address, V2_ROUTER, V3_ROUTER
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot.strategy import D
+from dipbot.market.chain import Pool, WBNB, USDT, address, V2_ROUTER, V3_ROUTER
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.domain.strategy import D
 
 
 @pytest.mark.parametrize("with_quote_reader", [False, True])
@@ -83,7 +84,7 @@ def test_converter_rejects_actual_amount_roundtrip_loss(returned, accepted):
 
 @pytest.mark.parametrize('spent', [20,19,21])
 def test_source_debit_evidence_persists_and_mismatch_latches(tmp_path,spent):
-    from dipbot.storage import Store
+    from dipbot.persistence.storage import Store
     pool=Pool(address('0x'+'12'*20),'V2',address(USDT),address(WBNB),18,18,False)
     trader=object.__new__(LiveTrader)
     trader.owner=address('0x'+'34'*20)

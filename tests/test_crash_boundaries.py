@@ -6,8 +6,9 @@ import subprocess
 import sys
 
 import pytest
-from dipbot.storage import Store
-from dipbot.trader import LiveTrader, UncertainTransaction
+from dipbot.persistence.storage import Store
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
 from test_process_recovery import SCRIPT
 from test_execution import trader, Function
 

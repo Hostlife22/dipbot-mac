@@ -1,10 +1,11 @@
 from types import SimpleNamespace
 import pytest
 from web3.exceptions import BlockNotFound
-from dipbot.worker import Worker
-from dipbot.storage import Store
-from dipbot.strategy import D
-from dipbot.trader import UncertainTransaction, PaperTrader
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.execution.paper import PaperTrader
 from test_execution import trader, Function
 from test_autopair_dynamic import POOL
 
@@ -51,7 +52,7 @@ def test_old_exhausted_budget_does_not_block_after_restart(trader):
     trader.store.data['risk_limits'] = {'budget': '0', 'position': '0'}
     trader.store.data['risk_spent'] = {trader.owner.lower(): 10**30}
     trader.store.save()
-    from dipbot.trader import LiveTrader
+    from dipbot.execution.trader import LiveTrader
     restored = LiveTrader(trader.chain, trader.account.key, Store(trader.store.path), D('0.1'), lambda _: None)
     for _ in range(3):
         restored.begin('BUY')

@@ -10,9 +10,9 @@ import requests
 
 ORIGINAL_REQUEST = requests.Session.request
 from eth_abi import encode
-from dipbot.chain import Chain,Pool,WBNB,USDT,address
-from dipbot.worker import Worker
-from dipbot.storage import Store
+from dipbot.market.chain import Chain,Pool,WBNB,USDT,address
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
 
 
 @pytest.fixture

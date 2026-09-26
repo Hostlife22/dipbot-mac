@@ -5,11 +5,12 @@ import subprocess
 import sys
 from types import SimpleNamespace
 import pytest
-from dipbot.chain import address
-from dipbot.storage import Store
-from dipbot.strategy import D
-from dipbot.trader import LiveTrader, UncertainTransaction
-from dipbot import preferences
+from dipbot.market.chain import address
+from dipbot.persistence.storage import Store
+from dipbot.domain.strategy import D
+from dipbot.execution.trader import LiveTrader
+from dipbot.execution.errors import UncertainTransaction
+from dipbot.persistence import preferences
 from test_recovery_audit import setup_worker, POOL, OWNER
 from test_process_recovery import SCRIPT
 

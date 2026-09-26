@@ -13,14 +13,14 @@ import time
 import os
 from unittest.mock import patch
 from PySide6.QtCore import QCoreApplication
-from dipbot.chain import Chain, address
-from dipbot.storage import Store, Vault
-from dipbot.strategy import Settings, D
-from dipbot.worker import Worker
-from dipbot.trader import LiveTrader
-from dipbot.usd import UsdRate
-from dipbot.diagnostics import Diagnostics, resource_snapshot
-from tools.read_only_probe import guard_provider
+from dipbot.market.chain import Chain, address
+from dipbot.persistence.storage import Store, Vault
+from dipbot.domain.strategy import Settings, D
+from dipbot.application.worker import Worker
+from dipbot.execution.trader import LiveTrader
+from dipbot.ui.usd_feed import UsdRate
+from dipbot.observability.diagnostics import Diagnostics, resource_snapshot
+from dipbot.checks.read_only import guard_provider
 
 
 def forbidden(*args, **kwargs):

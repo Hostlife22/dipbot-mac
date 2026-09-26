@@ -2,9 +2,9 @@ from decimal import Decimal as D
 
 import pytest
 
-from dipbot.exit_policy import ExitPolicy
-from dipbot.signal_policy import SignalPolicy
-from dipbot.strategy import Settings, Strategy
+from dipbot.domain.exit_policy import ExitPolicy
+from dipbot.domain.signal_policy import SignalPolicy
+from dipbot.domain.strategy import Settings, Strategy
 
 
 def strategy(**kwargs):
@@ -66,8 +66,8 @@ def test_default_exits_remain_disabled():
 
 
 def test_restart_keeps_open_position_clock_and_peak(tmp_path):
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
     from test_worker import config
     w = Worker(Store(tmp_path/'state.json'))
     data = config() | {'exit_policy': {'max_hold_seconds': 30, 'trailing_pct': 5}}
@@ -82,8 +82,8 @@ def test_restart_keeps_open_position_clock_and_peak(tmp_path):
 
 
 def test_exit_preferences_roundtrip(tmp_path):
-    from dipbot import preferences
-    from dipbot.storage import Store
+    from dipbot.persistence import preferences
+    from dipbot.persistence.storage import Store
     store = Store(tmp_path/'state.json')
     data = preferences.from_windows_ui({})
     data['exit_policy'] = ExitPolicy(D('1.25'), 300, 12).export()
@@ -108,7 +108,7 @@ def test_quote_exit_refuses_missing_proceeds():
 
 
 def test_canonical_exit_quote_checks_hash_and_raw_bounds():
-    from dipbot.chain import Chain
+    from dipbot.market.chain import Chain
     c = object.__new__(Chain)
     c.checked_header = {'hash': b'a'*32}
     c.check = lambda **kw: 123
@@ -124,8 +124,8 @@ def test_canonical_exit_quote_checks_hash_and_raw_bounds():
 
 def test_worker_quote_failure_does_not_sell_or_use_old_return(tmp_path):
     from types import SimpleNamespace
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
     from test_autopair_dynamic import POOL
     import time
     w = Worker(Store(tmp_path/'state.json'))
@@ -147,8 +147,8 @@ def test_worker_quote_failure_does_not_sell_or_use_old_return(tmp_path):
 
 
 def test_ui_quote_exit_is_labeled_without_spot_thresholds(tmp_path):
-    from dipbot.worker import Worker
-    from dipbot.storage import Store
+    from dipbot.application.worker import Worker
+    from dipbot.persistence.storage import Store
     w = Worker(Store(tmp_path/'state.json'))
     w.strategy = strategy(tp_sl_basis='quote', trailing_pct=D(5))
     w.strategy.bought(D(100), now=0)
@@ -163,7 +163,7 @@ def test_ui_quote_exit_is_labeled_without_spot_thresholds(tmp_path):
 
 
 def test_quote_status_renders_in_actual_qt_window(window):
-    from dipbot.worker import Worker
+    from dipbot.application.worker import Worker
     w = window
     w.worker.strategy = strategy(tp_sl_basis='quote')
     w.worker.strategy.bought(D(100), now=0)

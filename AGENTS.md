@@ -6,7 +6,7 @@ This repository contains the independent macOS application in `dipbot/`. The Win
 
 ## Structure
 
-- `dipbot/`: UI, worker, strategy, BSC client, execution, storage and public profiles.
+- `dipbot/`: responsibility-based packages; see `docs/ARCHITECTURE_RU.md`. `domain` is pure Python; `application` coordinates `market`, `execution`, `persistence`; `ui` is presentation. `bootstrap.py` owns startup.
 - `tests/`: offline pytest tests with mocked HTTP and transaction submission.
 - `tools/`: reusable diagnostics and verification; see `tools/README.md`. Some tools submit LIVE transactions; do not batch-run them.
 - `docs/`: compact current documentation; begin with `docs/README.md` and `docs/CURRENT_STATUS_RU.md`.
@@ -35,3 +35,7 @@ Never commit licenses, keys, seed phrases, credential-bearing RPC URLs, wallet s
 ## Documentation hygiene
 
 Keep current behavior in the user guide and current status. Historical evidence and retired reverse-analysis scripts are in Git at `89e3a4f`; they are not an active task list. Write generated reports/screenshots to ignored `.local-artifacts/` or `/tmp`. Preserve behavioral regression tests even when their names refer to earlier audits.
+
+## Dependency boundaries
+
+Production modules must not import repository `tools` or `tests`. Keep `domain` free of Qt, web3, network and storage imports. Backend packages must not import `ui`, `application` or `checks`; the architecture tests enforce this. Use explicit package imports. Preserve the single sequential owner of trade execution when extracting services.

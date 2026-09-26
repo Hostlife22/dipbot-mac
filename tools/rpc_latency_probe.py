@@ -8,8 +8,8 @@ from pathlib import Path
 import statistics
 import time
 from urllib.parse import urlsplit
-from dipbot.chain import Chain, USDT
-from tools.read_only_probe import guard_provider
+from dipbot.market.chain import Chain, USDT
+from dipbot.checks.read_only import guard_provider
 
 ENDPOINTS = ['https://bsc-dataseed.binance.org', 'https://bsc-rpc.publicnode.com',
              'https://bsc-dataseed-public.bnbchain.org']
