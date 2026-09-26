@@ -57,7 +57,11 @@ class Diagnostics:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.session = Store(self.directory / "session.json")
-        self.previous_unclean = bool(self.session.data and not self.session.data.get("clean_exit"))
+        self.previous_unclean = bool(
+            self.session.path.exists()
+            and "started" in self.session.data
+            and not self.session.data.get("clean_exit")
+        )
         self.session.data = {
             "started": int(time.time()),
             "pid": os.getpid(),

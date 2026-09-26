@@ -45,6 +45,10 @@ def audit(chain, account, directory, pool, amount, results=None):
         w.pool = pool
         w.stop_event.clear()
         reports = []
+        messages = []
+        attempt = {"scenario": scenario, "passed": False}
+        results.append(attempt)
+        w.log.connect(messages.append)
 
         def report(name, value):
             if name == "sweep_report":
@@ -86,6 +90,7 @@ def audit(chain, account, directory, pool, amount, results=None):
             except UncertainTransaction:
                 assert scenario == "lost_send_response"
             result = reports[-1]
+            attempt["report"] = result
             assert result["status"] == (
                 "interrupted"
                 if scenario == "lost_send_response"
@@ -123,8 +128,15 @@ def audit(chain, account, directory, pool, amount, results=None):
                     pass
                 else:
                     raise AssertionError("Balance review must remain required")
-            results.append({"scenario": scenario, "passed": True, "report": result})
+            attempt["passed"] = True
+        except Exception as exc:
+            attempt["error_type"] = type(exc).__name__
+            attempt["logs"] = messages[-30:]
+            if reports:
+                attempt["report"] = reports[-1]
+            raise
         finally:
+            w.log.disconnect(messages.append)
             chain.quote = original_quote
             chain.w3.eth.send_raw_transaction = original_send
             trader.send = original_trader_send

@@ -1,7 +1,9 @@
 """Real localhost HTTP transport faults; no upstream network or transaction signing."""
 
 import json
+import os
 import socket
+import sys
 import threading
 import time
 from decimal import Decimal as D
@@ -217,3 +219,115 @@ def test_exit_read_persistent_http_503_is_bounded(tmp_path, node):
         w.exit_read(lambda source: source.price(w.pool))
     assert waits == [0.5, 1.0, 2.0] and w.paper.position == 1 and w.exit_retry is None
     assert not any("send" in method.lower() for method in state["calls"])
+
+
+@pytest.mark.parametrize("fault", [429, 503])
+def test_threaded_prolonged_outage_recovery_and_stop(tmp_path, node, qt_application, fault):
+    """Real HTTP failures and real QThread; optional extended duration for soak audits."""
+    duration = float(os.environ.get("DIPBOT_OUTAGE_SECONDS", "0.7"))
+    assert 0 < duration <= 900
+    state, endpoint = node
+    worker = worker_at(tmp_path, endpoint)
+    entry_attempts = []
+    worker.open_position = lambda: entry_attempts.append(True)
+    worker.interval = 0.1
+
+    def wait(predicate, timeout=5):
+        until = time.monotonic() + timeout
+        while not predicate():
+            assert time.monotonic() < until
+            qt_application.processEvents()
+            time.sleep(0.01)
+
+    worker.start()
+    try:
+        wait(lambda: worker.strategy.base == 100)
+        state["fault"] = fault
+        wait(lambda: worker.quote_unavailable)
+        began = time.monotonic()
+        while time.monotonic() - began < duration:
+            qt_application.processEvents()
+            assert worker.isRunning() and worker.running
+            assert not worker.paper.position and not entry_attempts
+            time.sleep(0.02)
+        state.update(fault=None, price=80, height=101)
+        wait(lambda: not worker.quote_unavailable and worker.current_price == 80)
+        assert worker.strategy.base == 80 and not entry_attempts
+        state["fault"] = fault
+        wait(lambda: worker.quote_unavailable)
+        stopped_at = time.monotonic()
+        worker.stop_event.set()
+        wait(lambda: not worker.running and not worker.stop_event.is_set())
+        assert time.monotonic() - stopped_at < 2
+        assert not worker.paper.position and not worker.store.data.get("operation")
+        assert not any("send" in method.lower() for method in state["calls"])
+    finally:
+        worker.quit_event.set()
+        assert worker.wait(5000)
+        qt_application.processEvents()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process suspension")
+def test_process_pause_discards_pre_pause_dip_anchor(tmp_path, node):
+    """SIGSTOP/SIGCONT exercises scheduler pause; this is not an OS sleep test."""
+    import select
+    import signal
+    import subprocess
+    import sys
+
+    state, endpoint = node
+    script = r"""
+import json,sys,time
+from pathlib import Path
+from PySide6.QtCore import QCoreApplication
+from dipbot.application.worker import Worker
+from dipbot.persistence.storage import Store
+from dipbot.market.chain import Chain,Pool,address
+from dipbot.domain.assets import USDT,WBNB
+app=QCoreApplication([])
+w=Worker(Store(Path(sys.argv[1])))
+w.mode='PAPER';w.running=True;w.interval=.1
+w.chain=Chain(sys.argv[2],request_timeout=.5)
+w.pool=Pool(address('0x'+'12'*20),'V2',address(USDT),address(WBNB),18,18,True)
+entries=[];w.open_position=lambda:entries.append(True)
+w.start()
+try:
+ until=time.monotonic()+10
+ while w.strategy.base != 100:
+  assert time.monotonic()<until
+  app.processEvents();time.sleep(.01)
+ print('READY',flush=True)
+ # Parent suspends the whole process, changes server price, then resumes it.
+ until=time.monotonic()+15
+ while w.current_price != 80:
+  assert time.monotonic()<until
+  app.processEvents();time.sleep(.01)
+ assert w.strategy.base==80 and not entries
+ print('RECOVERED',flush=True)
+finally:
+ w.quit_event.set();assert w.wait(3000)
+"""
+    proc = subprocess.Popen(
+        [sys.executable, "-c", script, str(tmp_path / "pause.json"), endpoint],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        assert ready and proc.stdout.readline() == b"READY\n"
+        proc.send_signal(signal.SIGSTOP)
+        # Wait until the OS confirms the stop before changing the quote.
+        _, status = os.waitpid(proc.pid, os.WUNTRACED)
+        assert os.WIFSTOPPED(status)
+        state.update(price=80, height=101)
+        time.sleep(2)
+        proc.send_signal(signal.SIGCONT)
+        stdout, stderr = proc.communicate(timeout=20)
+        assert proc.returncode == 0, stderr.decode()
+        assert stdout == b"RECOVERED\n"
+        assert not any("send" in method.lower() for method in state["calls"])
+    finally:
+        if proc.poll() is None:
+            proc.send_signal(signal.SIGCONT)
+            proc.kill()
+            proc.communicate(timeout=5)

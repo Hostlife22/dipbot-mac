@@ -122,3 +122,21 @@ def test_late_diagnostic_exception_cannot_raise_from_closed_stream(tmp_path):
     d = Diagnostics(tmp_path)
     d.close()
     d.write({"event": "late_callback"})
+
+
+def test_first_launch_and_clean_restart_are_not_reported_as_crashes(tmp_path):
+    for _ in range(2):
+        diagnostics = Diagnostics(tmp_path)
+        try:
+            assert not diagnostics.previous_unclean
+        finally:
+            diagnostics.close()
+
+
+def test_version_only_file_is_not_evidence_of_a_previous_session(tmp_path):
+    (tmp_path / "session.json").write_text('{"state_version":1}')
+    diagnostics = Diagnostics(tmp_path)
+    try:
+        assert not diagnostics.previous_unclean
+    finally:
+        diagnostics.close()
