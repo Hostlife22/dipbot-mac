@@ -1,3 +1,4 @@
+from dipbot.application.messages import Event, EventKind
 from dipbot.ui import autopair_controller
 from dipbot.ui import settings_controller
 from dipbot.ui import recovery_controller
@@ -434,25 +435,27 @@ class Window(QMainWindow):
         return position_presenter.update_controls(self)
 
     def on_event(self, name, payload):
-        if name == "discovery_event":
+        message = Event.from_wire(name, payload)
+        name, payload = message.kind, message.payload
+        if name == EventKind.DISCOVERY_EVENT:
             generation, event_name, value = payload
             if generation == self.auto_generation:
-                if event_name == "error":
+                if event_name == EventKind.ERROR:
                     self.pool_label.setText("Ошибка RPC/проверки · повторите AutoPair или CHECK POOL")
                 self.on_event(event_name, value)
             return
-        if name == "busy":
+        if name == EventKind.BUSY:
             self.busy = payload
             if not payload:
                 self.searching = False
-        elif name == 'exit_retry':
+        elif name == EventKind.EXIT_RETRY:
             self.exit_retry = payload
-        elif name == "error":
+        elif name == EventKind.ERROR:
             self.ui_error = str(payload)
             self.journal_toggle.setChecked(True)
             self.footer.setText("ОШИБКА: " + payload)
             QMessageBox.warning(self, "Операция прервана", payload)
-        elif name == 'price_context':
+        elif name == EventKind.PRICE_CONTEXT:
             self.same_block_cache = payload.get('same_block_cache', False)
             if self.price_source != payload['source']:
                 self.reset_price_display()
@@ -466,7 +469,7 @@ class Window(QMainWindow):
             if payload['source'] == 'BSC' and self.isVisible():
                 self.usd.set_token(payload['quote'])
                 self.gas_usd.set_token(WBNB if (self.mode.currentText() == 'LIVE' or (self.mode.currentText() == 'PAPER' and (self.cost_limit.value() > 0 or self.paper_gas.value() > 0))) and payload['quote'].lower() != WBNB.lower() else '')
-        elif name == "price":
+        elif name == EventKind.PRICE:
             if self.mode.currentText() != 'DEMO' and not self.selection_ready:
                 return
             self.last_price = Decimal(str(payload))
@@ -475,19 +478,19 @@ class Window(QMainWindow):
             self.metrics['price'].setToolTip(str(payload))
             self.last_quote_at = time.monotonic()
             self.update_quote_age()
-        elif name == 'trade_marker':
+        elif name == EventKind.TRADE_MARKER:
             if payload['mode'] == self.mode.currentText() and self.chart.values:
                 self.chart.mark(payload['side'], payload['price'])
-        elif name == "autopair":
+        elif name == EventKind.AUTOPAIR:
             self.pool_label.setText({"PENDING": "PENDING · ожидается ликвидность; повторите AutoPair",
                                      "NOT_FOUND": "Пулы не найдены",
                                      "INVALID_CONTRACT": "По адресу нет контракта BSC",
                                      "CATALOG_TOKEN": "Введён адрес базового профиля; выберите PAIR вручную",
                                      "UNSUPPORTED_POOL": "Неподдерживаемый пул или базовая пара",
                                      "AMBIGUOUS": "Найдено несколько пар; выберите маршрут явно"}.get(payload, self.pool_label.text()))
-        elif name == 'route_comparison_error':
+        elif name == EventKind.ROUTE_COMPARISON_ERROR:
             self.route_comparison.setText('Сравнение не выполнено: ' + str(payload))
-        elif name == 'route_comparison':
+        elif name == EventKind.ROUTE_COMPARISON:
             lines = [f"AMOUNT {payload['amount']} в базе · блок {payload['block']}"]
             for row in payload['rows']:
                 pool = row['pool']
@@ -500,7 +503,7 @@ class Window(QMainWindow):
                     lines.append(f"{prefix}: BUY {row['target_out']:.8g} target; потери цикла {row['loss_pct']:.3f}%{suffix}")
             lines.append('Порядок: меньше потерь цикла. Другие базы исключены. Это котировки, не симуляция token tax.')
             self.route_comparison.setText('\n'.join(lines))
-        elif name == "pools":
+        elif name == EventKind.POOLS:
             self.route_comparison.setText('Сравнение маршрутов ещё не выполнено')
             self.selection_ready = False
             self.pool_input.clear()
@@ -508,7 +511,7 @@ class Window(QMainWindow):
             self.pool_label.setText("Выберите проверенный маршрут" if payload else "Пул не выбран")
             for pool in payload:
                 self.candidates.addItem(pool.label, pool)
-        elif name == "selected":
+        elif name == EventKind.SELECTED:
             self.reset_price_display()
             self.display_unit = next((name for name, addr in profiles().items()
                                       if addr.lower() == payload.quote.lower()), payload.quote)
@@ -531,7 +534,7 @@ class Window(QMainWindow):
             pair_label = pair if pair != 'ALL' else f'{payload.quote[:8]}…{payload.quote[-6:]}'
             self.market_summary.setText(f"TARGET {payload.token[:8]}…{payload.token[-6:]} / {pair_label} · {payload.router} · пул {payload.address[:8]}…{payload.address[-6:]}")
             self.market_summary.setToolTip(f"TARGET: {payload.token}\nБаза: {pair_label} ({payload.quote})\nПул: {payload.address}")
-        elif name == "sweep_report":
+        elif name == EventKind.SWEEP_REPORT:
             status = {"completed": "завершён", "stopped": "остановлен — частичный результат",
                       "interrupted": "прерван — частичный результат"}.get(payload.get("status"), "результат")
             self.log("SWEEP: " + status)
@@ -549,13 +552,13 @@ class Window(QMainWindow):
                 self.log("SWEEP: балансы не проверены: " + ", ".join(payload["unknown"]))
             if payload["skipped"]:
                 self.log("SWEEP: пропущены цели; проверьте/выберите их для этого кошелька: " + ", ".join(payload["skipped"]))
-        elif name == "wallet":
+        elif name == EventKind.WALLET:
             self.wallet.setText(payload)
-        elif name == "profiles":
+        elif name == EventKind.PROFILES:
             self.update_profiles(payload)
-        elif name == "profile_removed":
+        elif name == EventKind.PROFILE_REMOVED:
             self.schedule_autopair()
-        elif name == "balances":
+        elif name == EventKind.BALANCES:
             self.log("Балансы: " + "; ".join(f"{k}={v}" for k, v in payload.items() if v not in ("0", "0.0")))
             for row in range(self.table.rowCount()):
                 symbol = self.table.item(row, 0).text()
@@ -567,9 +570,9 @@ class Window(QMainWindow):
                 except ValueError:
                     pass
                 self.table.setItem(row, 2, item)
-        elif name == "position_comparison_error":
+        elif name == EventKind.POSITION_COMPARISON_ERROR:
             self.position_comparison.setText("Сверка не выполнена: " + payload)
-        elif name == "position_comparison":
+        elif name == EventKind.POSITION_COMPARISON:
             lines = [f"Снимок балансов: блок {payload['block']}. Локальные записи не изменены."]
             for row in payload['rows']:
                 scale = Decimal(10)**row['decimals']
@@ -579,12 +582,12 @@ class Window(QMainWindow):
             if not payload['rows']:
                 lines.append('Сохранённых позиций нет.')
             self.position_comparison.setText('\n'.join(lines))
-        elif name == 'accounting_report':
+        elif name == EventKind.ACCOUNTING_REPORT:
             self.accounting_text.setPlainText(payload)
-        elif name == "receipt_review":
+        elif name == EventKind.RECEIPT_REVIEW:
             self.receipt_result.setText(payload)
             self.refresh_recovery()
-        elif name == "status":
+        elif name == EventKind.STATUS:
             self.refresh_recovery()
             self.quote_unavailable = payload.get('quote_unavailable', False)
             self.exit_retry = payload.get('exit_retry')

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dipbot.application.messages import CommandKind, EventKind
 from dataclasses import asdict, replace
 import time
 
@@ -142,7 +143,7 @@ def command(runtime: Worker, name, data):
         raise ValueError("Сначала остановите BOT")
     if name in ("connect", "discover", "verify", "select", "wallet", "remove_profile") and (runtime.paper.position or runtime.position()):
         raise ValueError("Сначала закройте текущую позицию")
-    if name == "connect":
+    if name == CommandKind.CONNECT:
         chain = Chain(data["rpc"])
         block = chain.check()
         backup = None
@@ -173,21 +174,21 @@ def command(runtime: Worker, name, data):
         runtime.last_market_header = None
         runtime.backup_verified_pool = None
         runtime.pool = None
-        runtime.event.emit("pools", [])
+        runtime.emit_event(EventKind.POOLS, [])
         runtime.log.emit(f"BSC подключена, chainId 56, блок {block}")
         if data.get("save"):
             Vault().save("rpc", data["rpc"])
             Vault().save('backup_rpc', data.get('backup_rpc', '').strip())
             Vault().save('ws_rpc', data.get('ws_rpc', '').strip())
             Vault().save('send_rpc', data.get('send_rpc', '').strip())
-    elif name == "wallet":
+    elif name == CommandKind.WALLET:
         account = Account.from_key(data["key"])
         Vault().save("wallet", data["key"])
         runtime.store.data["wallet_address"] = account.address
         runtime.store.save()
-        runtime.event.emit("wallet", account.address)
+        runtime.emit_event(EventKind.WALLET, account.address)
         runtime.log.emit("Кошелёк сохранён в macOS Keychain: " + account.address)
-    elif name == "discover":
+    elif name == CommandKind.DISCOVER:
         runtime.require_chain()
         generation = data.get("generation")
         if not runtime.discovery_current(generation):
@@ -209,7 +210,7 @@ def command(runtime: Worker, name, data):
         if result.state == "RESOLVED":
             runtime.select_pool(result.selected.pool, generation=generation)
         runtime.discovery_emit(generation, "autopair", result.state)
-    elif name == 'compare_routes':
+    elif name == CommandKind.COMPARE_ROUTES:
         runtime.require_chain()
         generation = data.get('generation')
         if not runtime.discovery_current(generation):
@@ -221,7 +222,7 @@ def command(runtime: Worker, name, data):
             D(data['maximum']), CostPolicy.parse(data['cost_policy']), D(data['gas']), runtime.rates,
             cancelled=lambda: not runtime.discovery_current(generation))
         runtime.discovery_emit(generation, 'route_comparison', report)
-    elif name == "verify":
+    elif name == CommandKind.VERIFY:
         runtime.require_chain()
         pool = runtime.chain.verify_pool(data["pool"], data["token"])
         generation = data.get("generation")
@@ -229,9 +230,9 @@ def command(runtime: Worker, name, data):
             return
         runtime.discovery_emit(generation, "pools", [pool])
         runtime.select_pool(pool, generation=generation)
-    elif name == "select":
+    elif name == CommandKind.SELECT:
         runtime.select_pool(data["pool"], generation=data.get("generation"))
-    elif name == "add_profile":
+    elif name == CommandKind.ADD_PROFILE:
         runtime.require_chain()
         if data.get("generation") is not None and data["generation"] != runtime.pool_generation:
             raise ValueError("Ввод изменился: повторите AutoPair или CHECK POOL")
@@ -265,10 +266,10 @@ def command(runtime: Worker, name, data):
                 try:
                     dynamic.upsert(runtime.store, runtime.pool, buy_route, max(0, (sample-returned)*10000//sample), symbol=symbol)
                 finally:
-                    runtime.event.emit("profiles", runtime.store.data.get("dynamic_profiles", {}))
-                runtime.event.emit("selected", runtime.pool)
+                    runtime.emit_event(EventKind.PROFILES, runtime.store.data.get("dynamic_profiles", {}))
+                runtime.emit_event(EventKind.SELECTED, runtime.pool)
         runtime.log.emit("ADDED: базовый актив проверен для конвертера; котировка не проверяет token tax / blacklist")
-    elif name == "remove_profile":
+    elif name == CommandKind.REMOVE_PROFILE:
         if runtime.store.data.get("operation"):
             raise UncertainTransaction("Сначала выполните сверку незавершённой операции")
         runtime.require_chain()
@@ -292,9 +293,9 @@ def command(runtime: Worker, name, data):
             if symbol not in runtime.store.data.get("dynamic_profiles", {}):
                 runtime.pool = None
                 runtime.pool_generation = None
-                runtime.event.emit("pools", [])
-                runtime.event.emit("profiles", runtime.store.data.get("dynamic_profiles", {}))
-                runtime.event.emit("profile_removed", symbol)
+                runtime.emit_event(EventKind.POOLS, [])
+                runtime.emit_event(EventKind.PROFILES, runtime.store.data.get("dynamic_profiles", {}))
+                runtime.emit_event(EventKind.PROFILE_REMOVED, symbol)
     elif name in ("start", "buy"):
         runtime.configure(data)
         if runtime.mode == "LIVE":
@@ -305,7 +306,7 @@ def command(runtime: Worker, name, data):
                 raise ValueError("Есть сохранённая позиция другого пула: выберите её пул или используйте SELL WALLET → BNB")
         if runtime.stop_event.is_set():
             raise ValueError("STOP запрошен во время подготовки")
-        if name == "start":
+        if name == CommandKind.START:
             runtime.running = True
             runtime.log.emit(f"START {runtime.mode}: DIP {runtime.strategy.settings.dip}% / TP {runtime.strategy.settings.take_profit}% / SL {runtime.strategy.settings.stop_loss}%")
         else:
@@ -313,12 +314,12 @@ def command(runtime: Worker, name, data):
             if runtime.stop_event.is_set():
                 raise ValueError("STOP запрошен во время чтения цены")
             runtime.open_position()
-    elif name == "sell":
+    elif name == CommandKind.SELL:
         runtime.close_position("MANUAL")
-    elif name == 'accounting_report':
+    elif name == CommandKind.ACCOUNTING_REPORT:
         owner = runtime.live.owner if runtime.live else runtime.store.data.get('wallet_address', '')
-        runtime.event.emit('accounting_report', accounting_report(runtime.store, owner))
-    elif name == "balance":
+        runtime.emit_event(EventKind.ACCOUNTING_REPORT, accounting_report(runtime.store, owner))
+    elif name == CommandKind.BALANCE:
         runtime.require_chain()
         owner = address(data["wallet"])
         balances = {"BNB": str(D(runtime.chain.w3.eth.get_balance(owner)) / 10**18)}
@@ -331,8 +332,8 @@ def command(runtime: Worker, name, data):
                 balances[symbol] = "?"
         if runtime.pool:
             balances["TARGET"] = str(D(runtime.chain.balance(runtime.pool.token, owner)) / D(10)**runtime.pool.token_decimals)
-        runtime.event.emit("balances", balances)
-    elif name == "convert":
+        runtime.emit_event(EventKind.BALANCES, balances)
+    elif name == CommandKind.CONVERT:
         runtime.configure(data)
         runtime.require_live()
         if runtime.stop_event.is_set():
@@ -346,11 +347,11 @@ def command(runtime: Worker, name, data):
         runtime.live.convert(runtime.pool.quote, amount, data["buy"], runtime.strategy.settings.slippage)
         runtime.live.finish()
         runtime.log.emit("Converter завершён")
-    elif name == "sweep":
+    elif name == CommandKind.SWEEP:
         runtime.configure(data)
         runtime.require_live()
         runtime.sweep()
-    elif name == 'cancel_pending':
+    elif name == CommandKind.CANCEL_PENDING:
         runtime.require_chain()
         if data.get('mode') != 'LIVE':
             raise ValueError('Отмена транзакции доступна только в LIVE')
@@ -364,25 +365,25 @@ def command(runtime: Worker, name, data):
         result = cancel_pending(helper, expected_hash=data['expected_hash'],
                                 expected_gas_price=data['expected_gas_price'])
         runtime.log.emit(result)
-        runtime.event.emit('receipt_review', result)
-    elif name == "compare_positions":
+        runtime.emit_event(EventKind.RECEIPT_REVIEW, result)
+    elif name == CommandKind.COMPARE_POSITIONS:
         runtime.require_chain()
         from dipbot.execution.recovery import compare_positions
-        runtime.event.emit("position_comparison", compare_positions(runtime.chain, runtime.store))
+        runtime.emit_event(EventKind.POSITION_COMPARISON, compare_positions(runtime.chain, runtime.store))
     elif name in ("reconcile", "unlock"):
         runtime.require_chain()
-        if name == "reconcile":
+        if name == CommandKind.RECONCILE:
             operation = runtime.store.data.get("operation")
             result = reconcile_receipts(runtime.chain, runtime.store, operation["wallet"] if operation else "")
             runtime.log.emit(result)
-            runtime.event.emit("receipt_review", result)
+            runtime.emit_event(EventKind.RECEIPT_REVIEW, result)
             return
         key = Vault().get("wallet")
         if not key:
             raise ValueError("Нет кошелька в Keychain")
         helper = LiveTrader(runtime.chain, key, runtime.store, D(data["gas"]), runtime.log.emit)
         runtime.log.emit(helper.reconcile())
-        if name == "unlock" and runtime.store.data.get("operation"):
+        if name == CommandKind.UNLOCK and runtime.store.data.get("operation"):
             operation = runtime.store.data["operation"]
             if not operation["transactions"]:
                 runtime.log.emit("Операция не дошла до записи транзакции")

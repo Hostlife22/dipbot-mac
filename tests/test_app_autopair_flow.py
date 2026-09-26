@@ -140,7 +140,8 @@ def test_address_resolution_to_trading_selection(window, raw):
     w.worker.chain = SimpleNamespace(resolve_address=resolve,
         verify_pool=lambda *args: POOL, price=lambda pool: 1)
     w.send('discover', token=raw, quote='ALL', router='AUTO')
-    name, data = w.worker.commands.get_nowait()
+    message = w.worker.commands.get_nowait()
+    name, data = message.kind, message.data()
     w.worker.command(name, data)
     w.on_event('busy', False)
     assert seen == [raw]

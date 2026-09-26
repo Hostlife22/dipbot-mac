@@ -1,3 +1,4 @@
+from dipbot.application.messages import Command
 import pytest
 from types import SimpleNamespace as NS
 from test_execution import trader,Function
@@ -56,7 +57,7 @@ def test_manual_entry_cancel_is_stop_not_error_dialog(tmp_path):
     class Commands:
         def get(self,timeout):
             calls[0]+=1
-            if calls[0]==1:return 'buy',{}
+            if calls[0]==1:return Command.from_wire('buy', {})
             w.quit_event.set();raise queue.Empty
         def get_nowait(self):raise queue.Empty
     def command(*args):

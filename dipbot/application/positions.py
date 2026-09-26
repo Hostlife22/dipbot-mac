@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dipbot.application.messages import CommandKind, EventKind
 from dipbot.application.errors import safe_error
 from dipbot.observability.telemetry import timed
 from dipbot.observability.cycle_trace import mark
@@ -71,7 +72,7 @@ def open_position(runtime: Worker):
         estimated_cost = runtime.cost_policy.assess(check, runtime.pool, runtime.gas_gwei, runtime.rates)
         if estimated_cost is not None:
             runtime.log.emit(f'Расчётные расходы цикла: {estimated_cost:.2f}% (модель газа, без token tax)')
-        runtime.event.emit('entry_check', {'estimated_cost_pct':str(estimated_cost) if estimated_cost is not None else None,
+        runtime.emit_event(EventKind.ENTRY_CHECK, {'estimated_cost_pct':str(estimated_cost) if estimated_cost is not None else None,
             'block': check.block,
             'roundtrip_loss_pct': str(check.roundtrip_loss_pct)})
         if runtime.stop_event.is_set():
@@ -164,7 +165,7 @@ def open_position(runtime: Worker):
     # Publish settled holdings before the chart marker. Monitor shutdown and
     # later RPC reads must not leave a filled trade paired with old UI state.
     runtime.status()
-    runtime.event.emit("trade_marker", {"mode": runtime.mode, "side": "BUY", "price": str(entry)})
+    runtime.emit_event(EventKind.TRADE_MARKER, {"mode": runtime.mode, "side": "BUY", "price": str(entry)})
     runtime.log.emit(f"{runtime.mode} BUY: исполнение {execution:.10g}; база TP/SL {entry:.10g}")
 
 
@@ -175,7 +176,7 @@ def exit_read(runtime: Worker, read, *, stopping=False):
         if value:
             runtime.record_market('exit_read_retry', **value)
         # Do not turn an active, known LIVE operation into a UI recovery latch.
-        runtime.event.emit('exit_retry', value)
+        runtime.emit_event(EventKind.EXIT_RETRY, value)
 
     def attempt(index):
         operation = runtime.store.data.get('operation')
@@ -275,7 +276,7 @@ def close_position(runtime: Worker, reason):
     runtime.record_market("execution", side="SELL", price=str(price), reason=reason)
     runtime.exit_return = None
     runtime.status()
-    runtime.event.emit("trade_marker", {"mode": runtime.mode, "side": "SELL", "price": str(price)})
+    runtime.emit_event(EventKind.TRADE_MARKER, {"mode": runtime.mode, "side": "SELL", "price": str(price)})
     if runtime.mode == "LIVE":
         # SELL is already accounted for if this independent read fails.
         runtime.strategy.base = runtime.read_price()

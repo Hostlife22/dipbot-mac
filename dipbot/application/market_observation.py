@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dipbot.application.messages import CommandKind, EventKind
 from dipbot.application.errors import safe_error
 from dipbot.observability.telemetry import timed
 from dipbot.observability.cycle_trace import signal_cycle
@@ -39,7 +40,7 @@ def read_price(runtime: Worker, force_chain=False):
     demo = runtime.mode == 'DEMO' and not force_chain
     source_chain = runtime.backup_chain if runtime.market_source != 'BSC' else runtime.chain
     header = getattr(source_chain, 'price_block', None) if not demo else None
-    runtime.event.emit('price_context', {'source': 'DEMO' if demo else getattr(runtime.chain, 'price_source', 'BSC'),
+    runtime.emit_event(EventKind.PRICE_CONTEXT, {'source': 'DEMO' if demo else getattr(runtime.chain, 'price_source', 'BSC'),
                                     'rpc_source': runtime.market_source,
                                     'same_block_cache': bool(getattr(source_chain, 'price_cache_hit', False)) if not demo else False,
                                     'block': header['number'] if header else None,
@@ -49,7 +50,7 @@ def read_price(runtime: Worker, force_chain=False):
                        block_hash=bytes(header['hash']).hex() if header else None,
                        block_timestamp=header.get('timestamp') if header else None,
                        source='DEMO' if demo else 'BSC')
-    runtime.event.emit("price", str(price))
+    runtime.emit_event(EventKind.PRICE, str(price))
     return price
 
 

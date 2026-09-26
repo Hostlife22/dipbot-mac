@@ -1,3 +1,4 @@
+from dipbot.application.messages import Command, CommandKind, Event, EventKind, StatusPayload
 from dipbot.application import commands
 from dipbot.application import market_observation
 from dipbot.application import positions
@@ -51,7 +52,7 @@ class Worker(QThread):
     def __init__(self, store: Store):
         super().__init__()
         self.store = store
-        self.commands = queue.Queue()
+        self.commands: queue.Queue[Command] = queue.Queue()
         self.quit_event = threading.Event()
         self.stop_event = threading.Event()
         self.chain = None
@@ -104,12 +105,16 @@ class Worker(QThread):
 
     def discovery_emit(self, generation, name, value):
         if generation is None:
-            self.event.emit(name, value)
+            self.emit_event(name, value)
         else:
-            self.event.emit("discovery_event", (generation, name, value))
+            self.emit_event(EventKind.DISCOVERY_EVENT, (generation, name, value))
+
+    def emit_event(self, name, payload):
+        message = Event.from_wire(name, payload)
+        self.event.emit(message.kind.value, message.payload)
 
     def submit(self, name, **data):
-        self.commands.put((name, data))
+        self.commands.put(Command.from_wire(name, data))
 
     def run(self):
         try:
@@ -130,11 +135,12 @@ class Worker(QThread):
             try:
                 timeout = (min(0.05, max(0, next_tick - time.monotonic()))
                            if self.running and self.head_feed is None else 0.05)
-                name, data = self.commands.get(timeout=timeout)
+                message = self.commands.get(timeout=timeout)
+                name, data = message.kind, message.data()
             except queue.Empty:
                 name = None
             if name:
-                self.event.emit("busy", True)
+                self.emit_event(EventKind.BUSY, True)
                 try:
                     self.command(name, data)
                 except ExitReadCancelled:
@@ -143,7 +149,7 @@ class Worker(QThread):
                     if name in ("discover", "verify", "select", "compare_routes") and not self.discovery_current(data.get("generation")):
                         continue
                     if name in ("reconcile", "compare_positions"):
-                        self.event.emit("position_comparison_error" if name == "compare_positions" else "receipt_review", safe_error(exc))
+                        self.emit_event(EventKind.POSITION_COMPARISON_ERROR if name == CommandKind.COMPARE_POSITIONS else "receipt_review", safe_error(exc))
                     self.running = False
                     self.halt_reason = safe_error(exc)
                     stopped_entry = (name in ('buy','start') and isinstance(exc,EntryRejected)
@@ -152,7 +158,7 @@ class Worker(QThread):
                     self.log.emit(('STOP: ' if stopped_entry else 'ОШИБКА: ') + safe_error(exc))
                     if stopped_entry:
                         pass  # Normal cancellation; STOP handling below clears queued commands.
-                    elif name == "compare_routes":
+                    elif name == CommandKind.COMPARE_ROUTES:
                         self.discovery_emit(data.get("generation"), "route_comparison_error", safe_error(exc))
                     elif name in ("discover", "verify", "select"):
                         self.pool = None
@@ -160,9 +166,9 @@ class Worker(QThread):
                         self.discovery_emit(data.get("generation"), "pools", [])
                         self.discovery_emit(data.get("generation"), "error", safe_error(exc))
                     else:
-                        self.event.emit("error", safe_error(exc))
+                        self.emit_event(EventKind.ERROR, safe_error(exc))
                 finally:
-                    self.event.emit("busy", False)
+                    self.emit_event(EventKind.BUSY, False)
                     self.status()
             if self.stop_event.is_set():
                 self.stop_event.clear()
@@ -184,7 +190,7 @@ class Worker(QThread):
                 except Exception as exc:
                     self.running = False
                     self.halt_reason = safe_error(exc)
-                    self.event.emit("error", safe_error(exc))
+                    self.emit_event(EventKind.ERROR, safe_error(exc))
                     self.log.emit("STOP: " + safe_error(exc))
                 self.status()
             if self.gap_recovery is not None and self.gap_recovery.result is not None:
@@ -233,7 +239,7 @@ class Worker(QThread):
                     self.running = False
                     self.halt_reason = safe_error(exc)
                     self.log.emit("BOT приостановлен: " + safe_error(exc))
-                    self.event.emit("error", safe_error(exc))
+                    self.emit_event(EventKind.ERROR, safe_error(exc))
                 # One observation at a time; slow RPC skips missed slots instead
                 # of queuing catch-up requests or adding another full delay.
                 delay = min(5, 0.5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
@@ -282,7 +288,7 @@ class Worker(QThread):
             levels.pop('SL', None)
         if entry and self.strategy.exit_policy.trailing_pct and self.strategy.peak_price:
             levels['TRAIL'] = str(self.strategy.peak_price*(1-self.strategy.exit_policy.trailing_pct/100))
-        self.event.emit("status", {"running": self.running, "mode": self.mode,
+        payload: StatusPayload = {"running": self.running, "mode": self.mode,
                          "levels": levels,
                          "exit_retry": self.exit_retry,
                          "trade_detail": self.current_trade_detail(),
@@ -312,7 +318,8 @@ class Worker(QThread):
                              f'Пауза после выхода: {max(0,self.strategy.cooldown_until-time.monotonic()):.1f} с'
                              if self.strategy.cooldown_until and time.monotonic() < self.strategy.cooldown_until else ''),
                          "halt_reason": self.halt_reason,
-                         "locked": bool(self.store.data.get("operation"))})
+                         "locked": bool(self.store.data.get("operation"))}
+        self.emit_event(EventKind.STATUS, payload)
 
     def position_key(self):
         return f"{self.live.owner.lower()}:{self.pool.address.lower()}" if self.live and self.pool else ""
@@ -343,7 +350,8 @@ class Worker(QThread):
         return commands.configure(self, data)
 
     def command(self, name, data):
-        return commands.command(self, name, data)
+        message = Command.from_wire(name, data)
+        return commands.command(self, message.kind, message.data())
 
     def select_pool(self, pool, *, generation=None):
         return commands.select_pool(self, pool, generation=generation)
@@ -384,7 +392,7 @@ class Worker(QThread):
         return SweepService(
             store=self.store, chain=self.chain, live=self.live,
             strategy=self.strategy, rates=self.rates, stop_event=self.stop_event,
-            log=self.log.emit, emit=self.event.emit, position=self.position,
+            log=self.log.emit, emit=self.emit_event, position=self.position,
         )
 
     def sweep(self):
