@@ -188,11 +188,13 @@ def run(token, directory, seconds, pool_address=None, exercise_recovery=False, c
                 w.buy.click();wait(lambda:not w.busy)
                 assert w.worker.paper.position > 0, report['errors']
                 capture('manual_buy')
-                if observe_manual_position:
-                    w.start.click();wait(lambda:not w.busy)
+                estimates_before = report.get('open_estimate_observations', 0)
                 until = time.monotonic()+12
                 while time.monotonic()<until:pump()
                 if observe_manual_position:
+                    assert not w.running, 'Manual monitoring must not start the strategy'
+                    assert report.get('open_estimate_observations', 0) > estimates_before
+                    report['idle_position_monitor_passed'] = True
                     capture('manual_open_estimate')
                 phase[0] = 'manual_paper_sell'
                 if observe_manual_position:

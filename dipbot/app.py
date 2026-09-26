@@ -1299,6 +1299,11 @@ class Window(QMainWindow):
             text += f' · {age:.1f} с назад'
         else:
             text = 'Открытая позиция, USD: — (нет свежей котировки продажи)'
+        if same and self.display_position and not payload.get('running'):
+            text += ' · наблюдение без автоторговли'
+            error = payload.get('position_watch_error')
+            if error:
+                text += ' · ' + error
         self.position_estimate.setText(text)
 
     def refresh_pnl(self):

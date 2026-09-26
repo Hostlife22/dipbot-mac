@@ -129,6 +129,7 @@ class Worker(QThread):
 
     def run_loop(self):
         next_tick = time.monotonic()
+        next_watch = 0.0
         while not self.quit_event.is_set():
             try:
                 timeout = (min(0.05, max(0, next_tick - time.monotonic()))
@@ -199,6 +200,12 @@ class Worker(QThread):
                     detail = (result['error_type'] if result['error_type'] else
                               f"{result['count']} Swap; ограниченный диапазон" if result['truncated'] else f"{result['count']} Swap")
                     self.log.emit(f"Дозагрузка событий {result['from_block']}–{result['to_block']}: {detail}. Исторические события не торгуются")
+            if not self.running and self.watchable_position() and time.monotonic() >= next_watch:
+                started = time.monotonic()
+                self.watch_position()
+                delay = min(5, .5 * 2**min(self.quote_failures, 4)) if self.quote_unavailable else self.interval
+                next_watch = max(started + delay, time.monotonic())
+                self.status()
             head = self.head_feed.snapshot() if self.head_feed is not None and self.mode != 'DEMO' and not self.quote_unavailable else None
             due = (self.head_schedule.due(head, time.monotonic(), next_tick)
                    if self.head_feed is not None and self.mode != 'DEMO' else time.monotonic() >= next_tick)
@@ -284,6 +291,7 @@ class Worker(QThread):
                          "exit_retry": self.exit_retry,
                          "trade_detail": self.current_trade_detail(),
                          "open_estimate": self.open_estimate,
+                         "position_watch_error": getattr(self, "position_watch_error", ""),
                          "position": str(self.paper.position) if self.mode != "LIVE" else str(D(self.position().get("amount", 0)) / D(10)**(self.pool.token_decimals if self.pool else 18)),
                          "base": str(self.strategy.base or 0),
                          "rpc_health": self.rpc_health.report() if self.adaptive_rpc else [],
@@ -815,8 +823,30 @@ class Worker(QThread):
         self.market_source = 'BSC · резервный RPC'
         return price
 
+    def watchable_position(self):
+        return (self.mode in ('PAPER', 'LIVE') and self.pool is not None
+                and bool(self.position() if self.mode == 'LIVE' else self.paper.position))
+
+    def watch_position(self):
+        # Serial read-only observation: no strategy signals, persistence or execution.
+        self.position_watch_error = ""
+        self.open_estimate = None
+        if self.store.data.get('operation'):
+            self.position_watch_error = "Результат транзакции неизвестен; требуется сверка"
+            return
+        try:
+            self.observe(read_only=True)
+            if self.quote_unavailable:
+                self.position_watch_error = "Ошибка RPC · повтор чтения с паузой до 5 с"
+        except Exception as exc:
+            # Monitoring must not raise modal errors or change the trading halt reason.
+            self.open_estimate = None
+            self.quote_unavailable = True
+            self.quote_failures += 1
+            self.position_watch_error = safe_error(exc)
+
     @timed("worker.observe")
-    def observe(self):
+    def observe(self, read_only=False):
         # Retry only a failed read, never an execution or post-receipt failure.
         if self.store.data.get("operation"):
             raise UncertainTransaction("Незавершённая операция: автоматические сделки заблокированы")
@@ -824,27 +854,27 @@ class Worker(QThread):
         try:
             price = self.read_price()
             exit_return = None
-            if self.strategy.entry is not None and self.strategy.exit_policy.tp_sl_basis == 'quote':
+            if read_only or (self.strategy.entry is not None and self.strategy.exit_policy.tp_sl_basis == 'quote'):
                 if self.mode == 'LIVE':
                     position = self.position()
                     amount, cost = position['amount'], D(position.get('cost_quote', 0))
                 else:
                     cost = self.paper.cost
                     amount = raw_amount(self.paper.position, self.pool.token_decimals) if self.pool else 0
-                if cost <= 0:
+                if cost <= 0 and not read_only:
                     raise ValueError('Неизвестна себестоимость позиции: TP/SL по выходу недоступен')
                 if self.mode == 'DEMO':
                     proceeds = self.paper.position*price
                 else:
                     source = self.backup_chain if self.market_source != 'BSC' else self.chain
                     exit_raw = source.exit_quote(self.pool, amount)
-                    self.record_quote(source, 'exit_signal', 'SELL', amount, exit_raw)
+                    self.record_quote(source, 'position_mark' if read_only else 'exit_signal', 'SELL', amount, exit_raw)
                     proceeds = D(exit_raw)/D(10)**self.pool.quote_decimals
                 if time.monotonic()-self.price_time > self.strategy.settings.max_gap:
                     raise TimeoutError("Снимок цены устарел во время котировки выхода")
                 if self.mode == 'PAPER':
                     proceeds -= self.paper_operation_cost()
-                exit_return = (proceeds/cost-1)*100
+                exit_return = (proceeds/cost-1)*100 if cost > 0 else None
                 rate = self.rates.snapshot(self.pool.quote) if self.pool else None
                 entry_usd = (self.position().get('entry_cost_usd') if self.mode == 'LIVE'
                              else self.paper_usd['entry'])
@@ -867,6 +897,8 @@ class Worker(QThread):
             self.log.emit("Чтение котировок восстановлено; проверка позиции возобновлена")
         self.quote_unavailable = False
         self.quote_failures = 0
+        if read_only:
+            return
         now = time.monotonic()
         if self.entry_notice and self.strategy.entry is None:
             if now < self.entry_retry_at:

@@ -1,0 +1,44 @@
+{
+  "utc": "2026-09-26T08:32:23.775991+00:00",
+  "mode": "PAPER",
+  "transactions_sent": 0,
+  "checks": 276,
+  "mismatches": [],
+  "errors": [],
+  "trades": [
+    {
+      "mode": "PAPER",
+      "side": "BUY",
+      "price": "1.41408894637113657855165806348030282157263484792940026271018537203697777902593E-7",
+      "phase": "manual_paper_buy"
+    },
+    {
+      "mode": "PAPER",
+      "side": "SELL",
+      "price": "1.41408894637113657855165806348030282157263484792940026271018537203697777902593E-7",
+      "phase": "manual_paper_sell"
+    }
+  ],
+  "pool": "0x68fBDF8107b82094049f0aC2b1814cc0af2fA0De",
+  "paper_policy": {
+    "gas_units": 0,
+    "latency_seconds": 0.25,
+    "fee_quote": "0.00001292156609381056984106473705"
+  },
+  "settings": {
+    "amount": "1",
+    "dip": "0.5",
+    "take_profit": "2",
+    "stop_loss": "2",
+    "slippage": "3",
+    "dynamic": "150",
+    "min_swaps": "0",
+    "max_roundtrip_loss": "3"
+  },
+  "open_estimate_observations": 26,
+  "idle_position_monitor_passed": true,
+  "observed_seconds": 15.01,
+  "clean_stop": true,
+  "passed": true,
+  "distinct_prices": 1
+}

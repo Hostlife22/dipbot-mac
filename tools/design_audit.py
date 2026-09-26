@@ -94,6 +94,12 @@ def run(output):
         seed();status(position='1000000',levels={'ENTRY':'.000000416'},
             open_estimate={'at':time.monotonic(),'value_usd':'1.1','pnl_usd':'.09','excludes_exit_gas':False})
         events();geometry();snap('open-position-usd')
+        status(running=False, position='100', open_estimate={'at':time.monotonic(),
+            'value_usd':'1.01','pnl_usd':'-.01','excludes_exit_gas':False})
+        events();geometry();snap('idle-position-usd')
+        status(running=False, position='100', quote_unavailable=True,
+            position_watch_error='Ошибка RPC · повтор чтения с паузой до 5 с')
+        events();geometry();snap('idle-position-rpc')
         seed('DEMO');status(running=False,base='0',levels={});snap('demo-stopped')
         seed();status(position='123456789.123456789',levels={'ENTRY':'.000000416','TP':'.00000042432','SL':'.00000040768','TRAIL':'.000000415'})
         snap('position')
