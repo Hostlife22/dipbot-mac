@@ -88,6 +88,15 @@ def test_http_error_keeps_status_without_provider_credentials():
     assert 'private-api-key' not in safe_error(HTTPError(response.url))
 
 
+def test_rpc_error_keeps_code_without_provider_message():
+    from web3.exceptions import Web3RPCError
+    error = Web3RPCError('https://node/private-api-key', rpc_response={
+        'error': {'code': -32005, 'message': 'https://node/private-api-key'}})
+    message = safe_error(error)
+    assert 'RPC -32005' in message
+    assert 'private-api-key' not in message
+
+
 
 def test_live_buy_uses_signal_guard_and_post_receipt_reference(tmp_path):
     worker = Worker(Store(tmp_path / "state.json"))

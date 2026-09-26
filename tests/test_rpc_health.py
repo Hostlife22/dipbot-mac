@@ -66,3 +66,29 @@ def test_adaptive_primary_failure_uses_backup(tmp_path):
     assert w.market_price() == 3
     assert w.rpc_health.failures[0] == 1
     assert 'резервный' in w.market_source
+
+
+@pytest.mark.parametrize('adaptive', [False, True])
+@pytest.mark.parametrize('code', [-32005, -32016, -32602])
+def test_market_rpc_codes_only_fail_over_for_transient_reads(tmp_path, adaptive, code):
+    from web3.exceptions import Web3RPCError
+    w = Worker(Store(tmp_path/'state.json'))
+    w.adaptive_rpc = adaptive
+    w.pool = POOL
+    def fail(*args):
+        raise Web3RPCError('provider error', rpc_response={'error': {'code': code}})
+    w.chain = NS(price=fail)
+    calls = []
+    w.backup_chain = NS()
+    def backup():
+        calls.append('read')
+        return D(3)
+    w.backup_price = backup
+    if code == -32602:
+        with pytest.raises(Web3RPCError):
+            w.market_price()
+        assert not calls
+    else:
+        assert w.market_price() == 3
+        assert calls == ['read']
+    assert w.chain.price is fail

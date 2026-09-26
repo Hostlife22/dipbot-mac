@@ -19,7 +19,7 @@ from .strategy import D, Settings, Strategy, raw_amount, snapshot_minimum, minim
 from .trader import LiveTrader, PaperTrader, UncertainTransaction, reconcile_receipts
 
 
-from .exit_reads import retry_read, ExitReadCancelled
+from .exit_reads import retry_read, ExitReadCancelled, transient
 from .trade_view import entry_view, exit_view
 from .entry_guard import EntryRejected
 from .signal_policy import SignalPolicy
@@ -43,6 +43,12 @@ def safe_error(exc):
         if type(code) is int and 100 <= code <= 599:
             detail = 'лимит запросов RPC' if code == 429 else 'ошибка HTTP при обращении к RPC'
             return f'HTTP {code}: {detail}. Операция прервана'
+    if isinstance(exc, Web3RPCError):
+        response = getattr(exc, 'rpc_response', None)
+        error = response.get('error') if isinstance(response, dict) else None
+        code = error.get('code') if isinstance(error, dict) else None
+        if type(code) is int:
+            return f'RPC {code}: операция прервана. Проверьте доступность узла'
     # Provider exceptions can contain RPC credentials. Do not log arbitrary text.
     if type(exc) in (ValueError, RuntimeError, UncertainTransaction, EntryRejected):
         message = str(exc)
@@ -777,8 +783,8 @@ class Worker(QThread):
                 if header and previous and (header['number'] < previous['number'] or (
                         header['number'] == previous['number'] and header['hash'] != previous['hash'])):
                     raise TimeoutError('RPC вернул более старый блок или другую ветвь')
-            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
-                if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+            except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, Web3RPCError) as exc:
+                if not transient(exc):
                     raise
                 self.rpc_health.failure(source_id, time.monotonic())
                 other = 1-source_id
@@ -799,8 +805,8 @@ class Worker(QThread):
             return self.backup_price()
         try:
             price = self.chain.price(self.pool)
-        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
-            if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, Web3RPCError) as exc:
+            if not transient(exc):
                 raise
             if self.backup_chain is None:
                 raise
@@ -888,8 +894,8 @@ class Worker(QThread):
                     'pnl_usd': str(D(value)-D(entry_usd)) if value is not None and entry_usd is not None else None,
                     'excludes_exit_gas': self.mode == 'LIVE'}
             self.exit_return = str(exit_return) if exit_return is not None else None
-        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, BlockNotFound) as exc:
-            if isinstance(exc, HTTPError) and getattr(exc.response, 'status_code', 0) not in (429, 500, 502, 503, 504):
+        except (RPCConnectionError, RPCTimeout, TimeoutError, HTTPError, Web3RPCError) as exc:
+            if not transient(exc):
                 raise
             self.record_market('read_error', type=type(exc).__name__)
             self.quote_failures += 1

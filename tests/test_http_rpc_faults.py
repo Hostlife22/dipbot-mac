@@ -26,6 +26,12 @@ def node(monkeypatch):
             if method not in ('eth_chainId','eth_getBlockByNumber','eth_call','eth_getCode'):
                 self.send_response(405);self.end_headers();return
             fault=state['fault']
+            if fault in ('rpc_limit', 'rpc_capacity'):
+                payload=json.dumps({'jsonrpc':'2.0','id':request['id'],
+                    'error':{'code':-32005 if fault=='rpc_limit' else -32016,
+                             'message':'request capacity exceeded'}}).encode()
+                self.send_response(200);self.send_header('Content-Length',str(len(payload)))
+                self.end_headers();self.wfile.write(payload);return
             if fault in (429,503):
                 self.send_response(fault);self.end_headers();return
             if fault=='disconnect':
@@ -66,7 +72,7 @@ def worker_at(tmp_path,endpoint):
     return worker
 
 
-@pytest.mark.parametrize('fault',[429,503,'timeout','disconnect','stale'])
+@pytest.mark.parametrize('fault',[429,503,'timeout','disconnect','stale','rpc_limit','rpc_capacity'])
 def test_persistent_http_fault_and_recovery_cannot_buy_old_dip(tmp_path,node,fault):
     state,endpoint=node;w=worker_at(tmp_path,endpoint)
     w.open_position=lambda:pytest.fail('No entry from the pre-outage baseline')
