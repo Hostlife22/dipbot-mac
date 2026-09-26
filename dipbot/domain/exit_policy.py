@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from decimal import Decimal as D
-from typing import Any
+
+from dipbot.domain.records import ExitSettings
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ class ExitPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждены настройки выхода") from exc
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> ExitSettings:
         return {
             "continue_after_risk_exit": self.continue_after_risk_exit,
             "tp_sl_basis": self.tp_sl_basis,

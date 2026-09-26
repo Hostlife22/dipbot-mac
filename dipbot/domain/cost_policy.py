@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal as D
 from decimal import localcontext
-from typing import Any
 
 from dipbot.domain.assets import WBNB
 from dipbot.domain.entry_guard import EntryQuote, EntryRejected
 from dipbot.domain.ports import QuoteAsset, RateSource
+from dipbot.domain.records import CostSettings
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ class CostPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждена модель расходов") from exc
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> CostSettings:
         return {"maximum_pct": str(self.maximum_pct), "roundtrip_gas": self.roundtrip_gas}
 
     def assess(self, entry_quote: EntryQuote, pool: QuoteAsset, gas_gwei: D, rates: RateSource) -> D | None:

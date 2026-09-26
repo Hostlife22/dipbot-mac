@@ -8,7 +8,14 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Generic, Mapping, TypedDict, TypeVar, cast
 
-from dipbot.domain.records import ExitRetry, OpenEstimate, RpcHealthRow, TradeDetail, UsdSummary
+from dipbot.domain.records import (
+    ExitRetry,
+    OpenEstimate,
+    PaperSettings,
+    RpcHealthRow,
+    TradeDetail,
+    UsdSummary,
+)
 
 
 class CommandKind(StrEnum):
@@ -118,7 +125,7 @@ class StatusPayload(TypedDict, total=False):
     effective_dip: str
     base_reason: str
     base_age: float | None
-    paper_cost_model: dict[str, object]
+    paper_cost_model: PaperSettings
     historical_usd: UsdSummary
     pnl_quote: str
     entry_notice: str

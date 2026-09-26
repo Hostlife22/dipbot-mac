@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal as D
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import QModelIndex, Qt, QTimer
 from PySide6.QtGui import QCloseEvent
@@ -262,7 +262,7 @@ class Window(QMainWindow, PresentationAccess):
                 exits = saved_preferences.get("exit_policy", {})
                 self.exit_basis.setCurrentIndex(self.exit_basis.findData(exits.get("tp_sl_basis", "spot")))
                 for key, field in self.exit_fields.items():
-                    field.setValue(float(exits.get(key, 0)))
+                    field.setValue(float(cast(str | float, exits.get(key, 0))))
                 self.continue_after_exit.setChecked(exits.get("continue_after_risk_exit", False))
                 self.gas.setText(saved_preferences["gas"])
                 self.interval.setValue(float(saved_preferences["interval"]))

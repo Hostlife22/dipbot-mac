@@ -16,6 +16,7 @@ from dipbot.domain.paper_policy import PaperPolicy
 from dipbot.domain.signal_policy import SignalPolicy
 from dipbot.domain.sizing import SizingPolicy
 from dipbot.domain.strategy import D, Settings
+from dipbot.persistence.records import PreferencesRecord
 from dipbot.persistence.storage import SaveAfterReplaceError
 
 FIELDS = (
@@ -30,7 +31,7 @@ FIELDS = (
 )
 
 
-def normalize(value: object) -> dict[str, Any]:
+def normalize(value: object) -> PreferencesRecord:
     if not isinstance(value, dict) or value.get("version") != 1:
         raise ValueError("Неизвестный формат настроек")
     try:
@@ -54,7 +55,7 @@ def normalize(value: object) -> dict[str, Any]:
         raise ValueError("Недопустимый GAS GWEI")
     if not interval.is_finite() or not D("0.1") <= interval <= D("0.5"):
         raise ValueError("Недопустимый интервал")
-    result = {
+    result: PreferencesRecord = {
         "version": 1,
         "settings": {k: str(getattr(settings, k)) for k in FIELDS},
         "gas": str(gas),
@@ -95,7 +96,7 @@ def normalize(value: object) -> dict[str, Any]:
             for key, amount in amounts.items():
                 router, pair = key.split(":", 1)
                 checked[pair_key(router, pair)] = positive_amount(amount)
-            result["selection"] = {k: selection[k] for k in ("router", "pair")}
+            result["selection"] = {"router": selection["router"], "pair": selection["pair"]}
             result["pair_amounts"] = checked
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("Повреждены настройки пар") from exc
@@ -133,7 +134,7 @@ def positive_amount(raw: object) -> str:
     return str(number)
 
 
-def from_windows_ui(payload: object, gas: str = "0.1", interval: str = "0.1") -> dict[str, Any]:
+def from_windows_ui(payload: object, gas: str = "0.1", interval: str = "0.1") -> PreferencesRecord:
     """Explicit pure-data migration of public UI JSON, never credentials/vault."""
     if not isinstance(payload, dict) or not isinstance(payload.get("trade", {}), dict):
         raise ValueError("Повреждён публичный Windows UI JSON")

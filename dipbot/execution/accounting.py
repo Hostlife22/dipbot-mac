@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Any, Mapping, Protocol, cast
 
 if TYPE_CHECKING:
     from dipbot.domain.records import (
+        ClosedTrade,
         FeeSummary,
+        GasRecord,
         OperationRecord,
         PositionRecord,
         RateMark,
@@ -69,7 +71,7 @@ def operation_fees(operation: OperationRecord | None) -> FeeSummary:
 def record_gas(store: StateStore, owner: str, record: Mapping[str, Any]) -> None:
     if "gas_fee_wei" not in record:
         return
-    store.ledger("gas_ledger")[record["hash"]] = {
+    row: GasRecord = {
         "wallet": owner.lower(),
         "label": record.get("label", "unknown"),
         "wei": str(record["gas_fee_wei"]),
@@ -78,6 +80,8 @@ def record_gas(store: StateStore, owner: str, record: Mapping[str, Any]) -> None
         "block": record.get("block"),
         "status": record["status"],
     }
+
+    store.ledger("gas_ledger")[record["hash"]] = row
 
 
 def closed_summary(store: StateStore, owner: str) -> UsdSummary:
@@ -125,26 +129,24 @@ def record_close(
         and fees["usd"] is not None
         else None
     )
-    store.ledger("closed_trades").setdefault(
-        identifier,
-        {
-            "wallet": owner.lower(),
-            "pool": pool.address,
-            "token": pool.token,
-            "quote": pool.quote,
-            "closed_at": int(time.time()),
-            "inventory_matches": inventory_matches,
-            "cost_quote": position.get("cost_quote"),
-            "proceeds_quote": str(proceeds),
-            "entry_cost_usd": entry_usd,
-            "entry_gas_hashes": position.get("entry_gas_hashes"),
-            "exit_gas_hashes": [row["hash"] for row in rows],
-            "proceeds_usd": proceeds_usd,
-            "exit_rate": exit_rate,
-            "exit_fees": fees,
-            "net_usd": str(net) if net is not None else None,
-        },
-    )
+    closed: ClosedTrade = {
+        "wallet": owner.lower(),
+        "pool": pool.address,
+        "token": pool.token,
+        "quote": pool.quote,
+        "closed_at": int(time.time()),
+        "inventory_matches": inventory_matches,
+        "cost_quote": position.get("cost_quote"),
+        "proceeds_quote": str(proceeds),
+        "entry_cost_usd": entry_usd,
+        "entry_gas_hashes": position.get("entry_gas_hashes"),
+        "exit_gas_hashes": [row["hash"] for row in rows],
+        "proceeds_usd": proceeds_usd,
+        "exit_rate": exit_rate,
+        "exit_fees": fees,
+        "net_usd": str(net) if net is not None else None,
+    }
+    store.ledger("closed_trades").setdefault(identifier, closed)
 
 
 def expense_summary(store: StateStore, owner: str) -> dict[str, Any]:

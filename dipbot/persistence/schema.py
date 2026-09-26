@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, TypedDict
 
-from dipbot.domain.records import OperationRecord, PositionRecord
+from dipbot.domain.records import ClosedTrade, GasRecord, OperationRecord, PositionRecord
+from dipbot.persistence.records import DynamicRegistry, PreferencesRecord, WalletRegistry
 
 CURRENT_VERSION = 1
 VERSION_FIELD = "state_version"
@@ -18,12 +19,12 @@ class PublicState(TypedDict, total=False):
     positions: dict[str, PositionRecord]
     operation: OperationRecord | None
     history: list[OperationRecord]
-    closed_trades: dict[str, Any]
-    gas_ledger: dict[str, Any]
-    ui_preferences: dict[str, Any]
+    closed_trades: dict[str, ClosedTrade]
+    gas_ledger: dict[str, GasRecord]
+    ui_preferences: PreferencesRecord
     dynamic_profiles: dict[str, str]
-    dynamic_registry: dict[str, Any]
-    wallet_tokens: dict[str, Any]
+    dynamic_registry: DynamicRegistry
+    wallet_tokens: WalletRegistry
 
 
 def validate_state(value: State) -> None:
@@ -48,6 +49,7 @@ def validate_state(value: State) -> None:
         raise ValueError("Повреждена история операций; торговля заблокирована")
 
     validate_records(value)
+    validate_financial_ledgers(value)
 
 
 def validate_records(value: State) -> None:
@@ -154,3 +156,51 @@ def load_state(raw: object) -> State:
         version = value[VERSION_FIELD]
     validate_state(value)
     return value
+
+
+# Validators accept sparse legacy records, but reject malformed known values.
+def validate_financial_row(raw: object) -> None:
+    from decimal import Decimal, InvalidOperation
+
+    if not isinstance(raw, dict) or any(not isinstance(key, str) for key in raw):
+        raise ValueError("Повреждена запись финансового журнала")
+    for key in ("wallet", "pool", "token", "quote", "label", "status"):
+        if key in raw and not isinstance(raw[key], str):
+            raise ValueError(f"Повреждено поле финансового журнала: {key}")
+    for key in ("wei", "usd", "cost_quote", "proceeds_quote", "entry_cost_usd", "proceeds_usd", "net_usd"):
+        value = raw.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ValueError(f"Денежное поле должно быть строкой: {key}")
+        try:
+            number = Decimal(value)
+        except InvalidOperation as exc:
+            raise ValueError(f"Некорректное денежное поле: {key}") from exc
+        if not number.is_finite():
+            raise ValueError(f"Нефинитное денежное поле: {key}")
+    for key in ("block", "closed_at", "sold_raw", "residual_raw"):
+        if raw.get(key) is not None and (type(raw[key]) is not int or raw[key] < 0):
+            raise ValueError(f"Некорректный счётчик финансового журнала: {key}")
+    if "inventory_matches" in raw and type(raw["inventory_matches"]) is not bool:
+        raise ValueError("Некорректная сверка количества")
+    for key in ("entry_gas_hashes", "exit_gas_hashes", "source_pools"):
+        value = raw.get(key)
+        if value is not None and (not isinstance(value, list) or any(not isinstance(v, str) for v in value)):
+            raise ValueError(f"Повреждён список финансового журнала: {key}")
+    for key in ("rate", "exit_rate", "exit_fees"):
+        value = raw.get(key)
+        if value is not None:
+            validate_financial_row(value)
+
+
+def validate_financial_ledgers(value: State) -> None:
+    from dipbot.persistence.ledger_cache import Ledger
+
+    for name in ("closed_trades", "gas_ledger"):
+        ledger = value.get(name, {})
+        if isinstance(ledger, Ledger):
+            ledger.validate_rows(validate_financial_row)
+        else:
+            for row in ledger.values():
+                validate_financial_row(row)

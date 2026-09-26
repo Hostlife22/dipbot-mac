@@ -149,6 +149,7 @@ class Ledger(TrackedDict):
         self._key_groups: dict[str, int] = {}
         self._encoded_groups: dict[int, str] = {}
         self._layout_dirty = False
+        self._validated_groups: dict[int, Callable[[object], None]] = {}
         self.changed = self.invalidate
         dict.__init__(self)
         for key, item in value.items():
@@ -165,6 +166,7 @@ class Ledger(TrackedDict):
         self._clear_summary()
         self._layout_dirty = True
         self._encoded_groups.clear()
+        self._validated_groups.clear()
 
     def _layout(self) -> None:
         if self._layout_dirty:
@@ -178,6 +180,7 @@ class Ledger(TrackedDict):
         group = self._key_groups.get(key)
         if group is not None:
             self._encoded_groups.pop(group, None)
+            self._validated_groups.pop(group, None)
 
     def __setitem__(self, key: Any, value: Any) -> None:
         value = tracked(value, lambda: self._touch_key(key))
@@ -189,6 +192,16 @@ class Ledger(TrackedDict):
             self._key_groups[key] = len(self._groups) - 1
         self._touch_key(key)
         dict.__setitem__(self, key, value)
+
+    def validate_rows(self, validator: Callable[[object], None]) -> None:
+        """Revalidate dirty groups only; mutations invalidate JSON and schema caches together."""
+        self._layout()
+        for index, keys in enumerate(self._groups):
+            if self._validated_groups.get(index) is validator:
+                continue
+            for key in keys:
+                validator(self[key])
+            self._validated_groups[index] = validator
 
     def encoded_parts(self) -> tuple[str, ...]:
         if self._parts is None:

@@ -14,12 +14,13 @@ from copy import deepcopy
 
 from dipbot.domain.assets import ETH, FEES, USDT, WBNB
 from dipbot.market.chain import address, profiles, route_path
+from dipbot.persistence.records import DynamicProfile
 from dipbot.persistence.storage import SaveAfterReplaceError
 
 MODES = {"direct_v2", "direct_v3", "via_usdt_v3", "via_eth_v3", "native_wrap"}
 
 
-def records(store: StateStore) -> dict[str, Any]:
+def records(store: StateStore) -> dict[str, DynamicProfile]:
     registry = store.data.get("dynamic_registry", {"version": 1, "records": {}})
     if not isinstance(registry, dict):
         raise ValueError("Повреждён реестр динамических профилей")
@@ -42,7 +43,7 @@ def records(store: StateStore) -> dict[str, Any]:
             valid = False
         if not valid:
             raise ValueError("Повреждён динамический профиль; повторная проверка обязательна")
-    return cast(dict[str, Any], result)
+    return cast(dict[str, DynamicProfile], result)
 
 
 def catalog(store: StateStore, router: str) -> dict[str, str]:
@@ -113,7 +114,7 @@ def safe_symbol(raw: object, token: str) -> str:
 
 def upsert(
     store: StateStore, pool: Pool, route: list[Pool], loss_bps: int, *, symbol: Any = None
-) -> dict[str, Any]:
+) -> DynamicProfile:
     old = records(store)
     mode, fee = route_settings(route)
     if route_path(route)[0][-1] != address(pool.quote):
@@ -133,7 +134,7 @@ def upsert(
             name = stem[: 24 - len(suffix)] + suffix
             counter += 1
     now = int(time.time())
-    record = {
+    record: DynamicProfile = {
         "name": name,
         "token_address": pool.quote,
         "trade_router": pool.router,

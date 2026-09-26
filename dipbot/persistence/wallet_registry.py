@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from dipbot.market.autopair import Candidate
@@ -16,9 +16,10 @@ from dataclasses import asdict
 
 from dipbot.market.chain import address
 from dipbot.persistence.dynamic import persist
+from dipbot.persistence.records import WalletToken
 
 
-def records(store: StateStore, owner: str) -> dict[str, Any]:
+def records(store: StateStore, owner: str) -> dict[str, WalletToken]:
     registry = store.data.get("wallet_tokens", {"version": 1, "wallets": {}})
     if (
         not isinstance(registry, dict)
@@ -36,7 +37,7 @@ def records(store: StateStore, owner: str) -> dict[str, Any]:
             or row.get("router") not in ("V2", "V3")
         ):
             raise ValueError("Повреждён маршрут токена кошелька")
-    return rows
+    return cast(dict[str, WalletToken], rows)
 
 
 def register(store: StateStore, owner: str, pool: Pool, pair_name: str) -> None:
@@ -55,7 +56,7 @@ def register(store: StateStore, owner: str, pool: Pool, pair_name: str) -> None:
     persist(store, updated)
 
 
-def choose_registered(result: Resolution, record: dict[str, Any]) -> Candidate | None:
+def choose_registered(result: Resolution, record: WalletToken) -> Candidate | None:
     if result.state == "RESOLVED" and result.selected and result.selected.ready:
         return result.selected
     candidates = [

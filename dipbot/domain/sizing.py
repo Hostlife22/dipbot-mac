@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal as D
-from typing import Any
 
 from dipbot.domain.entry_guard import EntryRejected
 from dipbot.domain.ports import RateSource
+from dipbot.domain.records import SizingSettings
 
 
 @dataclass(frozen=True)
@@ -40,5 +40,5 @@ class SizingPolicy:
             raise EntryRejected("Для AMOUNT в USD нужен свежий курс базового актива; дождитесь USD-котировки")
         return requested / D(rate["usd"])
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> SizingSettings:
         return {"unit": self.unit, "reserve_bnb": str(self.reserve_bnb)}

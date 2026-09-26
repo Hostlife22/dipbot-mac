@@ -145,3 +145,67 @@ class PriceContext(TypedDict):
     block: int | None
     block_timestamp: int | None
     quote: str
+
+
+class GasRecord(TypedDict, total=False):
+    wallet: str
+    label: str
+    wei: str
+    usd: str | None
+    rate: RateMark | None
+    block: int | None
+    status: str
+
+
+class ClosedTrade(TypedDict, total=False):
+    wallet: str
+    pool: str
+    token: str
+    quote: str
+    closed_at: int
+    inventory_matches: bool
+    cost_quote: str | None
+    proceeds_quote: str
+    entry_cost_usd: str | None
+    entry_gas_hashes: list[str] | None
+    exit_gas_hashes: list[str]
+    proceeds_usd: str | None
+    exit_gas_usd: str | None
+    exit_rate: RateMark | None
+    exit_fees: FeeSummary
+    net_usd: str | None
+    sold_raw: int
+    residual_raw: int
+    source_pools: list[str]
+
+
+class SizingSettings(TypedDict):
+    unit: str
+    reserve_bnb: str
+
+
+class PaperSettings(TypedDict):
+    gas_units: int
+    latency_seconds: float
+    fee_quote: str
+
+
+class CostSettings(TypedDict):
+    maximum_pct: str
+    roundtrip_gas: int
+
+
+class ExitSettings(TypedDict):
+    continue_after_risk_exit: bool
+    tp_sl_basis: str
+    trailing_pct: str
+    max_hold_seconds: float
+    cooldown_seconds: float
+
+
+class SignalSettings(TypedDict):
+    mode: str
+    window_seconds: float
+    rebound_pct: str
+    max_block_age: float
+    volatility_multiplier: str

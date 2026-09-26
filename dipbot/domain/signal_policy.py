@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+
+from dipbot.domain.records import SignalSettings
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ class SignalPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждены параметры версии стратегии") from exc
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> SignalSettings:
         return {
             "mode": self.mode,
             "window_seconds": self.window_seconds,

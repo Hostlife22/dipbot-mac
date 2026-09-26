@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from decimal import Decimal as D
-from typing import Any
 
 from dipbot.domain.ports import RateSource
+from dipbot.domain.records import PaperSettings
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class PaperPolicy:
         except (TypeError, ArithmeticError, OverflowError) as exc:
             raise ValueError("Повреждена модель PAPER") from exc
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> PaperSettings:
         return {
             "gas_units": self.gas_units,
             "latency_seconds": self.latency_seconds,

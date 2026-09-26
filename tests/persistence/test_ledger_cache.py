@@ -140,7 +140,7 @@ def test_mutations_across_serialization_groups_keep_exact_disk_state(tmp_path, m
     assert json.loads(store.path.read_text()) == store.data
     ledger["0"]["nested"][0]["value"] = 100
     ledger.pop("2")
-    ledger["2"] = {"usd": "replacement"}
+    ledger["2"] = {"usd": "200", "note": "replacement"}
     store.save()
     assert json.loads(store.path.read_text()) == store.data
     ledger.clear()
