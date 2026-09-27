@@ -16,7 +16,7 @@ from dipbot.execution.accounting import marked_value
 from dipbot.execution.errors import UncertainTransaction
 from dipbot.market.chain import StaleBlock
 from dipbot.market.exit_reads import transient
-from dipbot.observability.cycle_trace import signal_cycle
+from dipbot.observability.cycle_trace import observation_mark, observation_timing, signal_cycle
 from dipbot.observability.telemetry import timed
 
 if TYPE_CHECKING:
@@ -184,13 +184,16 @@ def watch_position(runtime: ObservationRuntime) -> None:
 
 
 @timed("worker.observe")
+@observation_timing
 def observe(runtime: ObservationRuntime, read_only: bool = False) -> None:
     # Retry only a failed read, never an execution or post-receipt failure.
     if runtime.store.data.get("operation"):
         raise UncertainTransaction("Незавершённая операция: автоматические сделки заблокированы")
     runtime.session.open_estimate = None
     try:
+        observation_mark("http_started")
         price = runtime.read_price()
+        observation_mark("price_ready")
         exit_return = None
         if read_only or (
             runtime.session.strategy.entry is not None
@@ -297,6 +300,7 @@ def observe(runtime: ObservationRuntime, read_only: bool = False) -> None:
     action = runtime.session.strategy.observe(
         price, now, observation_id=observation_id, exit_return=exit_return
     )
+    observation_mark("strategy_completed")
     if (
         runtime.session.mode == "LIVE"
         and runtime.session.strategy.entry is not None

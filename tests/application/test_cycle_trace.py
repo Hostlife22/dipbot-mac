@@ -17,11 +17,16 @@ def test_signal_trace_correlates_signature_durable_intent_and_receipt(trader):
     row = events[0][1]
     assert [r["stage"] for r in row["stages"]] == [
         "signal",
+        "transaction_started",
+        "nonce_ready",
         "gas_estimated",
         "transaction_built",
         "signed",
+        "journal_started",
         "intent_persisted",
+        "broadcast_started",
         "broadcast_ack",
+        "receipt_observed",
         "receipt_validated",
         "completed",
     ]
@@ -93,3 +98,73 @@ def test_report_separates_paper_and_live_and_marks_incomplete(tmp_path):
     assert report["metrics"]["LIVE.signal_to_last_receipt_validated_ms"]["p50"] == 300
     assert not any("PAPER" in key and "receipt" in key for key in report["metrics"])
     assert report["incomplete_recordings"] == [path.name]
+
+
+def test_failed_after_ack_keeps_individual_transaction_metrics(tmp_path):
+    import json
+
+    from tools.cycle_latency_report import summarize
+
+    stages = [{"stage": "signal", "ms": 5}]
+    for transaction, kind, offset in [(1, "APPROVE", 10), (2, "BUY", 50)]:
+        for stage, elapsed in [
+            ("transaction_started", 0),
+            ("signed", 1),
+            ("journal_started", 2),
+            ("intent_persisted", 4),
+            ("broadcast_started", 5),
+            ("broadcast_ack", 8),
+        ]:
+            stages.append({"stage": stage, "ms": offset + elapsed, "kind": kind, "transaction": transaction})
+    stages.append({"stage": "failed", "ms": 100})
+    path = tmp_path / "events.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "event": "cycle_latency",
+                "mode": "LIVE",
+                "origin": "observation_start",
+                "action": "BUY",
+                "stages": stages,
+                "error_type": "TimeoutError",
+            }
+        )
+        + "\n"
+        + json.dumps({"event": "end", "dropped": 0})
+        + "\n"
+    )
+    result = summarize([path])
+    for kind, offset in [("APPROVE", 10), ("BUY", 50)]:
+        prefix = "LIVE.tx." + kind + ".failed_cycle."
+        assert result["metrics"][prefix + "send_to_ack_ms"]["p50"] == 3
+        assert result["metrics"][prefix + "observation_start_to_broadcast_ack_ms"]["p50"] == offset + 8
+        assert result["unavailable"][prefix + "ack_to_receipt_observed_ms"] == 1
+    assert not any("application_complete" in key for key in result["metrics"])
+
+
+def test_observation_origin_rpc_bounds_and_context_reset():
+    import time
+
+    from dipbot.observability.cycle_trace import observation_mark, observation_timing, rpc_span
+
+    events = []
+    worker = NS(mode="PAPER", live=None, record_market=lambda event, **kw: events.append(kw))
+
+    @observation_timing
+    def observe():
+        observation_mark("http_started")
+        rpc_span("eth_call", time.perf_counter_ns(), failed=False)
+        observation_mark("price_ready")
+        observation_mark("strategy_completed")
+        with signal_cycle(worker, "BUY", None):
+            for _ in range(300):
+                rpc_span("eth_call", time.perf_counter_ns(), failed=True)
+
+    observe()
+    row = events[0]
+    assert row["origin"] == "observation_start"
+    assert row["observation"]["http_started"] <= row["observation"]["price_ready"] <= row["stages"][0]["ms"]
+    assert len(row["rpc"]) == 256 and row["rpc_dropped"] == 45
+    with signal_cycle(worker, "BUY", None):
+        pass
+    assert events[1]["rpc"] == [] and events[1]["origin"] == "signal"

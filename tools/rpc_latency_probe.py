@@ -2,11 +2,15 @@
 
 import argparse
 import json
+import math
+import platform
 import statistics
+import subprocess
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from importlib.metadata import version
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -30,6 +34,10 @@ def summary(values):
         {
             "count": len(values),
             "median_ms": round(statistics.median(values) * 1000, 2),
+            "mean_ms": round(statistics.mean(values) * 1000, 2),
+            "p95_ms": round(sorted(values)[math.ceil(len(values) * 0.95) - 1] * 1000, 2),
+            "p99_ms": round(sorted(values)[math.ceil(len(values) * 0.99) - 1] * 1000, 2),
+            "p99_preliminary": len(values) < 1000,
             "max_ms": round(max(values) * 1000, 2),
         }
         if values
@@ -37,7 +45,7 @@ def summary(values):
     )
 
 
-def probe(endpoint, samples):
+def probe(endpoint, samples, max_seconds=300, interval=0.1):
     result = {"host": urlsplit(endpoint).hostname, "samples_per_router": samples}
     chain = Chain(endpoint)
     provider = chain.w3.provider
@@ -57,11 +65,34 @@ def probe(endpoint, samples):
         pools = {router: chain.verify_pool(addr, USDT) for router, addr in POOLS.items()}
         timings.clear()
         prices = defaultdict(list)
+        observations = []
+        deadline = time.monotonic() + max_seconds
         for _ in range(samples):
+            if time.monotonic() >= deadline:
+                break
             for router, pool in pools.items():
                 started = time.monotonic()
                 assert chain.price(pool) > 0
-                prices[router].append(time.monotonic() - started)
+                elapsed = time.monotonic() - started
+                cached = bool(getattr(chain, "price_cache_hit", False))
+                prices[router + (".cached" if cached else ".fresh")].append(elapsed)
+                header = chain.price_block
+                observations.append(
+                    {
+                        "router": router,
+                        "block": header["number"],
+                        "hash": bytes(header["hash"]).hex(),
+                        "cache_hit": cached,
+                        "ms": elapsed * 1000,
+                        "block_age_s": time.time() - header["timestamp"],
+                    }
+                )
+            time.sleep(interval)
+        result["observations"] = observations
+        result["independent_blocks"] = {
+            router: len({r["hash"] for r in observations if r["router"] == router and not r["cache_hit"]})
+            for router in POOLS
+        }
         result["price"] = {k: summary(v) for k, v in prices.items()}
         result["wire_requests"] = {k: summary(v) for k, v in timings.items()}
         block = chain.w3.eth.get_block("latest")
@@ -79,9 +110,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=5)
+    parser.add_argument("--max-seconds", type=float, default=300)
+    parser.add_argument("--interval", type=float, default=0.1)
     args = parser.parse_args()
+    if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
+        parser.error("invalid sampling limits")
     with ThreadPoolExecutor(max_workers=3) as executor:
-        rows = list(executor.map(lambda endpoint: probe(endpoint, args.samples), ENDPOINTS))
-    report = {"utc": datetime.now(timezone.utc).isoformat(), "endpoints": rows, "transactions_sent": 0}
+        rows = list(
+            executor.map(
+                lambda endpoint: probe(endpoint, args.samples, args.max_seconds, args.interval), ENDPOINTS
+            )
+        )
+    report = {
+        "utc": datetime.now(timezone.utc).isoformat(),
+        "endpoints": rows,
+        "transactions_sent": 0,
+        "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "web3": version("web3"),
+        "paid_rpc": "not provided",
+        "limits": "Request latency, not broadcast or event propagation. Cache hits are separate. Distinct blocks, not loop count, bound independent sample size. No exact DNS/TLS breakdown.",
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report))

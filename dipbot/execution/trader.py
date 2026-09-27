@@ -104,6 +104,7 @@ class LiveTrader:
     def send(self, function: ContractFunction, label: str, value: int = 0) -> TxReceipt:
         if self.operation is None:
             raise RuntimeError("Отправка вне записанной операции запрещена")
+        mark(self, "transaction_started", label=label)
         self.abort_entry_if_stopped(label)
         self.chain.check()
         w3 = self.chain.w3
@@ -114,6 +115,7 @@ class LiveTrader:
         latest_nonce = w3.eth.get_transaction_count(self.owner, "latest")
         if nonce != latest_nonce:
             raise UncertainTransaction("У кошелька уже есть pending-транзакция. Дождитесь её подтверждения")
+        mark(self, "nonce_ready", label=label)
         tx_base: TxParams = {
             "from": self.owner,
             "value": Wei(value),
@@ -167,11 +169,14 @@ class LiveTrader:
         if type(header.get("number")) is int:
             record["prepared_block"] = header["number"]
         self.operation["transactions"].append(record)
+        mark(self, "journal_started", label=label)
         self.store.save()  # Hash is durable BEFORE broadcast, even if the RPC reply is lost.
         mark(self, "intent_persisted", label=label)
         self.log(f"{label}: {local_hash}")
+        acknowledged = True
         try:
             try:
+                mark(self, "broadcast_started", label=label)
                 with TIMINGS.measure("execution.broadcast_ack"):
                     remote_hash = Web3.to_hex(broadcaster.w3.eth.send_raw_transaction(signed.raw_transaction))
             except Exception as exc:
@@ -180,10 +185,11 @@ class LiveTrader:
                     raise
                 # This is only a hint to query the durable local hash, never proof
                 # of confirmation and never permission to sign or broadcast again.
+                acknowledged = False
                 remote_hash = local_hash
             if remote_hash != local_hash:
                 raise UncertainTransaction("RPC вернул другой hash")
-            mark(self, "broadcast_ack", label=label)
+            mark(self, "broadcast_ack" if acknowledged else "broadcast_known", label=label)
             record["stage"] = "submitted"
             record["submitted_at"] = int(time.time())
             self.store.save()
@@ -193,6 +199,7 @@ class LiveTrader:
             raise UncertainTransaction(
                 f"Статус неизвестен: {local_hash}. Повторная отправка заблокирована"
             ) from None
+        mark(self, "receipt_observed", label=label, block=receipt["blockNumber"])
         self.validate_receipt(receipt, local_hash)
         self.check_canonical(receipt)
         mark(self, "receipt_validated", label=label, block=receipt["blockNumber"])

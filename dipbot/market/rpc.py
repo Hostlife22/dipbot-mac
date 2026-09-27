@@ -9,6 +9,7 @@ from typing import Any
 from web3 import HTTPProvider
 from web3.types import RPCEndpoint, RPCResponse
 
+from dipbot.observability.cycle_trace import rpc_span
 from dipbot.observability.telemetry import TIMINGS
 
 
@@ -57,10 +58,16 @@ class BscHTTPProvider(HTTPProvider):
                 }
                 else "other"
             )
-            with TIMINGS.measure("rpc." + label):
-                response = super().make_request(method, params)
-                if "error" in response:
-                    TIMINGS.record("rpc.json_error", 0, failed=True)
+            request_ns = time.perf_counter_ns()
+            failed = True
+            try:
+                with TIMINGS.measure("rpc." + label):
+                    response = super().make_request(method, params)
+                    failed = "error" in response
+                    if failed:
+                        TIMINGS.record("rpc.json_error", 0, failed=True)
+            finally:
+                rpc_span(label, request_ns, failed=failed)
         except Exception:
             self.invalidate_network()
             raise

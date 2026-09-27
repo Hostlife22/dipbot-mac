@@ -5,15 +5,89 @@ from __future__ import annotations
 import time
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Any
+from contextvars import ContextVar
+from functools import wraps
+from typing import Any, Callable, ParamSpec, TypeVar
+from uuid import uuid4
+
+_CAPTURE: ContextVar[dict[str, Any] | None] = ContextVar("market_capture", default=None)
+_ACTIVE: ContextVar["CycleTrace | None"] = ContextVar("cycle_trace", default=None)
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def observation_timing(function: Callable[P, R]) -> Callable[P, R]:
+    @wraps(function)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        token = _CAPTURE.set({"started_ns": time.perf_counter_ns(), "events": {}, "rpc": [], "dropped": 0})
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _CAPTURE.reset(token)
+
+    return wrapped
+
+
+def observation_mark(name: str) -> None:
+    capture = _CAPTURE.get()
+    if capture is not None and name in {
+        "http_started",
+        "raw_market_received",
+        "price_ready",
+        "strategy_completed",
+    }:
+        capture["events"][name] = time.perf_counter_ns()
+
+
+def rpc_span(method: str, started_ns: int, *, failed: bool) -> None:
+    """Only safe method labels; callers never pass params, URLs or response bodies."""
+    capture = _CAPTURE.get()
+    trace = _ACTIVE.get()
+    if capture is None and trace is None:
+        return
+    origin = trace.started_ns if trace else capture["started_ns"]  # type: ignore[index]
+    rows = trace.rpc if trace else capture["rpc"]  # type: ignore[index]
+    if len(rows) >= 256:
+        if trace:
+            trace.rpc_dropped += 1
+        else:
+            capture["dropped"] += 1  # type: ignore[index]
+        return
+    rows.append(
+        {
+            "method": method,
+            "start_ms": (started_ns - origin) / 1e6,
+            "duration_ms": (time.perf_counter_ns() - started_ns) / 1e6,
+            "failed": failed,
+            "transaction": trace.transaction if trace else None,
+        }
+    )
 
 
 class CycleTrace:
     def __init__(self, action: str, mode: str, header: Mapping[str, Any] | None = None) -> None:
-        self.started = time.perf_counter()
+        capture = _CAPTURE.get()
+        self.signal_ns = time.perf_counter_ns()
+        self.started_ns = capture["started_ns"] if capture else self.signal_ns
+        self.started = self.started_ns / 1e9
+        self.transaction = 0
+        self.rpc: list[dict[str, Any]] = list(capture["rpc"]) if capture else []
+        self.rpc_dropped = capture["dropped"] if capture else 0
         self.stages: list[dict[str, Any]] = []
         self.truncated = False
         self.data: dict[str, Any] = {
+            "schema": 2,
+            "cycle_id": uuid4().hex,
+            "origin": "observation_start" if capture else "signal",
+            "observation": {k: (v - self.started_ns) / 1e6 for k, v in capture["events"].items()}
+            if capture
+            else {},
+            "unavailable": {
+                "raw_market_received": "see observation; cache hit has no new pool read",
+                "finality": "not observed",
+                "head_received": "not correlated",
+                "broadcast": "N/A" if mode != "LIVE" else "see stages",
+            },
             "action": action,
             "mode": mode,
             "signal_block": None,
@@ -30,6 +104,12 @@ class CycleTrace:
     def mark(self, stage: str, *, kind: str | None = None, block: int | None = None) -> None:
         if stage not in {
             "signal",
+            "transaction_started",
+            "nonce_ready",
+            "journal_started",
+            "broadcast_started",
+            "broadcast_known",
+            "receipt_observed",
             "quote",
             "gas_estimated",
             "transaction_built",
@@ -52,7 +132,11 @@ class CycleTrace:
         if len(self.stages) >= 64:
             self.truncated = True
             return
-        row = {"stage": stage, "ms": (time.perf_counter() - self.started) * 1000}
+        if stage == "transaction_started":
+            self.transaction += 1
+        row: dict[str, Any] = {"stage": stage, "ms": (time.perf_counter_ns() - self.started_ns) / 1e6}
+        if kind is not None and self.transaction and stage != "quote":
+            row["transaction"] = self.transaction
         if kind in ("BUY", "SELL", "APPROVE", "OTHER"):
             row["kind"] = kind
         if type(block) is int and block >= 0:
@@ -81,6 +165,7 @@ def signal_cycle(worker: Any, action: str, header: Mapping[str, Any] | None) -> 
     if live is not None:
         live.cycle_trace = trace
     error_type = None
+    token = _ACTIVE.set(trace)
     try:
         yield trace
     except BaseException as exc:
@@ -88,6 +173,7 @@ def signal_cycle(worker: Any, action: str, header: Mapping[str, Any] | None) -> 
         raise
     finally:
         trace.mark("failed" if error_type else "completed")
+        _ACTIVE.reset(token)
         worker.cycle_trace = previous
         if live is not None:
             live.cycle_trace = previous_live
@@ -97,6 +183,8 @@ def signal_cycle(worker: Any, action: str, header: Mapping[str, Any] | None) -> 
                 "cycle_latency",
                 **trace.data,
                 stages=trace.stages,
+                rpc=trace.rpc,
+                rpc_dropped=trace.rpc_dropped,
                 error_type=error_type,
                 truncated=trace.truncated,
             )

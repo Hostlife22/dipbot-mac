@@ -17,3 +17,19 @@
 `windows_dpapi_probe` проверяет системный DPAPI только на Windows. Проверки fork требуют локального узла; PAPER/read-only требуют RPC. `token_ui_paper_check` — CLI-обёртка; реализация для приложения находится в `dipbot/checks/token_ui_paper.py`. Общий read-only guard находится в `dipbot/checks/read_only.py`.
 
 Вывод прогонов направляйте в `.local-artifacts/` или `/tmp`, без секретов. Старые анализаторы Nuitka/Ghidra/FLOSS и промежуточные отчёты доступны в Git на `89e3a4f`; они не нужны для запуска Mac-приложения.
+
+## Performance baseline
+
+`performance_baseline` измеряет локальную стратегию, overhead трассировки и ABI
+без подключения к сети. `rpc_latency_probe` разделяет новые чтения и cache hits,
+сохраняет block/hash и предварительные p95/p99. `cycle_latency_report` учитывает
+отдельные approve/swap и ACK даже при последующей ошибке; финальность не предполагается.
+
+```bash
+uv run --frozen python -m tools.performance_baseline --output .local-artifacts/performance/cpu.json --profile .local-artifacts/performance/cpu.prof
+uv run --frozen python -m tools.rpc_latency_probe --samples 1000 --max-seconds 300 --output .local-artifacts/performance/rpc.json
+```
+
+Ограничение по времени может завершить RPC-прогон раньше 1000 независимых блоков;
+смотрите `independent_blocks`, а не только число итераций. Сравнивайте одинаковые
+cohorts и сборки. Ни один из этих инструментов не отправляет транзакции.

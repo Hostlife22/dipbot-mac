@@ -31,6 +31,7 @@ from dipbot.domain.assets import (
 )
 from dipbot.domain.strategy import D
 from dipbot.market.rpc import BscHTTPProvider
+from dipbot.observability.cycle_trace import observation_mark
 from dipbot.observability.telemetry import TIMINGS, timed
 
 
@@ -421,6 +422,7 @@ class Chain:
             context.prec = 78
             if pool.router == "V2":
                 r0, r1, _ = self.call(pool.address, POOL_ABI, "getReserves", block=block)
+                observation_mark("raw_market_received")
                 if not r0 or not r1:
                     raise ValueError("WAITING: нулевая ликвидность")
                 numerator, denominator = (r1, r0) if pool.token_is_0 else (r0, r1)
@@ -431,6 +433,7 @@ class Chain:
                 liquidity, slot = batch(
                     self, [request(pool.address, POOL_ABI, name) for name in ("liquidity", "slot0")], block
                 )
+                observation_mark("raw_market_received")
                 if liquidity is None or slot is None:
                     raise ValueError("Не удалось прочитать состояние V3 через Multicall")
                 if not liquidity:
