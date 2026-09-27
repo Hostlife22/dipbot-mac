@@ -390,7 +390,13 @@ if __name__ == "__main__":
     start_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     source_hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in [Path(__file__), Path("dipbot/market/chain.py"), Path("dipbot/market/rpc.py")]
+        for p in [
+            Path(__file__),
+            Path("dipbot/market/chain.py"),
+            Path("dipbot/market/rpc.py"),
+            Path("dipbot/market/head_feed.py"),
+            Path("dipbot/observability/cycle_trace.py"),
+        ]
     }
     if args.shadow_seconds > 0 or args.finality_seconds > 0:
         result = {"commit_at_start": start_commit, "source_sha256": source_hashes}

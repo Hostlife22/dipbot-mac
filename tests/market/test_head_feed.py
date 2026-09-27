@@ -158,3 +158,36 @@ def test_worker_deferred_reads_do_not_busy_spin_and_feed_stops(tmp_path, monkeyp
     worker.run()
     assert len(starts) == 3 and starts[1] - starts[0] >= 0.3 - 1e-9
     assert stopped == [True]
+
+
+def test_requested_shutdown_is_not_reported_as_network_failure():
+    ready = threading.Event()
+    closed = threading.Event()
+
+    class Socket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def send(self, value):
+            self.request = json.loads(value)
+
+        def recv(self, **kwargs):
+            if self.request["id"] == 1:
+                return json.dumps({"id": 1, "result": "0x38"})
+            if not ready.is_set():
+                ready.set()
+                return json.dumps({"id": 2, "result": "sub"})
+            assert closed.wait(timeout=2)
+            raise ConnectionError("intentional shutdown")
+
+        def close(self):
+            closed.set()
+
+    feed = HeadFeed("wss://example.invalid", connector=lambda *a, **kw: Socket()).start()
+    assert ready.wait(timeout=2)
+    feed.stop()
+    assert feed.reconnects == 0 and feed.error_type == ""
+    assert not feed.thread.is_alive()

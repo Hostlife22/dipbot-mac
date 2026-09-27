@@ -132,6 +132,8 @@ class HeadFeed:
                         if params.get("subscription") == subscription:
                             self.accept(params["result"])
             except Exception as exc:
+                if self.stop_event.is_set():
+                    break  # Expected socket close during shutdown is not a reconnect failure.
                 with self.lock:
                     self.error_type = type(exc).__name__
                     self.reconnects += 1
