@@ -247,11 +247,18 @@ class LiveTrader:
             router, abi, factory, wrapped = V2_ROUTER, V2_ABI, V2_FACTORY, "WETH"
         else:
             router, abi, factory, wrapped = V3_ROUTER, V3_ABI, V3_FACTORY, "WETH9"
-        if not self.chain.w3.eth.get_code(address(router)):
-            raise ValueError("Router отсутствует в сети")
-        if self.chain.call(router, abi, "factory").lower() != factory.lower():
+        reader = getattr(self.chain, "router_identity", None)
+        if reader is None:
+            # Compatibility with narrow execution adapters/test doubles.
+            if not self.chain.w3.eth.get_code(address(router)):
+                raise ValueError("Router отсутствует в сети")
+            actual_factory = self.chain.call(router, abi, "factory")
+            actual_wrapped = self.chain.call(router, abi, wrapped)
+        else:
+            actual_factory, actual_wrapped = reader(router, abi, wrapped)
+        if actual_factory.lower() != factory.lower():
             raise ValueError("Factory router не совпадает")
-        if self.chain.call(router, abi, wrapped).lower() != WBNB.lower():
+        if actual_wrapped.lower() != WBNB.lower():
             raise ValueError("WBNB router не совпадает")
         return address(router), abi
 

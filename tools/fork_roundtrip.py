@@ -69,7 +69,9 @@ def run(
     paired_performance=False,
     cohort_audit=False,
     paired_repeats=3,
+    paired_router=False,
 ):
+    paired_performance = paired_performance or paired_router
     if not 1 <= paired_repeats <= 30:
         raise ValueError("paired repeats must be 1..30")
     if sweep_audit and paired_performance:
@@ -297,7 +299,7 @@ def run(
                     "explicit local evm_mine before receipt read; not BSC inclusion timing"
                 )
                 report["paired_identity_cycles"] = paired_identity(
-                    chain, account, pool, amount, directory, paired_repeats
+                    chain, account, pool, amount, directory, paired_repeats, router_identity=paired_router
                 )
                 report["benchmark_local_submissions"] = sum(
                     r["local_submissions"] for r in report["paired_identity_cycles"]
@@ -360,9 +362,10 @@ def run(
     return report
 
 
-def paired_identity(chain, account, pool, amount, directory, repeats=3):
+def paired_identity(chain, account, pool, amount, directory, repeats=3, *, router_identity=False):
     """Warm same-fork snapshot A/B; all writes stay behind the local Anvil guard."""
     rows = []
+    flag = "router_identity_multicall_enabled" if router_identity else "identity_multicall_enabled"
     original_wait = chain.w3.eth.wait_for_transaction_receipt
 
     def mined_receipt(*args, **kwargs):
@@ -379,7 +382,7 @@ def paired_identity(chain, account, pool, amount, directory, repeats=3):
                 snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
                 traces = []
                 try:
-                    chain.identity_multicall_enabled = enabled
+                    setattr(chain, flag, enabled)
                     # Read immutable metadata caches are shared; mutable state is reset.
                     store = Store(Path(directory) / f"paired-{repeat}-{enabled}.json")
                     trader = LiveTrader(chain, account.key, store, D(".1"), lambda _: None)
@@ -405,6 +408,7 @@ def paired_identity(chain, account, pool, amount, directory, repeats=3):
                         {
                             "repeat": repeat,
                             "multicall": enabled,
+                            "identity_scope": "router" if router_identity else "pool",
                             "traces": traces,
                             "received": str(bought),
                             "returned": str(sold),
@@ -415,7 +419,7 @@ def paired_identity(chain, account, pool, amount, directory, repeats=3):
                     result = chain.w3.provider.make_request("evm_revert", [snapshot])
                     if result.get("result") is not True:
                         raise RuntimeError("Fork snapshot restoration failed")
-                    chain.identity_multicall_enabled = True
+                    setattr(chain, flag, True)
     if len({(r["received"], r["returned"]) for r in rows}) != 1:
         raise AssertionError("Paired fork financial outputs differ")
     return rows
@@ -529,6 +533,7 @@ def main():
     p.add_argument("--sweep-audit", action="store_true")
     p.add_argument("--block", type=int)
     p.add_argument("--paired-performance", action="store_true")
+    p.add_argument("--paired-router", action="store_true")
     p.add_argument("--paired-repeats", type=int, default=3)
     p.add_argument("--cohort-audit", action="store_true")
     a = p.parse_args()
@@ -544,6 +549,7 @@ def main():
         paired_performance=a.paired_performance,
         cohort_audit=a.cohort_audit,
         paired_repeats=a.paired_repeats,
+        paired_router=a.paired_router,
     )
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)

@@ -197,9 +197,13 @@ def connection_probe(endpoint, samples=5, repeats=3):
     }
 
 
-def identity_probe(endpoint, samples=5, repeats=3):
+def identity_probe(endpoint, samples=5, repeats=3, *, router_identity=False):
     """Alternating direct/Multicall identity reads with identical canonical guards."""
+    from dipbot.execution.trader import LiveTrader
+
     chain = Chain(endpoint)
+    helper = object.__new__(LiveTrader)
+    helper.chain = chain
     guard_provider(chain.w3.provider)
     wire = []
     original = chain.w3.provider._make_request
@@ -211,18 +215,28 @@ def identity_probe(endpoint, samples=5, repeats=3):
     chain.w3.provider._make_request = measured
     rows = []
     for router, addr in POOLS.items():
-        chain.verify_pool(addr, USDT)  # warm metadata/ABI, excluded explicitly
+        warm_pool = chain.verify_pool(addr, USDT)  # warm metadata/ABI, excluded explicitly
         for repeat in range(repeats):
             for index in range(samples):
                 modes = [False, True] if (repeat + index) % 2 else [True, False]
                 expected = None
                 for enabled in modes:
-                    chain.identity_multicall_enabled = enabled
+                    setattr(
+                        chain,
+                        "router_identity_multicall_enabled"
+                        if router_identity
+                        else "identity_multicall_enabled",
+                        enabled,
+                    )
                     wire.clear()
                     started = time.perf_counter()
                     error = None
                     try:
-                        pool = chain.verify_pool(addr, USDT)
+                        pool = (
+                            helper.verify_router(warm_pool)
+                            if router_identity
+                            else chain.verify_pool(addr, USDT)
+                        )
                         if expected is not None and pool != expected:
                             raise AssertionError("pool identity mismatch")
                         expected = pool
@@ -453,6 +467,7 @@ if __name__ == "__main__":
     parser.add_argument("--uncached", action="store_true")
     parser.add_argument("--connections", action="store_true")
     parser.add_argument("--identity", action="store_true")
+    parser.add_argument("--router-identity", action="store_true")
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
@@ -491,8 +506,9 @@ if __name__ == "__main__":
         )
         print(json.dumps({"output": str(args.output), "passed": passed}))
         raise SystemExit(0 if passed else 1)
-    if args.identity:
-        result = identity_probe(ENDPOINTS[0], args.samples)
+    if args.identity or args.router_identity:
+        result = identity_probe(ENDPOINTS[0], args.samples, router_identity=args.router_identity)
+        result["identity_scope"] = "router" if args.router_identity else "pool"
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
             json.dumps({"commit_at_start": start_commit, "source_sha256": source_hashes, **result}, indent=2)

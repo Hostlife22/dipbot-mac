@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from dipbot.market.autopair import Candidate
@@ -54,7 +54,7 @@ class Resolution:
 def batch(
     chain: Chain,
     requests: list[tuple[str, Any, str, tuple[Any, ...]]],
-    block: int,
+    block: int | Literal["latest"],
     *,
     allow_empty: bool = False,
 ) -> list[Any]:

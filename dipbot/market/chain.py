@@ -264,6 +264,21 @@ class Chain:
     def call(self, addr: str, abi: Any, name: str, *args: Any, block: int | str = "latest") -> Any:
         return getattr(self.contract(addr, abi).functions, name)(*args).call(block_identifier=block)
 
+    def router_identity(self, router: str, abi: Any, wrapped: str) -> tuple[str, str]:
+        """Fresh router identity; batch only sender-independent public getters."""
+        if not self.w3.eth.get_code(address(router)):
+            raise ValueError("Router отсутствует в сети")
+        if getattr(self, "router_identity_multicall_enabled", True):
+            from dipbot.market.discovery import batch, request
+
+            values = batch(self, [request(router, abi, "factory"), request(router, abi, wrapped)], "latest")
+            if any(value is None for value in values):
+                raise ValueError("Не удалось проверить factory/WBNB router через Multicall")
+            factory, native = values
+        else:
+            factory, native = self.call(router, abi, "factory"), self.call(router, abi, wrapped)
+        return address(factory), address(native)
+
     def check(self, *, force_network: bool = True) -> int:
         if force_network and isinstance(self.w3.provider, BscHTTPProvider):
             self.w3.provider.invalidate_network()
