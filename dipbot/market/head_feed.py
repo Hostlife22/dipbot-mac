@@ -28,6 +28,7 @@ class Head:
     received_at: float
     revision: int
     discontinuity: int
+    received_ns: int | None = None
 
 
 class HeadFeed:
@@ -66,6 +67,7 @@ class HeadFeed:
             return self.head if self.connected else None
 
     def accept(self, value: dict[str, Any], now: float | None = None) -> bool:
+        received_ns = time.perf_counter_ns()
         number = int(value["number"], 16)
         block_hash, parent = value["hash"].lower(), value["parentHash"].lower()
         if number < 0 or any(not re.fullmatch(r"0x[0-9a-f]{64}", h) for h in (block_hash, parent)):
@@ -79,7 +81,13 @@ class HeadFeed:
             if previous and (number != previous.number + 1 or parent != previous.hash):
                 discontinuity += 1
             self.head = Head(
-                number, block_hash, parent, now, previous.revision + 1 if previous else 1, discontinuity
+                number,
+                block_hash,
+                parent,
+                now,
+                previous.revision + 1 if previous else 1,
+                discontinuity,
+                received_ns,
             )
             return True
 

@@ -72,6 +72,7 @@ def summarize(paths):
                 for scope in scopes:
                     outcome = scope + (".failed_cycle" if failed else ".successful_cycle")
                     for before, after, label in [
+                        ("head_received", "price_ready", "head_to_price_ms"),
                         ("http_started", "raw_market_received", "http_to_raw_market_ms"),
                         ("raw_market_received", "price_ready", "raw_market_to_price_ms"),
                         ("price_ready", "strategy_completed", "price_to_strategy_ms"),
@@ -104,6 +105,13 @@ def summarize(paths):
                             add(scope + ".signal_to_" + name + "_ms", tx[name]["ms"] - signal)
                             if row.get("origin") == "observation_start":
                                 add(scope + ".observation_start_to_" + name + "_ms", tx[name]["ms"])
+                            if "head_received" in observation:
+                                add(
+                                    scope + ".head_to_" + name + "_ms",
+                                    tx[name]["ms"] - observation["head_received"],
+                                )
+                            else:
+                                unavailable[scope + ".head_to_" + name + "_ms"] += 1
                             if "raw_market_received" in observation:
                                 add(
                                     scope + ".raw_market_to_" + name + "_ms",

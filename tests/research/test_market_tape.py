@@ -194,6 +194,6 @@ def test_worker_trace_survives_archive_allowlist(tmp_path):
     assert tape.close()
     cycles = [r for r in read(tape.path) if r["event"] == "cycle_latency"]
     assert cycles
-    assert all(r["schema"] == 2 and r["origin"] == "observation_start" for r in cycles)
+    assert all(r["schema"] == 3 and r["origin"] == "observation_start" for r in cycles)
     assert all("price_ready" in r["observation"] for r in cycles)
     assert all(r["rpc"] == [] and r["rpc_dropped"] == 0 for r in cycles)

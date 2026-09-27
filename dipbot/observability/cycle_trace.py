@@ -11,15 +11,31 @@ from typing import Any, Callable, ParamSpec, TypeVar
 from uuid import uuid4
 
 _CAPTURE: ContextVar[dict[str, Any] | None] = ContextVar("market_capture", default=None)
+_HEAD: ContextVar[dict[str, Any] | None] = ContextVar("observation_head", default=None)
 _ACTIVE: ContextVar["CycleTrace | None"] = ContextVar("cycle_trace", default=None)
 P = ParamSpec("P")
 R = TypeVar("R")
 
 
+@contextmanager
+def head_context(number: int | None, block_hash: str | None, received_ns: int | None) -> Iterator[None]:
+    """Carry the consumed hint across scheduling without changing its reception clock."""
+    value = None
+    if number is not None and block_hash is not None and received_ns is not None:
+        value = {"number": number, "hash": block_hash.lower(), "received_ns": received_ns}
+    token = _HEAD.set(value)
+    try:
+        yield
+    finally:
+        _HEAD.reset(token)
+
+
 def observation_timing(function: Callable[P, R]) -> Callable[P, R]:
     @wraps(function)
     def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
-        token = _CAPTURE.set({"started_ns": time.perf_counter_ns(), "events": {}, "rpc": [], "dropped": 0})
+        token = _CAPTURE.set(
+            {"started_ns": time.perf_counter_ns(), "events": {}, "rpc": [], "dropped": 0, "head": _HEAD.get()}
+        )
         try:
             return function(*args, **kwargs)
         finally:
@@ -76,7 +92,7 @@ class CycleTrace:
         self.stages: list[dict[str, Any]] = []
         self.truncated = False
         self.data: dict[str, Any] = {
-            "schema": 2,
+            "schema": 3,
             "cycle_id": uuid4().hex,
             "origin": "observation_start" if capture else "signal",
             "observation": {k: (v - self.started_ns) / 1e6 for k, v in capture["events"].items()}
@@ -99,6 +115,24 @@ class CycleTrace:
             if isinstance(timestamp, (int, float)) and 0 <= time.time() - timestamp < 3600:
                 # Wall-clock estimate from integer block timestamp, not exact propagation time.
                 self.data["block_to_signal_ms"] = (time.time() - timestamp) * 1000
+        hint = capture.get("head") if capture else None
+        if hint and header:
+            value = header.get("hash")
+            block_hash = (
+                value.lower()
+                if isinstance(value, str)
+                else "0x" + bytes(value).hex()
+                if value is not None
+                else None
+            )
+            matched = header.get("number") == hint["number"] and block_hash == hint["hash"]
+            elapsed = (hint["received_ns"] - self.started_ns) / 1e6
+            self.data["head"] = {"number": hint["number"], "hash": hint["hash"], "matched": matched}
+            if matched and hint["received_ns"] <= self.started_ns:
+                self.data["observation"]["head_received"] = elapsed
+                self.data["unavailable"].pop("head_received")
+            else:
+                self.data["unavailable"]["head_received"] = "different block/hash or invalid clock ordering"
         self.mark("signal")
 
     def mark(self, stage: str, *, kind: str | None = None, block: int | None = None) -> None:

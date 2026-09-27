@@ -170,3 +170,64 @@ def test_observation_origin_rpc_bounds_and_context_reset():
     with signal_cycle(worker, "BUY", None):
         pass
     assert events[1]["rpc"] == [] and events[1]["origin"] == "signal"
+
+
+@pytest.mark.parametrize("same_hash,same_number", [(True, True), (False, True), (True, False)])
+def test_head_reception_is_correlated_only_with_identical_block(monkeypatch, same_hash, same_number):
+    from dipbot.observability.cycle_trace import head_context, observation_timing
+
+    monkeypatch.setattr("dipbot.observability.cycle_trace.time.perf_counter_ns", lambda: 2_000_000)
+    rows = []
+    block_hash = "0x" + "11" * 32
+
+    @observation_timing
+    def observe():
+        rows.append(
+            CycleTrace(
+                "BUY",
+                "PAPER",
+                {
+                    "number": 9 if same_number else 10,
+                    "hash": bytes.fromhex(("11" if same_hash else "22") * 32),
+                },
+            ).data
+        )
+
+    with head_context(9, block_hash, 1_000_000):
+        observe()
+    observe()
+    if same_hash and same_number:
+        assert rows[0]["observation"]["head_received"] == -1
+        assert "head_received" not in rows[0]["unavailable"]
+    else:
+        assert "head_received" not in rows[0]["observation"]
+        assert "head_received" in rows[0]["unavailable"]
+    assert "head" not in rows[1]
+
+
+def test_head_report_preserves_time_spent_before_http(tmp_path):
+    import json
+
+    from tools.cycle_latency_report import summarize
+
+    path = tmp_path / "head.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "event": "cycle_latency",
+                "mode": "LIVE",
+                "action": "BUY",
+                "observation": {"head_received": -30, "price_ready": 200},
+                "stages": [
+                    {"stage": "signal", "ms": 201},
+                    {"stage": "broadcast_ack", "ms": 300, "transaction": 1, "kind": "BUY"},
+                    {"stage": "completed", "ms": 400},
+                ],
+            }
+        )
+        + "\n"
+        + json.dumps({"event": "end", "dropped": 0})
+    )
+    result = summarize([path])
+    assert result["metrics"]["LIVE.BUY.successful_cycle.head_to_price_ms"]["p50"] == 230
+    assert result["metrics"]["LIVE.tx.BUY.successful_cycle.head_to_broadcast_ack_ms"]["p50"] == 330

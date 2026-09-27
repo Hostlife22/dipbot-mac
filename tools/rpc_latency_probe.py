@@ -227,6 +227,140 @@ def head_delivery(seconds=60):
     }
 
 
+def shadow_processing(seconds=120):
+    """Compare production scheduling concurrently, with independent read-only Chains."""
+    from dipbot.market.head_feed import HeadFeed, HeadSchedule
+    from dipbot.observability.cycle_trace import (
+        CycleTrace,
+        head_context,
+        observation_mark,
+        observation_timing,
+    )
+
+    def run_mode(use_heads):
+        chain = Chain(ENDPOINTS[1], request_timeout=2)
+        calls = guard_provider(chain.w3.provider)
+        rows, errors = [], []
+        feed = HeadFeed("wss://bsc-rpc.publicnode.com").start() if use_heads else None
+        schedule = HeadSchedule()
+        try:
+            pool = chain.verify_pool(POOLS["V2"], USDT)
+            deadline = time.monotonic() + seconds
+            next_poll = 0
+
+            @observation_timing
+            def observe():
+                observation_mark("http_started")
+                price = chain.price(pool)
+                observation_mark("price_ready")
+                trace = CycleTrace("READ", "READ_ONLY", chain.price_block)
+                rows.append(
+                    {
+                        "block": chain.price_block["number"],
+                        "hash": bytes(chain.price_block["hash"]).hex(),
+                        "price": str(price),
+                        "cache_hit": chain.price_cache_hit,
+                        "observation": trace.data["observation"],
+                        "head": trace.data.get("head"),
+                        "unavailable": trace.data["unavailable"],
+                    }
+                )
+
+            while time.monotonic() < deadline:
+                now = time.monotonic()
+                head = feed.snapshot() if feed else None
+                due = schedule.due(head, now, next_poll) if feed else now >= next_poll
+                if not due:
+                    time.sleep(0.01)
+                    continue
+                schedule.consume(head, now)
+                try:
+                    with head_context(
+                        head.number if head else None,
+                        head.hash if head else None,
+                        head.received_ns if head else None,
+                    ):
+                        observe()
+                except Exception as exc:
+                    errors.append({"type": type(exc).__name__, "t": time.monotonic()})
+                next_poll = max(now + 0.1, time.monotonic())
+        except Exception as exc:
+            errors.append({"type": type(exc).__name__})
+        finally:
+            if feed:
+                feed.stop()
+        matched = [r for r in rows if "head_received" in r["observation"]]
+        return {
+            "rows": rows,
+            "errors": errors,
+            "calls": dict(calls),
+            "independent_blocks": len({r["hash"] for r in rows}),
+            "head_to_price": summary(
+                [
+                    (r["observation"]["price_ready"] - r["observation"]["head_received"]) / 1000
+                    for r in matched
+                ]
+            ),
+            "head_unmatched": len(rows) - len(matched),
+            "reconnects": feed.reconnects if feed else 0,
+        }
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        polling, heads = list(executor.map(run_mode, [False, True]))
+    left = {r["hash"]: r["price"] for r in polling["rows"]}
+    right = {r["hash"]: r["price"] for r in heads["rows"]}
+    shared = left.keys() & right.keys()
+    return {
+        "polling": polling,
+        "heads": heads,
+        "common_blocks": len(shared),
+        "price_mismatches": sum(left[h] != right[h] for h in shared),
+        "transactions_sent": 0,
+        "limits": "Concurrent read-only V2 spot observations, no strategy/signing. Head correlation requires equal block/hash; unmatched reads remain unknown. Different cadence can change strategy observations; this does not justify changing trading defaults.",
+    }
+
+
+def finality_probe(seconds=30):
+    """Observe one public block reaching provider finalized tag; never a tx guarantee."""
+    chain = Chain(ENDPOINTS[1], request_timeout=2)
+    guard_provider(chain.w3.provider)
+    started = time.perf_counter_ns()
+    rows, errors = [], []
+    result = {
+        "observed": False,
+        "transactions_sent": 0,
+        "rule": "provider finalized.number >= target.number AND canonical target hash unchanged",
+    }
+    try:
+        target = chain.w3.eth.get_block("latest")
+        received = time.perf_counter_ns()
+        result.update(target_block=target["number"], target_hash=bytes(target["hash"]).hex())
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            try:
+                finalized = chain.w3.eth.get_block("finalized")
+                rows.append({"number": finalized["number"], "ms": (time.perf_counter_ns() - received) / 1e6})
+                if finalized["number"] >= target["number"]:
+                    chain.canonical_receipt({"blockNumber": target["number"], "blockHash": target["hash"]})
+                    result.update(
+                        observed=True,
+                        block_received_to_finality_observed_ms=(time.perf_counter_ns() - received) / 1e6,
+                    )
+                    break
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            time.sleep(0.5)
+    except Exception as exc:
+        errors.append(type(exc).__name__)
+    return {
+        **result,
+        "rows": rows,
+        "errors": errors,
+        "total_ms": (time.perf_counter_ns() - started) / 1e6,
+        "limits": "Provider-tag observation of a block, not independent consensus verification or event-to-transaction finality. Does not alter execution receipt policy.",
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -234,6 +368,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-seconds", type=float, default=300)
     parser.add_argument("--interval", type=float, default=0.1)
     parser.add_argument("--head-seconds", type=float, default=0)
+    parser.add_argument("--shadow-seconds", type=float, default=0)
+    parser.add_argument("--finality-seconds", type=float, default=0)
     parser.add_argument("--uncached", action="store_true")
     parser.add_argument("--identity", action="store_true")
     args = parser.parse_args()
@@ -244,6 +380,16 @@ if __name__ == "__main__":
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in [Path(__file__), Path("dipbot/market/chain.py"), Path("dipbot/market/rpc.py")]
     }
+    if args.shadow_seconds > 0 or args.finality_seconds > 0:
+        result = {"commit_at_start": start_commit, "source_sha256": source_hashes}
+        if args.shadow_seconds > 0:
+            result["shadow_processing"] = shadow_processing(args.shadow_seconds)
+        if args.finality_seconds > 0:
+            result["finality"] = finality_probe(args.finality_seconds)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps({"output": str(args.output)}))
+        raise SystemExit(0)
     if args.identity:
         result = identity_probe(ENDPOINTS[0], args.samples)
         args.output.parent.mkdir(parents=True, exist_ok=True)

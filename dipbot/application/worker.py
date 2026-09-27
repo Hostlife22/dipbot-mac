@@ -25,7 +25,7 @@ from dipbot.execution.accounting import (
 )
 from dipbot.market.chain import Chain, Pool
 from dipbot.market.exit_reads import ExitReadCancelled
-from dipbot.observability.cycle_trace import mark
+from dipbot.observability.cycle_trace import head_context, mark
 
 
 class Worker(QThread, StateAccess):
@@ -238,7 +238,12 @@ class Worker(QThread, StateAccess):
                             error_type="Busy",
                         )
                 try:
-                    self.observe()
+                    with head_context(
+                        head.number if head else None,
+                        head.hash if head else None,
+                        head.received_ns if head else None,
+                    ):
+                        self.observe()
                 except ExitReadCancelled:
                     pass  # STOP is processed at the next loop boundary; no execution retry.
                 except Exception as exc:

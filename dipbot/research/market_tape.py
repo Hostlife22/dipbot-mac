@@ -16,6 +16,7 @@ FIELDS = {
         "schema",
         "cycle_id",
         "origin",
+        "head",
         "observation",
         "unavailable",
         "rpc",

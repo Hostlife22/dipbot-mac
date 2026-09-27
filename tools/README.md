@@ -49,3 +49,11 @@ uv run --frozen python -m tools.rpc_latency_probe --identity --samples 5 --outpu
 
 Для отдельного визуального PAPER-прогона trailing в собранном приложении доступен
 `--market-paper-trailing 3`; без этого параметра сохранены прежние настройки.
+
+```bash
+uv run --frozen python -m tools.rpc_latency_probe --shadow-seconds 120 --finality-seconds 30 --output .local-artifacts/performance/shadow-finality.json
+```
+
+Этот режим отдельно сравнивает polling/HeadSchedule с HTTP-проверкой цены V2,
+сохраняет несовпавшие head и ошибки. `finality` наблюдает публичный блок по тегу
+провайдера и canonical hash; не отправляет tx и не меняет receipt-policy бота.
