@@ -171,3 +171,17 @@ def test_rpc_endpoint_selection_does_not_expose_credentials(monkeypatch):
         pass
     else:
         raise AssertionError("Missing endpoint accepted")
+
+
+def test_private_wss_endpoint_requires_tls_and_never_echoes_secret(monkeypatch):
+    import pytest
+
+    from tools.rpc_latency_probe import endpoint_selection
+
+    monkeypatch.setenv("AUDIT_WSS", "wss://example.test/SECRET")
+    assert endpoint_selection(["AUDIT_WSS"], scheme="wss") == ["wss://example.test/SECRET"]
+    for value in ("ws://example.test/SECRET", "wss://name:SECRET@example.test", "wss://example.test/#SECRET"):
+        monkeypatch.setenv("AUDIT_WSS", value)
+        with pytest.raises(ValueError) as error:
+            endpoint_selection(["AUDIT_WSS"], scheme="wss")
+        assert "SECRET" not in str(error.value)

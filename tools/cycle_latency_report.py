@@ -3,6 +3,8 @@
 import argparse
 import json
 import math
+import random
+import statistics
 from collections import defaultdict, deque
 from pathlib import Path
 
@@ -174,11 +176,107 @@ def summarize(paths):
     }
 
 
+def paired_fork_summary(report):
+    """Compare matched snapshots; never claim event delivery or BSC inclusion."""
+    if not report.get("passed") or report.get("mainnet_transactions_sent") != 0:
+        raise ValueError("Expected a successful isolated fork report")
+    pairs = defaultdict(dict)
+    scope = set()
+    for row in report.get("paired_identity_cycles", []):
+        enabled = row.get("multicall")
+        repeat = row.get("repeat")
+        if type(enabled) is not bool or type(repeat) is not int or enabled in pairs[repeat]:
+            raise ValueError("Duplicate or invalid paired observation")
+        pairs[repeat][enabled] = row
+        scope.add(row.get("identity_scope"))
+    if not pairs or len(scope) != 1:
+        raise ValueError("Missing pairs or mixed optimizations")
+    metrics = defaultdict(lambda: {False: [], True: []})
+    for variants in pairs.values():
+        if set(variants) != {False, True}:
+            raise ValueError("Incomplete pair")
+        if any(variants[False][k] != variants[True][k] for k in ("received", "returned")):
+            raise ValueError("Financial outputs differ")
+        extracted = {}
+        for enabled, row in variants.items():
+            values = {}
+            for trace in row["traces"]:
+                if trace.get("error_type") or trace.get("truncated") or trace.get("rpc_dropped"):
+                    raise ValueError("Failed or truncated trace")
+                action = trace["action"]
+                if action not in {"BUY", "STOP_LOSS"}:
+                    raise ValueError("Unexpected paired action")
+                side = "BUY" if action == "BUY" else "SELL"
+                signal = next(x["ms"] for x in trace["stages"] if x["stage"] == "signal")
+                for stage in trace["stages"]:
+                    if stage.get("kind") == side and stage["stage"] in {"broadcast_ack", "receipt_observed"}:
+                        key = side + ".signal_to_" + stage["stage"] + "_ms"
+                        value = stage["ms"] - signal
+                        if key in values or not math.isfinite(value) or value < 0:
+                            raise ValueError("Invalid or duplicated target swap timing")
+                        values[key] = value
+                values[side + ".rpc_calls"] = len(trace["rpc"])
+            expected = {
+                side + suffix
+                for side in ("BUY", "SELL")
+                for suffix in (".signal_to_broadcast_ack_ms", ".signal_to_receipt_observed_ms", ".rpc_calls")
+            }
+            if set(values) != expected:
+                raise ValueError("Missing BUY/SELL stages")
+            extracted[enabled] = values
+        for key in extracted[False]:
+            for enabled in (False, True):
+                metrics[key][enabled].append(extracted[enabled][key])
+
+    def distribution(values):
+        ordered = sorted(values)
+        return {
+            "count": len(values),
+            "mean": statistics.mean(values),
+            "max": max(values),
+            **{
+                name: ordered[math.ceil(len(values) * q) - 1]
+                for name, q in (("p50", 0.5), ("p95", 0.95), ("p99", 0.99))
+            },
+            "p99_preliminary": True,
+        }
+
+    results = {}
+    for key, variants in metrics.items():
+        delta = [before - after for before, after in zip(variants[False], variants[True])]
+        rng = random.Random(0)
+        means = sorted(statistics.mean(rng.choices(delta, k=len(delta))) for _ in range(2000))
+        results[key] = {
+            "direct": distribution(variants[False]),
+            "multicall": distribution(variants[True]),
+            "paired_mean_saving": statistics.mean(delta),
+            "paired_mean_saving_bootstrap95": [means[49], means[1949]] if len(delta) >= 2 else None,
+            "positive_saving_pairs": sum(x > 0 for x in delta),
+        }
+    return {
+        "environment": "FORK",
+        "pairs": len(pairs),
+        "identity_scope": next(iter(scope)),
+        "fork_block": report.get("fork_block"),
+        "fork_block_hash": report.get("fork_block_hash"),
+        "metrics": results,
+        "mainnet_transactions_sent": 0,
+        "limits": "Same-snapshot local execution, not natural events or BSC consensus. Receipt observation is not exact inclusion. Repeats are correlated; bootstrap intervals are descriptive, not production confidence. No stable p99 claim.",
+    }
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("recordings", type=Path, nargs="+")
+    p.add_argument("recordings", type=Path, nargs="*")
+    p.add_argument("--paired-fork", type=Path)
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
-    report = summarize(a.recordings)
+    if bool(a.recordings) == bool(a.paired_fork):
+        p.error("Provide recordings or --paired-fork, exclusively")
+    report = (
+        paired_fork_summary(json.loads(a.paired_fork.read_text()))
+        if a.paired_fork
+        else summarize(a.recordings)
+    )
     a.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report))

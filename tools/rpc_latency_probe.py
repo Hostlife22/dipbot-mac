@@ -31,22 +31,22 @@ POOLS = {
 }
 
 
-def endpoint_selection(names):
+def endpoint_selection(names, *, scheme="https"):
     """Resolve user-supplied endpoints without placing credentials in CLI/report."""
     if not names:
-        return list(ENDPOINTS)
+        return list(ENDPOINTS) if scheme == "https" else ["wss://bsc-rpc.publicnode.com"]
     selected = []
     for name in names:
         value = os.environ.get(name, "").strip()
         parsed = urlsplit(value)
         if (
-            parsed.scheme != "https"
+            parsed.scheme != scheme
             or not parsed.hostname
             or parsed.username
             or parsed.password
             or parsed.fragment
         ):
-            raise ValueError(f"Invalid or missing HTTPS endpoint in environment variable {name}")
+            raise ValueError(f"Invalid or missing {scheme.upper()} endpoint in environment variable {name}")
         selected.append(value)
     return selected
 
@@ -282,13 +282,13 @@ def identity_probe(endpoint, samples=5, repeats=3, *, router_identity=False):
     }
 
 
-def head_delivery(seconds=60):
+def head_delivery(seconds=60, endpoint=ENDPOINTS[1], wss="wss://bsc-rpc.publicnode.com"):
     """Shadow comparison on equal hashes; never drive strategy from these hints."""
     from dipbot.market.head_feed import HeadFeed
 
-    chain = Chain("https://bsc-rpc.publicnode.com", request_timeout=2)
+    chain = Chain(endpoint, request_timeout=2)
     guard_provider(chain.w3.provider)
-    feed = HeadFeed("wss://bsc-rpc.publicnode.com").start()
+    feed = HeadFeed(wss).start()
     rows, errors = [], []
     seen = set()
     deadline = time.monotonic() + seconds
@@ -326,7 +326,7 @@ def head_delivery(seconds=60):
     }
 
 
-def shadow_processing(seconds=120):
+def shadow_processing(seconds=120, endpoint=ENDPOINTS[1], wss="wss://bsc-rpc.publicnode.com"):
     """Compare production scheduling concurrently, with independent read-only Chains."""
     from dipbot.market.head_feed import HeadFeed, HeadSchedule
     from dipbot.observability.cycle_trace import (
@@ -337,10 +337,10 @@ def shadow_processing(seconds=120):
     )
 
     def run_mode(use_heads):
-        chain = Chain(ENDPOINTS[1], request_timeout=2)
+        chain = Chain(endpoint, request_timeout=2)
         calls = guard_provider(chain.w3.provider)
         rows, errors = [], []
-        feed = HeadFeed("wss://bsc-rpc.publicnode.com").start() if use_heads else None
+        feed = HeadFeed(wss).start() if use_heads else None
         schedule = HeadSchedule()
         try:
             pool = chain.verify_pool(POOLS["V2"], USDT)
@@ -435,9 +435,9 @@ def shadow_processing(seconds=120):
     }
 
 
-def finality_probe(seconds=30):
+def finality_probe(seconds=30, endpoint=ENDPOINTS[1]):
     """Observe one public block reaching provider finalized tag; never a tx guarantee."""
-    chain = Chain(ENDPOINTS[1], request_timeout=2)
+    chain = Chain(endpoint, request_timeout=2)
     guard_provider(chain.w3.provider)
     started = time.perf_counter_ns()
     rows, errors = [], []
@@ -495,21 +495,33 @@ if __name__ == "__main__":
         default=[],
         help="Environment variable containing an HTTPS RPC URL; repeat to compare endpoints",
     )
+    parser.add_argument("--wss-env", help="Environment variable containing WSS RPC URL")
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
-    if args.endpoint_env and (args.head_seconds or args.shadow_seconds or args.finality_seconds):
-        parser.error("Custom endpoints currently support HTTP/identity/connection probes only")
+    if args.endpoint_env and (args.head_seconds or args.shadow_seconds) and not args.wss_env:
+        parser.error("Custom head/shadow comparison requires explicit --wss-env")
+    if args.wss_env and not (args.head_seconds or args.shadow_seconds):
+        parser.error("--wss-env requires a head or shadow comparison")
     try:
         endpoints = endpoint_selection(args.endpoint_env)
+        wss = endpoint_selection([args.wss_env] if args.wss_env else [], scheme="wss")[0]
     except ValueError as exc:
         parser.error(str(exc))
     if (
         args.endpoint_env
         and len(endpoints) != 1
-        and (args.connections or args.identity or args.router_identity)
+        and (
+            args.connections
+            or args.identity
+            or args.router_identity
+            or args.head_seconds
+            or args.shadow_seconds
+            or args.finality_seconds
+        )
     ):
         parser.error("Connection/identity comparisons require exactly one explicit endpoint")
+    selected_http = endpoints[0] if args.endpoint_env else ENDPOINTS[1]
     start_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     source_hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -533,11 +545,16 @@ if __name__ == "__main__":
         )
         raise SystemExit(0 if result["passed"] else 1)
     if args.shadow_seconds > 0 or args.finality_seconds > 0:
-        result = {"commit_at_start": start_commit, "source_sha256": source_hashes}
+        result = {
+            "commit_at_start": start_commit,
+            "source_sha256": source_hashes,
+            "http_host": urlsplit(selected_http).hostname,
+            "wss_host": urlsplit(wss).hostname if args.shadow_seconds else None,
+        }
         if args.shadow_seconds > 0:
-            result["shadow_processing"] = shadow_processing(args.shadow_seconds)
+            result["shadow_processing"] = shadow_processing(args.shadow_seconds, selected_http, wss)
         if args.finality_seconds > 0:
-            result["finality"] = finality_probe(args.finality_seconds)
+            result["finality"] = finality_probe(args.finality_seconds, selected_http)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2) + "\n")
         passed = ("shadow_processing" not in result or result["shadow_processing"]["passed"]) and (
@@ -578,7 +595,7 @@ if __name__ == "__main__":
         "limits": "Request latency, not broadcast or event propagation. Cache hits are separate. Distinct blocks, not loop count, bound independent sample size. No exact DNS/TLS breakdown.",
     }
     if args.head_seconds > 0:
-        report["shadow_heads"] = head_delivery(args.head_seconds)
+        report["shadow_heads"] = head_delivery(args.head_seconds, selected_http, wss)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(

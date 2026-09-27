@@ -126,8 +126,22 @@ factory/WBNB router напрямую и через Multicall: getCode сохра
 `rpc_latency_probe --endpoint-env VARIABLE --output REPORT.json`. Обычный режим
 принимает несколько `--endpoint-env` для сравнения public/paid; identity/connection
 режимы требуют один endpoint. Значения переменных не пишутся в аргументы CLI
-или отчёт. WSS/shadow/finality используют отдельные встроенные настройки и не
-принимают этот флаг. Наличие интерфейса не означает, что paid RPC уже проверен.
+или отчёт. Head/shadow принимают один HTTP endpoint и явный `--wss-env WSS_VARIABLE`;
+finality использует выбранный HTTP. Наличие интерфейса не означает, что paid RPC проверен.
+
+```bash
+uv run --frozen python -m tools.rpc_latency_probe --endpoint-env RPC_HTTP --wss-env RPC_WSS --shadow-seconds 120 --finality-seconds 30 --output .local-artifacts/private-rpc.json
+uv run --frozen python -m tools.revert_probe --endpoint-env ARCHIVE_RPC --hash TX_HASH --output .local-artifacts/revert.json
+```
+
+`revert_probe` только читает receipt, канонический блок и callTracer. Недоступный
+trace остаётся неизвестным (exit 2); receipt status=0 сам по себе не объясняет
+причину revert. Вложенный пойманный revert также не равен причине отказа всей tx.
+
+`cycle_latency_report --paired-fork REPORT.json --output SUMMARY.json` сравнивает
+пары fork snapshot, отдельно BUY/SELL и approve, отвергает неполные пары,
+неравные суммы и обрезанные трассы. Bootstrap-интервалы описывают локальную
+серию с зависимыми повторами; p99 не считается доказанным production tail.
 
 Опциональная проверка реального локального send/receipt с аварийным завершением
 процесса и восстановлением без повторной отправки:
