@@ -1,6 +1,7 @@
 """Read-only RPC timing; record method timings without params or credentials."""
 
 import argparse
+import hashlib
 import json
 import math
 import platform
@@ -45,13 +46,17 @@ def summary(values):
     )
 
 
-def probe(endpoint, samples, max_seconds=300, interval=0.1):
+def probe(endpoint, samples, max_seconds=300, interval=0.1, uncached=False):
     result = {"host": urlsplit(endpoint).hostname, "samples_per_router": samples}
     chain = Chain(endpoint)
+    chain.contract_cache_enabled = not uncached
     provider = chain.w3.provider
     guard_provider(provider)
     original = provider._make_request
     timings = defaultdict(list)
+    observations = []
+    prices = defaultdict(list)
+    errors = []
 
     def measured(method, *args, **kwargs):
         started = time.monotonic()
@@ -62,7 +67,9 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1):
 
     provider._make_request = measured
     try:
-        pools = {router: chain.verify_pool(addr, USDT) for router, addr in POOLS.items()}
+        pools = {
+            router: chain.verify_pool(addr, USDT, require_liquidity=False) for router, addr in POOLS.items()
+        }
         timings.clear()
         prices = defaultdict(list)
         observations = []
@@ -72,7 +79,17 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1):
                 break
             for router, pool in pools.items():
                 started = time.monotonic()
-                assert chain.price(pool) > 0
+                try:
+                    assert chain.price(pool) > 0
+                except Exception as exc:
+                    errors.append(
+                        {
+                            "router": router,
+                            "error_type": type(exc).__name__,
+                            "ms": (time.monotonic() - started) * 1000,
+                        }
+                    )
+                    continue
                 elapsed = time.monotonic() - started
                 cached = bool(getattr(chain, "price_cache_hit", False))
                 prices[router + (".cached" if cached else ".fresh")].append(elapsed)
@@ -103,6 +120,13 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1):
         )
     except Exception as exc:
         result.update(passed=False, error_type=type(exc).__name__)
+    result["observations"] = observations
+    result["errors"] = errors
+    result["price"] = {k: summary(v) for k, v in prices.items()}
+    result["wire_requests"] = {k: summary(v) for k, v in timings.items()}
+    result["contract_factory_cache"] = not uncached
+    if errors:
+        result["passed"] = False
     return result
 
 
@@ -157,20 +181,30 @@ if __name__ == "__main__":
     parser.add_argument("--max-seconds", type=float, default=300)
     parser.add_argument("--interval", type=float, default=0.1)
     parser.add_argument("--head-seconds", type=float, default=0)
+    parser.add_argument("--uncached", action="store_true")
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
+    start_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    source_hashes = {
+        str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in [Path(__file__), Path("dipbot/market/chain.py"), Path("dipbot/market/rpc.py")]
+    }
     with ThreadPoolExecutor(max_workers=3) as executor:
         rows = list(
             executor.map(
-                lambda endpoint: probe(endpoint, args.samples, args.max_seconds, args.interval), ENDPOINTS
+                lambda endpoint: probe(
+                    endpoint, args.samples, args.max_seconds, args.interval, args.uncached
+                ),
+                ENDPOINTS,
             )
         )
     report = {
         "utc": datetime.now(timezone.utc).isoformat(),
         "endpoints": rows,
         "transactions_sent": 0,
-        "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "commit_at_start": start_commit,
+        "source_sha256": source_hashes,
         "python": platform.python_version(),
         "platform": platform.platform(),
         "web3": version("web3"),
@@ -181,4 +215,11 @@ if __name__ == "__main__":
         report["shadow_heads"] = head_delivery(args.head_seconds)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps(report))
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "endpoints": [{k: v for k, v in r.items() if k != "observations"} for r in rows],
+            }
+        )
+    )

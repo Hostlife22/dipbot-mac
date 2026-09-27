@@ -42,11 +42,12 @@ def measure(function, count):
     return distribution(samples)
 
 
-def run(count=1000, repeats=3, profile=None):
+def run(count=1000, repeats=3, profile=None, uncached=False):
     chain = Chain("http://127.0.0.1:1")  # Contract construction/encoding only, no requests.
     chain.w3.provider.make_request = lambda *a, **kw: (_ for _ in ()).throw(
         AssertionError("Network forbidden")
     )
+    chain.contract_cache_enabled = not uncached
     events = []
     worker = SimpleNamespace(mode="PAPER", live=None, record_market=lambda event, **kw: None)
 
@@ -84,6 +85,7 @@ def run(count=1000, repeats=3, profile=None):
         profiler.dump_stats(str(profile))
     return {
         "kind": "offline_cpu_not_broadcast",
+        "contract_factory_cache": not uncached,
         "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], text=True)),
         "python": platform.python_version(),
@@ -104,8 +106,11 @@ if __name__ == "__main__":
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profile", type=Path)
+    parser.add_argument("--uncached", action="store_true")
     args = parser.parse_args()
     if args.samples < 1 or args.repeats < 1:
         parser.error("positive samples/repeats required")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(run(args.samples, args.repeats, args.profile), indent=2) + "\n")
+    args.output.write_text(
+        json.dumps(run(args.samples, args.repeats, args.profile, args.uncached), indent=2) + "\n"
+    )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Mapping, cast
 
 from eth_typing import HexStr
@@ -236,9 +237,28 @@ class Chain:
         )
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         self._decimals: dict[str, int] = {}
+        self._contract_factories: OrderedDict[str, type[Contract]] = OrderedDict()
+        self._factory_web3 = self.w3
 
     def contract(self, addr: str, abi: Any) -> Contract:
-        return self.w3.eth.contract(address=address(addr), abi=abi)
+        target = address(addr)
+        if not getattr(self, "contract_cache_enabled", True):
+            return self.w3.eth.contract(address=target, abi=abi)
+        if getattr(self, "_factory_web3", None) is not self.w3:
+            self._contract_factories = OrderedDict()
+            self._factory_web3 = self.w3
+        # Cache only ABI-derived factories, never calls, instances or chain state.
+        # Content keys notice in-place ABI edits; fresh instances isolate addresses
+        # and function bindings. The executor owns this bounded per-Chain cache.
+        key = json.dumps(abi, sort_keys=True, separators=(",", ":"))
+        factory = self._contract_factories.get(key)
+        if factory is None:
+            factory = self.w3.eth.contract(abi=json.loads(key))
+            if len(self._contract_factories) >= 32:
+                self._contract_factories.popitem(last=False)
+            self._contract_factories[key] = factory
+        self._contract_factories.move_to_end(key)
+        return factory(target)
 
     def call(self, addr: str, abi: Any, name: str, *args: Any, block: int | str = "latest") -> Any:
         return getattr(self.contract(addr, abi).functions, name)(*args).call(block_identifier=block)
