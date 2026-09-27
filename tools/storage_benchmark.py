@@ -33,7 +33,7 @@ def realistic_ledger(store, count):
                 "gas_usd": ".001",
                 "gas_usd_rate": rate,
                 "block": 17000000 + i,
-                "status": 1,
+                "status": "confirmed",
             }
             record_gas(store, owner, row)
             rows.append(row)

@@ -183,3 +183,17 @@ def test_rotation_io_failure_is_explicit_and_releases_reservation(tmp_path, monk
     assert tape.path not in MarketTape._leases
     with pytest.raises(ValueError):
         load(tape.path)
+
+
+def test_worker_trace_survives_archive_allowlist(tmp_path):
+    worker = Worker(Store(tmp_path / "state.json"))
+    worker.command("start", config() | {"record_market": True})
+    for _ in range(15):
+        worker.observe()
+    tape = worker.recorder
+    assert tape.close()
+    cycles = [r for r in read(tape.path) if r["event"] == "cycle_latency"]
+    assert cycles
+    assert all(r["schema"] == 2 and r["origin"] == "observation_start" for r in cycles)
+    assert all("price_ready" in r["observation"] for r in cycles)
+    assert all(r["rpc"] == [] and r["rpc_dropped"] == 0 for r in cycles)

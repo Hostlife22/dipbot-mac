@@ -13,6 +13,13 @@ from typing import Any
 
 FIELDS = {
     "cycle_latency": {
+        "schema",
+        "cycle_id",
+        "origin",
+        "observation",
+        "unavailable",
+        "rpc",
+        "rpc_dropped",
         "action",
         "mode",
         "signal_block",

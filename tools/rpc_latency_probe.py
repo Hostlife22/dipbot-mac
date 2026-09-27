@@ -106,12 +106,57 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1):
     return result
 
 
+def head_delivery(seconds=60):
+    """Shadow comparison on equal hashes; never drive strategy from these hints."""
+    from dipbot.market.head_feed import HeadFeed
+
+    chain = Chain("https://bsc-rpc.publicnode.com", request_timeout=2)
+    guard_provider(chain.w3.provider)
+    feed = HeadFeed("wss://bsc-rpc.publicnode.com").start()
+    rows, errors = [], []
+    seen = set()
+    deadline = time.monotonic() + seconds
+    try:
+        while time.monotonic() < deadline:
+            started = time.monotonic()
+            try:
+                chain.check(force_network=False)
+                finished = time.monotonic()
+                header = chain.checked_header
+                head = feed.snapshot()
+                block_hash = "0x" + bytes(header["hash"]).hex()
+                if head and head.hash == block_hash and block_hash not in seen:
+                    seen.add(block_hash)
+                    rows.append(
+                        {
+                            "block": head.number,
+                            "hash": block_hash,
+                            "wss_before_http_response_ms": (finished - head.received_at) * 1000,
+                            "http_request_ms": (finished - started) * 1000,
+                        }
+                    )
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            time.sleep(0.1)
+    finally:
+        feed.stop()
+    return {
+        "matched_hashes": rows,
+        "errors": errors,
+        "reconnects": feed.reconnects,
+        "feed_error": feed.error_type,
+        "mainnet_transactions_sent": 0,
+        "limits": "Only equal observed hashes, selection bias and HTTP polling included. Not absolute propagation time or proof of faster trading. No decisions executed.",
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=5)
     parser.add_argument("--max-seconds", type=float, default=300)
     parser.add_argument("--interval", type=float, default=0.1)
+    parser.add_argument("--head-seconds", type=float, default=0)
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
@@ -132,6 +177,8 @@ if __name__ == "__main__":
         "paid_rpc": "not provided",
         "limits": "Request latency, not broadcast or event propagation. Cache hits are separate. Distinct blocks, not loop count, bound independent sample size. No exact DNS/TLS breakdown.",
     }
+    if args.head_seconds > 0:
+        report["shadow_heads"] = head_delivery(args.head_seconds)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report))

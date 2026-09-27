@@ -31,7 +31,7 @@ def summarize(paths):
                 if row.get("event") != "cycle_latency":
                     continue
                 cycles += 1
-                mode = row["mode"]
+                mode = "FORK" if row.get("environment") == "FORK" else row["mode"]
                 failed = bool(row.get("error_type"))
                 outcomes[mode + (".failed" if failed else ".successful")] += 1
                 if failed:

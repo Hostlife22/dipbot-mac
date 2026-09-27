@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import platform
 import re
 import socket
 import subprocess
@@ -12,6 +13,7 @@ from collections import Counter
 from decimal import Decimal as D
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 
 import requests
 from eth_account import Account
@@ -19,6 +21,7 @@ from eth_account import Account
 from dipbot.domain.assets import WBNB
 from dipbot.execution.trader import LiveTrader
 from dipbot.market.chain import Chain, address
+from dipbot.observability.cycle_trace import signal_cycle
 from dipbot.persistence.storage import Store
 
 READ_METHODS = frozenset(
@@ -53,10 +56,13 @@ def validate_read_request(payload):
     return rows
 
 
-def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False):
+def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False, fork_block=None):
     # Upstream is constructed only as a Chain for validation/read calls.
     remote = Chain(endpoint, request_timeout=8)
-    block = remote.check()
+    head = remote.check()
+    block = head if fork_block is None else fork_block
+    if not 0 < block <= head:
+        raise ValueError("Invalid fork block")
     remote_pool = remote.verify_pool(pool_address, token)
     if remote_pool.quote.lower() != WBNB.lower():
         raise ValueError("Локальный тест пока требует базу WBNB")
@@ -135,6 +141,10 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False)
     local = f"http://127.0.0.1:{port}"
     process = None
     report = {
+        "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "python": platform.python_version(),
+        "fork_block_hash": remote.w3.eth.get_block(block)["hash"].hex(),
+        "cycle_traces": [],
         "environment": "local Anvil fork",
         "fork_block": block,
         "pool": remote_pool.address,
@@ -233,6 +243,13 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False)
             store = Store(Path(directory) / "state.json")
             trader = LiveTrader(chain, account.key, store, D(".1"), lambda _: None)
             pool = chain.verify_pool(pool_address, token)
+            trace_worker = SimpleNamespace(
+                mode="LIVE",
+                live=trader,
+                record_market=lambda event, **kw: report["cycle_traces"].append(
+                    {"event": event, "environment": "FORK", **kw}
+                ),
+            )
             report["phase"] = "wrap"
             trader.begin("LOCAL WRAP")
             trader.wrap(amount)
@@ -240,12 +257,14 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False)
             quoted_buy = chain.quote(pool, amount, True)
             report["phase"] = "buy"
             trader.begin("BUY local fork")
-            received = trader.swap(pool, amount, True, D(3), simulate=True)
+            with signal_cycle(trace_worker, "BUY", None):
+                received = trader.swap(pool, amount, True, D(3), simulate=True)
             trader.finish()
             quoted_sell = chain.quote(pool, received, False)
             report["phase"] = "sell"
             trader.begin("SELL local fork")
-            returned = trader.swap(pool, received, False, D(3), simulate=True)
+            with signal_cycle(trace_worker, "STOP_LOSS", None):
+                returned = trader.swap(pool, received, False, D(3), simulate=True)
             trader.finish()
             if sweep_audit:
                 report["phase"] = "sweep_audit"
@@ -306,9 +325,17 @@ def main():
     p.add_argument("--amount-wei", type=int, default=10**14)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--sweep-audit", action="store_true")
+    p.add_argument("--block", type=int)
     a = p.parse_args()
     report = run(
-        a.anvil, a.rpc, address(a.token), address(a.pool), a.amount_wei, a.output, sweep_audit=a.sweep_audit
+        a.anvil,
+        a.rpc,
+        address(a.token),
+        address(a.pool),
+        a.amount_wei,
+        a.output,
+        sweep_audit=a.sweep_audit,
+        fork_block=a.block,
     )
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)
