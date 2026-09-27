@@ -186,23 +186,30 @@ receipt polling и локальный майнинг существенно вл
 `.local-artifacts/performance/`; сборка — `dist/DipBot Mac.app`.
 
 
-### Performance: продолжение и текущая граница проверки
+### Performance: текущая проверка и ограничения
 
-Добавлены корреляция WSS head→HTTP→signal по block/hash, отдельные Converter/Sweep
-traces и исходные reserves/V3 spot state в архиве без новых RPC executor. Исправлен
-ложный reconnect при намеренном STOP WebSocket. 904 теста, mypy 89 файлов и Ruff
-прошли; обновлённая Intel `.app` проходит отдельную сборку/smoke/codesign.
+Новые operation/transaction IDs сохраняются до broadcast и связывают исходный
+сигнал с read-only RECONCILE после перезапуска. Lost ACK/crash проверки подтверждают
+отсутствие повторной отправки и сохранение ambiguous latch; legacy IDs UNKNOWN.
+907 тестов, mypy 89 файлов, Ruff/format, source/built smoke и codesign прошли.
+Обновлённая Intel-сборка: `dist/DipBot Mac.app`.
 
-Fork: allowance needed/ready × ABI warm/cleared, три повтора BUY/SELL каждого V2/V3,
-Converter и пять сценариев Sweep прошли. BSC отправок/расходов 0. В двух новых
-10-минутных `.app` PAPER был по одному естественному BUY-сигналу; оба отклонены
-round-trip защитой. Сделок 0, trailing этим не подтверждён. UI/архив/STOP согласованы,
-6171 цена совпала с сохранёнными reserves/block/hash. Один прогон пережил 24 HTTP
-429 с восстановлением; второй без ошибок RPC. WSS не показал устойчивого выигрыша
-перед polling, поэтому по умолчанию не включён.
+HTTP: новый клиент median 326 мс, reused 81 мс (N=15, retries off); Chain уже
+переиспользует соединения. Fork V2/V3: по 10 пар A/B, суммы совпадают, RPC за цикл
+57→55 / 58→56. Ускорение полного BUY не доказано; это локальный Anvil, не BSC.
+CPU стратегии ~0,015 мс, с trace ~0,040–0,055 мс; digest решений прежний.
 
-Это кандидат для дальнейшей проверки, не доказанная production-готовность. Paid
-RPC, новый LIVE end-to-end, финальность собственных tx и естественный trailing
-остаются непроверенными. Полная матрица и ограничения — раздел 12
-[performance-плана](PERFORMANCE_PLAN_RU.md); отчёты/снимки —
-`.local-artifacts/performance/continuation/`.
+Новая `.app` прошла 600 с автономного PAPER NAMI на $20: естественный BUY →
+TRAILING_STOP → SELL, результат модели +$0,9892 согласован с UI +$0,99. Следующий
+BUY-сигнал через 224 с отклонён cost guard; исполненного повторного входа не было.
+3957 архивных цен совпали с reserves/block/hash; ошибок UI/RPC нет, STOP чистый,
+архив без drops. Четыре интервала >0,55 с вызвали прежний сброс базы DIP. Память
+195–198 MiB, 6 потоков в короткой выборке. Эти проверки не моделируют token tax/MEV
+и не доказывают прибыльность или отсутствие редких падений.
+
+Это проверенный кандидат, не полностью подтверждённая production-готовность.
+Paid RPC, новые LIVE end-to-end и финальность собственных tx не проверялись;
+новых BSC отправок/расходов 0. Нет нативной ARM/notarized сборки и подтверждения
+длительной эксплуатации. Подробные результаты/условно отложенные оптимизации —
+раздел 12 [performance-плана](PERFORMANCE_PLAN_RU.md), артефакты/скриншоты —
+`.local-artifacts/performance/production-candidate/`.
