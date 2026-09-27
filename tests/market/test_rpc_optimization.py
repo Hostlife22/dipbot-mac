@@ -142,3 +142,20 @@ def test_strict_check_forces_identity_but_price_checks_reuse_it(provider, monkey
     clock["network"] = "0x1"
     with pytest.raises(ValueError, match="не к BSC"):
         c.check()
+
+
+def test_trace_counts_requests_and_json_errors_but_not_identity_cache_hits(provider):
+    from dipbot.observability.cycle_trace import signal_cycle
+
+    p, clock, _ = provider
+    rows = []
+    worker = SimpleNamespace(mode="PAPER", live=None, record_market=lambda event, **kw: rows.append(kw))
+    with signal_cycle(worker, "BUY", None):
+        p.make_request("eth_chainId", [])
+        p.make_request("eth_chainId", [])
+        p.make_request("eth_getCode", ["SECRET_ADDRESS", "latest"])
+        clock["error"] = True
+        p.make_request("eth_call", [{"data": "SECRET_CALLDATA"}, "latest"])
+    assert [r["method"] for r in rows[0]["rpc"]] == ["eth_chainId", "eth_getCode", "eth_call"]
+    assert [r["failed"] for r in rows[0]["rpc"]] == [False, False, True]
+    assert "SECRET" not in str(rows) and "example.test" not in str(rows)

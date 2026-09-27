@@ -46,6 +46,8 @@ class BscHTTPProvider(HTTPProvider):
                     "eth_chainId",
                     "eth_call",
                     "eth_getBlockByNumber",
+                    "eth_getBlockByHash",
+                    "eth_getCode",
                     "eth_getTransactionReceipt",
                     "eth_getTransactionByHash",
                     "eth_getTransactionCount",

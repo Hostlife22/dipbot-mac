@@ -68,6 +68,18 @@ def summarize(paths):
                     for scope in scopes:
                         for name, value in metrics.items():
                             add(scope + "." + name, value)
+                observation = row.get("observation", {})
+                for scope in scopes:
+                    outcome = scope + (".failed_cycle" if failed else ".successful_cycle")
+                    for before, after, label in [
+                        ("http_started", "raw_market_received", "http_to_raw_market_ms"),
+                        ("raw_market_received", "price_ready", "raw_market_to_price_ms"),
+                        ("price_ready", "strategy_completed", "price_to_strategy_ms"),
+                    ]:
+                        if before in observation and after in observation:
+                            add(outcome + "." + label, observation[after] - observation[before])
+                        else:
+                            unavailable[outcome + "." + label] += 1
                 # Group by transaction, never conflate approve and target swap.
                 txs = defaultdict(dict)
                 for stage in stages:
@@ -92,6 +104,13 @@ def summarize(paths):
                             add(scope + ".signal_to_" + name + "_ms", tx[name]["ms"] - signal)
                             if row.get("origin") == "observation_start":
                                 add(scope + ".observation_start_to_" + name + "_ms", tx[name]["ms"])
+                            if "raw_market_received" in observation:
+                                add(
+                                    scope + ".raw_market_to_" + name + "_ms",
+                                    tx[name]["ms"] - observation["raw_market_received"],
+                                )
+                            else:
+                                unavailable[scope + ".raw_market_to_" + name + "_ms"] += 1
                 # Counts are provider calls (SDK retries disabled by Chain), not cache hits.
                 for scope in scopes:
                     outcome = scope + (".failed_cycle" if failed else ".successful_cycle")

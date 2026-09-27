@@ -124,6 +124,7 @@ def test_failed_after_ack_keeps_individual_transaction_metrics(tmp_path):
                 "event": "cycle_latency",
                 "mode": "LIVE",
                 "origin": "observation_start",
+                "observation": {"raw_market_received": 2},
                 "action": "BUY",
                 "stages": stages,
                 "error_type": "TimeoutError",
@@ -138,6 +139,7 @@ def test_failed_after_ack_keeps_individual_transaction_metrics(tmp_path):
         prefix = "LIVE.tx." + kind + ".failed_cycle."
         assert result["metrics"][prefix + "send_to_ack_ms"]["p50"] == 3
         assert result["metrics"][prefix + "observation_start_to_broadcast_ack_ms"]["p50"] == offset + 8
+        assert result["metrics"][prefix + "raw_market_to_broadcast_ack_ms"]["p50"] == offset + 6
         assert result["unavailable"][prefix + "ack_to_receipt_observed_ms"] == 1
     assert not any("application_complete" in key for key in result["metrics"])
 

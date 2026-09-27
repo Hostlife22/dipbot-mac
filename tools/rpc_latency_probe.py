@@ -82,9 +82,12 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1, uncached=False):
                 try:
                     assert chain.price(pool) > 0
                 except Exception as exc:
+                    response = getattr(exc, "rpc_response", None)
+                    code = response.get("error", {}).get("code") if isinstance(response, dict) else None
                     errors.append(
                         {
                             "router": router,
+                            "rpc_error_code": code if type(code) is int else None,
                             "error_type": type(exc).__name__,
                             "ms": (time.monotonic() - started) * 1000,
                         }
