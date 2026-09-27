@@ -20,6 +20,14 @@ from dipbot.domain.usd import price_text
 from dipbot.ui.theme import COLORS, METRICS
 
 
+def axis_digits(values: list[float], rate: D | None) -> int:
+    """Use enough significant digits to distinguish adjacent displayed ticks."""
+    for digits in range(6, 17):
+        if len({price_text(value, rate, digits) for value in values}) == len(values):
+            return digits
+    return 16
+
+
 class Chart(QWidget):
     def __init__(self) -> None:
         super().__init__()
@@ -91,7 +99,10 @@ class Chart(QWidget):
         font.setPixelSize(11)
         painter.setFont(font)
         fm = painter.fontMetrics()
-        axis_width = min(145, max(100, fm.horizontalAdvance(price_text(hi, self.usd_rate, 6)) + 20))
+        ticks = [lo + spread * index / 3 for index in range(4)]
+        digits = axis_digits(ticks, self.usd_rate)
+        labels = [price_text(value, self.usd_rate, digits) for value in ticks]
+        axis_width = min(145, max(100, max(fm.horizontalAdvance(label) for label in labels) + 20))
         left, right, top, bottom = axis_width, max(axis_width + 40, w - 175), 25, h - 28
 
         def y(value: float) -> float:
@@ -105,7 +116,8 @@ class Chart(QWidget):
             painter.setPen(QPen(QColor(COLORS["grid"]), 1))
             painter.drawLine(QPointF(left, py), QPointF(right, py))
             painter.setPen(QColor(COLORS["muted"]))
-            painter.drawText(10, int(py) + 4, price_text(value, self.usd_rate, 6))
+            label = fm.elidedText(labels[index], Qt.TextElideMode.ElideMiddle, axis_width - 16)
+            painter.drawText(10, int(py) + 4, label)
         painter.drawText(left, h - 5, f"−{elapsed:.1f} с")
         painter.drawText(int(right) - 110, h - 5, "последняя цена")
         colors = {
@@ -147,7 +159,7 @@ class Chart(QWidget):
             painter.drawLine(QPointF(left, py), QPointF(right, py))
             painter.setPen(color)
             name = names.get(label, label)
-            text = f"{name}  {price_text(value, self.usd_rate, 6)}"
+            text = f"{name}  {price_text(value, self.usd_rate, digits)}"
             text = fm.elidedText(text, Qt.TextElideMode.ElideMiddle, w - int(right) - 14)
             painter.drawText(int(right) + 8, int(py_label) + 4, text)
         path = QPainterPath()
@@ -202,5 +214,5 @@ class Chart(QWidget):
             painter.drawText(
                 left,
                 17,
-                f"{price_text(self.values[index], self.usd_rate)} · {self.times[index] - self.times[-1]:.1f} с от последней котировки",
+                f"{price_text(self.values[index], self.usd_rate, max(8, digits))} · {self.times[index] - self.times[-1]:.1f} с от последней котировки",
             )

@@ -105,3 +105,17 @@ def test_realized_pnl_usd_sign_small_values_expiry_and_wrong_currency(window):
     assert "$" not in w.footer.text()
     w.on_event("status", payload | {"realized": "—"})
     assert "P&L: —" in w.footer.text()
+
+
+@pytest.mark.parametrize(
+    "base,step,rate", [(1.000269, 1e-8, D(1)), (1.0, 1e-9, None), (1e-18, 1e-24, D(800)), (1e10, 1.0, D(1))]
+)
+def test_chart_ticks_preserve_small_price_differences(base, step, rate):
+    from dipbot.ui.chart import axis_digits
+
+    values = [base + i * step for i in range(4)]
+    digits = axis_digits(values, rate)
+    labels = [price_text(value, rate, digits) for value in values]
+    assert len(set(labels)) == 4
+    numbers = [D(label.removeprefix("$")) for label in labels]
+    assert numbers == sorted(numbers)
