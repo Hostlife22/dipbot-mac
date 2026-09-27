@@ -1,7 +1,9 @@
 """Explicit read-only BSC integration probe; no wallet, signing or local Store."""
 
 import argparse
+import hashlib
 import json
+import platform
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -83,6 +85,19 @@ def market_snapshots(endpoint, token, pool_address, seconds, usd, output):
             json.dumps(
                 {
                     "event": "header",
+                    "dirty": bool(
+                        subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()
+                    ),
+                    "source_sha256": {
+                        str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in [
+                            Path(__file__),
+                            Path("dipbot/market/chain.py"),
+                            Path("dipbot/checks/read_only.py"),
+                        ]
+                    },
+                    "python": platform.python_version(),
+                    "endpoint_host": urlsplit(endpoint).hostname,
                     "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                     "token": pool.token,
                     "pool": pool.address,

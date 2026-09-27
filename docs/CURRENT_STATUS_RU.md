@@ -163,7 +163,7 @@ ABI инвалидирует кеш. Три офлайн серии по 1000: �
 BUY/SELL прошли, внешних транзакций 0; сетевой разброс больше CPU-выигрыша.
 Регрессии market/execution/trace: 320 passed. Durable journal и guards сохранены.
 
-### Performance: итог текущего цикла
+### Performance: предыдущий цикл
 
 Проверка identity пула объединена Multicall и привязана к одному block/hash.
 Относительно прежнего кода убран один RPC, добавлена проверка canonical snapshot.
@@ -184,3 +184,25 @@ receipt polling и локальный майнинг существенно вл
 остаются UNKNOWN. Новых mainnet-транзакций и расходов 0. Подробности и причины
 отложенных оптимизаций — в `PERFORMANCE_PLAN_RU.md`, артефакты —
 `.local-artifacts/performance/`; сборка — `dist/DipBot Mac.app`.
+
+
+### Performance: продолжение и текущая граница проверки
+
+Добавлены корреляция WSS head→HTTP→signal по block/hash, отдельные Converter/Sweep
+traces и исходные reserves/V3 spot state в архиве без новых RPC executor. Исправлен
+ложный reconnect при намеренном STOP WebSocket. 904 теста, mypy 89 файлов и Ruff
+прошли; обновлённая Intel `.app` проходит отдельную сборку/smoke/codesign.
+
+Fork: allowance needed/ready × ABI warm/cleared, три повтора BUY/SELL каждого V2/V3,
+Converter и пять сценариев Sweep прошли. BSC отправок/расходов 0. В двух новых
+10-минутных `.app` PAPER был по одному естественному BUY-сигналу; оба отклонены
+round-trip защитой. Сделок 0, trailing этим не подтверждён. UI/архив/STOP согласованы,
+6171 цена совпала с сохранёнными reserves/block/hash. Один прогон пережил 24 HTTP
+429 с восстановлением; второй без ошибок RPC. WSS не показал устойчивого выигрыша
+перед polling, поэтому по умолчанию не включён.
+
+Это кандидат для дальнейшей проверки, не доказанная production-готовность. Paid
+RPC, новый LIVE end-to-end, финальность собственных tx и естественный trailing
+остаются непроверенными. Полная матрица и ограничения — раздел 12
+[performance-плана](PERFORMANCE_PLAN_RU.md); отчёты/снимки —
+`.local-artifacts/performance/continuation/`.
