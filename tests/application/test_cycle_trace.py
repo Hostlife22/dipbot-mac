@@ -260,3 +260,60 @@ def test_sweep_trace_retains_partial_outcome(tmp_path):
     assert rows[-1]["action"] == "SWEEP"
     assert rows[-1]["operation_outcome"]["status"] == "stopped"
     assert rows[-1]["operation_outcome"]["unknown"] > 0
+
+
+def test_durable_identifiers_link_recovery_after_lost_ack(trader):
+    from dipbot.execution.trader import LiveTrader
+    from dipbot.persistence.storage import Store
+
+    rows = []
+    worker = NS(mode="LIVE", live=trader, record_market=lambda event, **kw: rows.append(kw))
+    trader.chain.w3.eth.fail_send = True
+    with pytest.raises(UncertainTransaction):
+        with signal_cycle(worker, "BUY", None):
+            trader.begin("BUY")
+            trader.send(Function(), "BUY")
+    persisted = Store(trader.store.path)
+    op = persisted.data["operation"]
+    record = op["transactions"][0]
+    signed = next(s for s in rows[0]["stages"] if s["stage"] == "signed")
+    assert signed["operation_id"] == op["operation_id"]
+    assert signed["transaction_id"] == record["transaction_id"]
+    assert record["signal_cycle_id"] == rows[0]["cycle_id"]
+    assert len(op["operation_id"]) == len(record["transaction_id"]) == 32
+    recovered = object.__new__(LiveTrader)
+    recovered.store, recovered.owner, recovered.chain = persisted, trader.owner, trader.chain
+    recovered.chain.w3.eth.send_raw_transaction = lambda *a: pytest.fail("must not resend")
+    recovered.chain.w3.eth.get_transaction_receipt = lambda h: {
+        "status": 1,
+        "blockNumber": 123,
+        "transactionHash": h,
+    }
+    worker.live = recovered
+    with signal_cycle(worker, "RECONCILE", None):
+        recovered.reconcile()
+    assert rows[1]["cycle_id"] != rows[0]["cycle_id"]
+    assert rows[1]["recovery"][-1] == {
+        "phase": "receipt_persisted",
+        "operation_id": op["operation_id"],
+        "transaction_id": record["transaction_id"],
+        "signal_cycle_id": rows[0]["cycle_id"],
+    }
+    stored = Store(trader.store.path).data["operation"]
+    assert stored["operation_id"] == op["operation_id"] and stored["transactions"][0]["status"] == "confirmed"
+    with pytest.raises(UncertainTransaction):
+        recovered.begin("blocked until balance review")
+    assert trader.owner not in str(rows)
+
+
+def test_legacy_recovery_ids_remain_unknown():
+    from dipbot.observability.cycle_trace import recovery_mark
+
+    rows = []
+    worker = NS(mode="LIVE", live=None, record_market=lambda event, **kw: rows.append(kw))
+    with signal_cycle(worker, "RECONCILE", None):
+        recovery_mark({"wallet": "private"}, {"hash": "private"}, "review_started")
+    assert rows[0]["recovery"] == [
+        {"phase": "review_started", "operation_id": None, "transaction_id": None, "signal_cycle_id": None}
+    ]
+    assert "private" not in str(rows)

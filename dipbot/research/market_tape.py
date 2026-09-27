@@ -18,6 +18,7 @@ FIELDS = {
         "origin",
         "head",
         "operation_outcome",
+        "recovery",
         "observation",
         "unavailable",
         "rpc",

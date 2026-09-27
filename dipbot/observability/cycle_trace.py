@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -192,7 +193,48 @@ def mark(subject: object, stage: str, *, label: str | None = None, block: int | 
             "BNB → WBNB": "WRAP",
             "WBNB → BNB": "UNWRAP",
         }.get(label or "", kind)
+        before = len(trace.stages)
         trace.mark(stage, kind=kind if label is not None else None, block=block)
+        if len(trace.stages) > before:
+            operation = getattr(subject, "operation", None) or {}
+            identifiers = {
+                "operation_id": operation.get("operation_id"),
+                "transaction_id": getattr(subject, "active_transaction_id", None)
+                if trace.stages[-1].get("transaction")
+                else None,
+            }
+            trace.stages[-1].update(
+                {
+                    k: v
+                    for k, v in identifiers.items()
+                    if isinstance(v, str) and re.fullmatch(r"[0-9a-f]{32}", v)
+                }
+            )
+
+
+def recovery_mark(operation: Mapping[str, Any], record: Mapping[str, Any], phase: str) -> None:
+    """Only durable opaque IDs; never reconstruct elapsed time across process clocks."""
+    trace = _ACTIVE.get()
+    if trace is None:
+        return
+    rows = trace.data.setdefault("recovery", [])
+    if len(rows) >= 256:
+        trace.truncated = True
+        return
+    identifiers = {
+        "operation_id": operation.get("operation_id"),
+        "transaction_id": record.get("transaction_id"),
+        "signal_cycle_id": record.get("signal_cycle_id") or operation.get("signal_cycle_id"),
+    }
+    rows.append(
+        {
+            "phase": phase,
+            **{
+                k: v if isinstance(v, str) and re.fullmatch(r"[0-9a-f]{32}", v) else None
+                for k, v in identifiers.items()
+            },
+        }
+    )
 
 
 @contextmanager

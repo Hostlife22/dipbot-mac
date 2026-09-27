@@ -77,6 +77,8 @@ class PositionRecord(TypedDict, total=False):
 
 
 class TransactionRecord(TypedDict, total=False):
+    transaction_id: str
+    signal_cycle_id: str
     hash: str
     label: str
     nonce: int
@@ -97,6 +99,8 @@ class TransactionRecord(TypedDict, total=False):
 
 
 class OperationRecord(TypedDict, total=False):
+    operation_id: str
+    signal_cycle_id: str
     wallet: str
     description: str
     started: int

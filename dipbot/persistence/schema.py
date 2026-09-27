@@ -102,7 +102,14 @@ def validate_records(value: State) -> None:
         operation = mapping(raw, "operation")
         fields(
             operation,
-            {"wallet": (str,), "description": (str,), "started": (int,), "transactions": (list,)},
+            {
+                "operation_id": (str,),
+                "signal_cycle_id": (str,),
+                "wallet": (str,),
+                "description": (str,),
+                "started": (int,),
+                "transactions": (list,),
+            },
             "operation",
         )
         for raw_transaction in operation.get("transactions", []):
@@ -111,6 +118,8 @@ def validate_records(value: State) -> None:
                 transaction,
                 {
                     "hash": (str,),
+                    "transaction_id": (str,),
+                    "signal_cycle_id": (str,),
                     "nonce": (int,),
                     "status": (str,),
                     "stage": (str,),

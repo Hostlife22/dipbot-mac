@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from typing import Any, cast
+from uuid import uuid4
 
 from eth_account import Account
 from eth_typing import HexStr
@@ -60,11 +61,15 @@ class LiveTrader:
         if self.store.data.get("operation"):
             raise UncertainTransaction("Есть незавершённая LIVE-операция. Нужна сверка транзакций и балансов")
         self.operation = {
+            "operation_id": uuid4().hex,
             "wallet": self.owner,
             "description": description,
             "started": int(time.time()),
             "transactions": [],
         }
+        trace = getattr(self, "cycle_trace", None)
+        if trace is not None:
+            self.operation["signal_cycle_id"] = trace.data["cycle_id"]
         self.store.data["operation"] = self.operation
         self.store.save()
 
@@ -104,6 +109,7 @@ class LiveTrader:
     def send(self, function: ContractFunction, label: str, value: int = 0) -> TxReceipt:
         if self.operation is None:
             raise RuntimeError("Отправка вне записанной операции запрещена")
+        self.active_transaction_id = uuid4().hex
         mark(self, "transaction_started", label=label)
         self.abort_entry_if_stopped(label)
         self.chain.check()
@@ -153,6 +159,7 @@ class LiveTrader:
         mark(self, "signed", label=label)
         local_hash = Web3.to_hex(Web3.keccak(signed.raw_transaction))
         record: TransactionRecord = {
+            "transaction_id": self.active_transaction_id,
             "hash": local_hash,
             "label": label,
             "nonce": nonce,
@@ -165,6 +172,9 @@ class LiveTrader:
                 {k: tx_fields[k] for k in ("chainId", "nonce", "value", "gas", "gasPrice", "to")},
             ),
         }
+        trace = getattr(self, "cycle_trace", None)
+        if trace is not None:
+            record["signal_cycle_id"] = trace.data["cycle_id"]
         header = getattr(self.chain, "checked_header", {})
         if type(header.get("number")) is int:
             record["prepared_block"] = header["number"]

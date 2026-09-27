@@ -536,9 +536,10 @@ def handle_reconcile(runtime: CommandRuntime, name: CommandKind, data: dict[str,
     runtime.require_chain()
     if name == CommandKind.RECONCILE:
         operation = runtime.store.data.get("operation")
-        result = reconcile_receipts(
-            runtime.connections.reader, runtime.store, operation["wallet"] if operation else ""
-        )
+        with signal_cycle(runtime, "RECONCILE", None):
+            result = reconcile_receipts(
+                runtime.connections.reader, runtime.store, operation["wallet"] if operation else ""
+            )
         runtime.log.emit(result)
         runtime.emit_event(EventKind.RECEIPT_REVIEW, result)
         return

@@ -17,6 +17,7 @@ from web3.exceptions import TransactionNotFound
 from dipbot.execution.accounting import record_gas
 from dipbot.execution.errors import UncertainTransaction
 from dipbot.execution.trader import LiveTrader
+from dipbot.observability.cycle_trace import recovery_mark
 
 
 def reconcile_receipts(chain: Chain, store: StateStore, owner: str) -> str:
@@ -25,8 +26,10 @@ def reconcile_receipts(chain: Chain, store: StateStore, owner: str) -> str:
         return "Незавершённых операций нет"
     if operation["wallet"].lower() != owner.lower():
         raise ValueError("Для сверки нужен тот же кошелёк, который начал операцию")
+    recovery_mark(operation, {}, "operation_review")
     chain.check()
     for record in operation["transactions"]:
+        recovery_mark(operation, record, "review_started")
         try:
             receipt = chain.w3.eth.get_transaction_receipt(record["hash"])
         except TransactionNotFound:
@@ -96,6 +99,7 @@ def reconcile_receipts(chain: Chain, store: StateStore, owner: str) -> str:
             record["gas_fee_wei"] = receipt["gasUsed"] * receipt["effectiveGasPrice"]
             record_gas(store, owner, record)
         store.save()
+        recovery_mark(operation, record, "receipt_persisted")
     settled_nonces = [
         r["nonce"]
         for r in operation["transactions"]
