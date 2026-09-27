@@ -8,11 +8,13 @@ from requests.exceptions import HTTPError
 from web3.exceptions import Web3RPCError
 
 from dipbot.domain.entry_guard import EntryRejected
-from dipbot.execution.errors import UncertainTransaction
+from dipbot.execution.errors import SimulationRejected, UncertainTransaction
 from dipbot.persistence.storage import SaveAfterReplaceError
 
 
 def safe_error(exc: BaseException) -> str:
+    if type(exc) is SimulationRejected:
+        return str(exc)
     if type(exc) is SaveAfterReplaceError:
         return "Файл заменён, но надёжность сохранения не подтверждена; проверьте сохранённое состояние"
     if isinstance(exc, HTTPError):

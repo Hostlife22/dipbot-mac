@@ -129,7 +129,12 @@ class LiveTrader:
             "nonce": nonce,
             "chainId": 56,
         }
-        gas = (function.estimate_gas(tx_base) * 120 + 99) // 100
+        try:
+            gas = (function.estimate_gas(tx_base) * 120 + 99) // 100
+        except ContractLogicError as exc:
+            from dipbot.execution.errors import SimulationRejected
+
+            raise SimulationRejected(str(exc.args[0]) if exc.args else "") from None
         mark(self, "gas_estimated", label=label)
         if gas * self.gas_price > self.max_fee:
             raise ValueError("Расчётная комиссия превышает лимит 0.005 BNB на транзакцию")
