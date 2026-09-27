@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from dipbot.domain.assets import WBNB
 from dipbot.persistence import preferences
 from dipbot.persistence.vault import Vault
 
@@ -164,6 +165,12 @@ def mode_changed(view: Window) -> None:
         )
     if hasattr(view, "chart"):
         view.reset_price_display()
+        if mode != "DEMO" and view.selection_ready and view.isVisible():
+            selected = view.store.data.get("last_pool", {})
+            quote = selected.get("quote", "")
+            view.usd.set_token(quote)
+            needs_gas_rate = mode == "LIVE" or view.cost_limit.value() > 0 or view.paper_gas.value() > 0
+            view.gas_usd.set_token(WBNB if quote and quote.lower() != WBNB.lower() and needs_gas_rate else "")
     if hasattr(view, "selection_ready"):
         view.update_controls()
     if mode == "DEMO":

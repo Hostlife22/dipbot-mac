@@ -119,3 +119,26 @@ def test_chart_ticks_preserve_small_price_differences(base, step, rate):
     assert len(set(labels)) == 4
     numbers = [D(label.removeprefix("$")) for label in labels]
     assert numbers == sorted(numbers)
+
+
+def test_switch_to_live_refetches_selected_base_rate_without_start(window, monkeypatch):
+    from dataclasses import asdict
+
+    from dipbot.ui.usd_feed import UsdRate
+
+    fetched = []
+    monkeypatch.setattr(UsdRate, "refresh", lambda feed: fetched.append(feed.token))
+    w = window
+    w.show()
+    w.store.data["last_pool"] = asdict(POOL)
+    w.on_event("selected", POOL)
+    w.usd.token = POOL.quote.lower()
+    w.usd.rate = D(700)
+    w.usd.received_at = time.monotonic()
+    w.mode.setCurrentText("LIVE")
+    assert w.usd.token == POOL.quote.lower()
+    assert POOL.quote.lower() in fetched
+    assert w.usd.current() is None  # Wait for a fresh response, never revive the old rate.
+    assert not w.running and not w.store.data.get("operation")
+    w.mode.setCurrentText("DEMO")
+    assert w.usd.token == "" and w.usd.current() is None
