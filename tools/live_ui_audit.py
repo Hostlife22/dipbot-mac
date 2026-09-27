@@ -8,6 +8,7 @@ at 110% of the latest fetched BNB/USD, inside the user's $1 loss/fee budget.
 import argparse
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from decimal import Decimal as D
 from pathlib import Path
@@ -40,9 +41,11 @@ def reserve_cost_usd(previous, gas_wei, value_wei, fx):
     return total
 
 
-def observe_finality(chain, receipt, timeout=15):
+def observe_finality(chain, receipt, timeout=15, received_ns=None):
     """Provider-reported finality after send returned; never change execution outcome."""
     started = time.monotonic()
+    received_ns = time.perf_counter_ns() if received_ns is None else received_ns
+    queue_ms = (time.perf_counter_ns() - received_ns) / 1e6
     errors = []
     while time.monotonic() - started < timeout:
         try:
@@ -51,7 +54,8 @@ def observe_finality(chain, receipt, timeout=15):
                 chain.canonical_receipt(receipt)
                 return {
                     "observed": True,
-                    "post_send_return_to_finalized_ms": (time.monotonic() - started) * 1000,
+                    "post_send_return_to_finalized_ms": (time.perf_counter_ns() - received_ns) / 1e6,
+                    "observer_queue_ms": queue_ms,
                     "finalized_block": finalized["number"],
                     "errors": errors,
                     "rule": "provider finalized number >= receipt block, canonical receipt hash rechecked",
@@ -130,7 +134,20 @@ def run(
         report.pop("failure_type", None)
         before += report["native_balance_delta_wei"]
     report["initial_native_balance_wei"] = before
+    report["passed"] = False
+    report["status"] = "running"
+    report["audit_finality_observer"] = "background independent Chain; queued time included"
     logs = []
+    observer = ThreadPoolExecutor(max_workers=1, thread_name_prefix="audit-finality")
+    observations = []
+
+    def finality_read(receipt, received_ns):
+        try:
+            reader = Chain("https://bsc-dataseed.binance.org", request_timeout=3)
+            reader.check()
+            return observe_finality(reader, receipt, received_ns=received_ns)
+        except Exception as exc:
+            return {"observed": False, "errors": [type(exc).__name__]}
 
     def save():
         saved = Store(directory / "report.json")
@@ -168,24 +185,30 @@ def run(
                 return built
 
         receipt = original_send(trader, BudgetFunction(), label, value)
-        finality = observe_finality(trader.chain, receipt)
+        received_ns = time.perf_counter_ns()
         trace = getattr(trader, "cycle_trace", None)
-        if finality["observed"] and trace is not None:
-            finality["cycle_id"] = trace.data["cycle_id"]
-            finality["cycle_start_to_finalized_observed_ms"] = (
-                time.perf_counter_ns() - trace.started_ns
-            ) / 1e6
-        report["receipts"].append(
-            {
-                "label": label,
-                "hash": receipt["transactionHash"].hex(),
-                "status": receipt["status"],
-                "block": receipt["blockNumber"],
-                "block_hash": receipt["blockHash"].hex(),
-                "finality": finality,
-                "gas_fee_wei": receipt["gasUsed"] * receipt["effectiveGasPrice"],
-            }
-        )
+        row = {
+            "label": label,
+            "hash": receipt["transactionHash"].hex(),
+            "status": receipt["status"],
+            "block": receipt["blockNumber"],
+            "block_hash": receipt["blockHash"].hex(),
+            "gas_fee_wei": receipt["gasUsed"] * receipt["effectiveGasPrice"],
+            "finality": {"observed": False, "reason": "observer pending"},
+            "audit_finality_mode": "background",
+        }
+        report["receipts"].append(row)
+        if len(observations) < 64:
+            observations.append(
+                (
+                    row,
+                    observer.submit(finality_read, receipt, received_ns),
+                    trace.data["cycle_id"] if trace else None,
+                    (received_ns - trace.started_ns) / 1e6 if trace else None,
+                )
+            )
+        else:
+            row["finality"] = {"observed": False, "reason": "observer capacity"}
         save()
         print(
             json.dumps(
@@ -521,6 +544,16 @@ def run(
         finally:
             w.worker.quit_event.set()
             w.worker.wait()
+            observer.shutdown(wait=True)
+            for row, future, cycle_id, offset in observations:
+                finality = future.result()
+                if finality["observed"] and cycle_id is not None:
+                    finality["cycle_id"] = cycle_id
+                    finality["cycle_start_to_finalized_observed_ms"] = (
+                        offset + finality["post_send_return_to_finalized_ms"]
+                    )
+                row["finality"] = finality
+            report["status"] = "completed" if report.get("passed") else "failed"
             report["journal_locked"] = bool(w.store.data.get("operation"))
             report["remaining_wbnb_raw"] = chain.balance(WBNB, account.address)
             report["remaining_usdt_raw"] = chain.balance(USDT, account.address)
