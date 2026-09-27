@@ -25,7 +25,7 @@ from dipbot.execution.accounting import (
 )
 from dipbot.market.chain import Chain, Pool
 from dipbot.market.exit_reads import ExitReadCancelled
-from dipbot.observability.cycle_trace import head_context, mark
+from dipbot.observability.cycle_trace import head_context, mark, signal_cycle
 
 
 class Worker(QThread, StateAccess):
@@ -477,7 +477,23 @@ class Worker(QThread, StateAccess):
         )
 
     def sweep(self) -> None:
-        self.sweep_service().run()
+        service = self.sweep_service()
+        original_emit = service.emit
+        with signal_cycle(self, "SWEEP", None) as trace:
+
+            def report(name: str, payload: Any) -> None:
+                if name == "sweep_report":
+                    trace.data["operation_outcome"] = {
+                        "status": payload["status"],
+                        "failed": len(payload["failed"]),
+                        "skipped": len(payload["skipped"]),
+                        "unknown": len(payload["unknown"]),
+                        "needs_reconciliation": payload.get("needs_reconciliation", False),
+                    }
+                original_emit(name, payload)
+
+            service.emit = report
+            service.run()
 
 
 T = TypeVar("T")

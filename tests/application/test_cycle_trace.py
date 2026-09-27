@@ -231,3 +231,32 @@ def test_head_report_preserves_time_spent_before_http(tmp_path):
     result = summarize([path])
     assert result["metrics"]["LIVE.BUY.successful_cycle.head_to_price_ms"]["p50"] == 230
     assert result["metrics"]["LIVE.tx.BUY.successful_cycle.head_to_broadcast_ack_ms"]["p50"] == 330
+
+
+def test_converter_and_wrap_are_not_reported_as_target_swaps():
+    from dipbot.observability.cycle_trace import mark
+
+    trace = CycleTrace("CONVERT_BUY", "LIVE")
+    subject = NS(cycle_trace=trace)
+    for label in ["CONVERTER BUY", "CONVERTER SELL", "BNB → WBNB", "WBNB → BNB"]:
+        mark(subject, "transaction_started", label=label)
+        mark(subject, "broadcast_ack", label=label)
+    assert [s["kind"] for s in trace.stages if s["stage"] == "broadcast_ack"] == [
+        "CONVERT_BUY",
+        "CONVERT_SELL",
+        "WRAP",
+        "UNWRAP",
+    ]
+
+
+def test_sweep_trace_retains_partial_outcome(tmp_path):
+    from tests.support.sweep import multi_worker
+
+    worker, _, _, _, _ = multi_worker(tmp_path)
+    rows = []
+    worker.record_market = lambda event, **kw: rows.append(dict(event=event, **kw))
+    worker.stop_event.set()
+    worker.sweep()
+    assert rows[-1]["action"] == "SWEEP"
+    assert rows[-1]["operation_outcome"]["status"] == "stopped"
+    assert rows[-1]["operation_outcome"]["unknown"] > 0

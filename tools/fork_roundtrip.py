@@ -19,7 +19,7 @@ from unittest.mock import patch
 import requests
 from eth_account import Account
 
-from dipbot.domain.assets import WBNB
+from dipbot.domain.assets import USDT, WBNB
 from dipbot.execution.trader import LiveTrader
 from dipbot.market.chain import Chain, address
 from dipbot.observability.cycle_trace import signal_cycle
@@ -67,6 +67,7 @@ def run(
     sweep_audit=False,
     fork_block=None,
     paired_performance=False,
+    cohort_audit=False,
 ):
     if sweep_audit and paired_performance:
         raise ValueError("Run Sweep and performance as separate cohorts")
@@ -288,6 +289,13 @@ def run(
                 report["benchmark_local_submissions"] = sum(
                     r["local_submissions"] for r in report["paired_identity_cycles"]
                 )
+            if cohort_audit:
+                report["phase"] = "cohort_audit"
+                report["cohorts"] = []
+                audit_cohorts(chain, account, pool, amount, directory, report["cohorts"])
+                report["benchmark_local_submissions"] = report.get("benchmark_local_submissions", 0) + sum(
+                    r["local_submissions"] for r in report["cohorts"]
+                )
             if sweep_audit:
                 report["phase"] = "sweep_audit"
                 from tools.fork_sweep_audit import audit
@@ -399,6 +407,103 @@ def paired_identity(chain, account, pool, amount, directory):
     return rows
 
 
+def audit_cohorts(chain, account, pool, amount, directory, rows=None):
+    """Fixed fork, exact approval variants; setup and converter separately identified."""
+    rows = [] if rows is None else rows
+    for repeat in range(3):
+        for ready in (False, True):
+            for cold in (False, True):
+                snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
+                traces = []
+                try:
+                    store = Store(Path(directory) / f"cohort-{repeat}-{ready}-{cold}.json")
+                    trader = LiveTrader(chain, account.key, store, D(".1"), lambda _: None)
+                    worker = SimpleNamespace(
+                        mode="LIVE",
+                        live=trader,
+                        record_market=lambda event, **kw: traces.append(
+                            dict(event=event, environment="FORK", **kw)
+                        ),
+                    )
+                    trader.begin("LOCAL WRAP")
+                    trader.wrap(amount)
+                    trader.finish()
+                    bought = sold = 0
+                    for buy in (True, False):
+                        size = amount if buy else bought
+                        if ready:
+                            router, _ = trader.verify_router(pool)
+                            trader.begin("LOCAL PREAPPROVE")
+                            trader.approve(pool.quote if buy else pool.token, router, size)
+                            trader.finish()
+                        if cold:
+                            chain._contract_factories.clear()
+                        with signal_cycle(worker, "BUY" if buy else "STOP_LOSS", None):
+                            trader.begin("BUY cohort" if buy else "SELL cohort")
+                            output = trader.swap(pool, size, buy, D(3), simulate=True)
+                            trader.finish()
+                        if buy:
+                            bought = output
+                        else:
+                            sold = output
+                    approvals = sum(
+                        s.get("kind") == "APPROVE" and s["stage"] == "broadcast_ack"
+                        for t in traces
+                        for s in t["stages"]
+                    )
+                    if approvals != (0 if ready else 2):
+                        raise AssertionError("Unexpected measured approval cohort")
+                    rows.append(
+                        {
+                            "repeat": repeat,
+                            "router": pool.router,
+                            "allowance": "ready" if ready else "needed",
+                            "abi_cache": "cleared" if cold else "warm",
+                            "traces": traces,
+                            "received": str(bought),
+                            "returned": str(sold),
+                            "local_submissions": sum(len(op["transactions"]) for op in store.data["history"]),
+                        }
+                    )
+                finally:
+                    if chain.w3.provider.make_request("evm_revert", [snapshot]).get("result") is not True:
+                        raise RuntimeError("Cohort restore failed")
+    if len({(r["received"], r["returned"]) for r in rows}) != 1:
+        raise AssertionError("Cohort financial outputs differ")
+    snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
+    traces = []
+    try:
+        store = Store(Path(directory) / "converter-cohort.json")
+        trader = LiveTrader(chain, account.key, store, D(".1"), lambda _: None)
+        worker = SimpleNamespace(
+            mode="LIVE",
+            live=trader,
+            record_market=lambda event, **kw: traces.append(dict(event=event, environment="FORK", **kw)),
+        )
+        converted = 0
+        for buy in (True, False):
+            with signal_cycle(worker, "CONVERT_BUY" if buy else "CONVERT_SELL", None):
+                trader.begin("Converter cohort")
+                output = trader.convert(USDT, amount if buy else converted, buy, D(3))
+                trader.finish()
+            if buy:
+                converted = output
+        rows.append(
+            {
+                "operation": "converter",
+                "route": "selected by production conversion_route",
+                "traces": traces,
+                "received": str(converted),
+                "returned": str(output),
+                "local_submissions": sum(len(op["transactions"]) for op in store.data["history"]),
+            }
+        )
+    finally:
+        if chain.w3.provider.make_request("evm_revert", [snapshot]).get("result") is not True:
+            raise RuntimeError("Converter restore failed")
+    return rows
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--anvil", type=Path, required=True)
@@ -410,6 +515,7 @@ def main():
     p.add_argument("--sweep-audit", action="store_true")
     p.add_argument("--block", type=int)
     p.add_argument("--paired-performance", action="store_true")
+    p.add_argument("--cohort-audit", action="store_true")
     a = p.parse_args()
     report = run(
         a.anvil,
@@ -421,6 +527,7 @@ def main():
         sweep_audit=a.sweep_audit,
         fork_block=a.block,
         paired_performance=a.paired_performance,
+        cohort_audit=a.cohort_audit,
     )
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)

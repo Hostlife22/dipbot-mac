@@ -46,7 +46,9 @@ def audit(chain, account, directory, pool, amount, results=None):
         w.stop_event.clear()
         reports = []
         messages = []
-        attempt = {"scenario": scenario, "passed": False}
+        traces = []
+        w.record_market = lambda event, **kw: traces.append(dict(event=event, environment="FORK", **kw))
+        attempt = {"scenario": scenario, "passed": False, "traces": traces}
         results.append(attempt)
         w.log.connect(messages.append)
 

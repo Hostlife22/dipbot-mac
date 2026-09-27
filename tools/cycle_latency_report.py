@@ -32,7 +32,16 @@ def summarize(paths):
                     continue
                 cycles += 1
                 mode = "FORK" if row.get("environment") == "FORK" else row["mode"]
-                failed = bool(row.get("error_type"))
+                operation = row.get("operation_outcome") or {}
+                failed = bool(row.get("error_type")) or bool(
+                    operation
+                    and (
+                        operation.get("status") != "completed"
+                        or operation.get("failed")
+                        or operation.get("unknown")
+                        or operation.get("needs_reconciliation")
+                    )
+                )
                 outcomes[mode + (".failed" if failed else ".successful")] += 1
                 if failed:
                     failures[mode] += 1
@@ -45,6 +54,9 @@ def summarize(paths):
                 signal = next((s["ms"] for s in stages if s["stage"] == "signal"), 0)
                 action = {
                     "BUY": "BUY",
+                    "SWEEP": "SWEEP",
+                    "CONVERT_BUY": "CONVERT_BUY",
+                    "CONVERT_SELL": "CONVERT_SELL",
                     "TAKE_PROFIT": "SELL",
                     "STOP_LOSS": "SELL",
                     "TRAILING_STOP": "SELL",

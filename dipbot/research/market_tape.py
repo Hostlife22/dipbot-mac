@@ -17,6 +17,7 @@ FIELDS = {
         "cycle_id",
         "origin",
         "head",
+        "operation_outcome",
         "observation",
         "unavailable",
         "rpc",

@@ -163,7 +163,7 @@ class CycleTrace:
             "execution_applied",
         }:
             return
-        if len(self.stages) >= 64:
+        if len(self.stages) >= (256 if self.data["action"] == "SWEEP" else 64):
             self.truncated = True
             return
         if stage == "transaction_started":
@@ -171,7 +171,7 @@ class CycleTrace:
         row: dict[str, Any] = {"stage": stage, "ms": (time.perf_counter_ns() - self.started_ns) / 1e6}
         if kind is not None and self.transaction and stage != "quote":
             row["transaction"] = self.transaction
-        if kind in ("BUY", "SELL", "APPROVE", "OTHER"):
+        if kind in ("BUY", "SELL", "APPROVE", "OTHER", "CONVERT_BUY", "CONVERT_SELL", "WRAP", "UNWRAP"):
             row["kind"] = kind
         if type(block) is int and block >= 0:
             row["block"] = block
@@ -186,6 +186,12 @@ def mark(subject: object, stage: str, *, label: str | None = None, block: int | 
             if label in ("BUY", "SELL")
             else ("APPROVE" if label and label.startswith("APPROVE") else "OTHER")
         )
+        kind = {
+            "CONVERTER BUY": "CONVERT_BUY",
+            "CONVERTER SELL": "CONVERT_SELL",
+            "BNB → WBNB": "WRAP",
+            "WBNB → BNB": "UNWRAP",
+        }.get(label or "", kind)
         trace.mark(stage, kind=kind if label is not None else None, block=block)
 
 

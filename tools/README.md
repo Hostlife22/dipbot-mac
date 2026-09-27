@@ -57,3 +57,10 @@ uv run --frozen python -m tools.rpc_latency_probe --shadow-seconds 120 --finalit
 Этот режим отдельно сравнивает polling/HeadSchedule с HTTP-проверкой цены V2,
 сохраняет несовпавшие head и ошибки. `finality` наблюдает публичный блок по тегу
 провайдера и canonical hash; не отправляет tx и не меняет receipt-policy бота.
+
+`fork_roundtrip --cohort-audit` проверяет allowance needed/ready и ABI warm/cleared
+по три повтора BUY/SELL, затем Converter. Это локальные транзакции Anvil через
+read-only proxy; холодный сетевой клиент и BSC latency здесь не моделируются.
+`--sweep-audit` сохраняет отдельные traces частичных отказов и STOP.
+В изолированном `.app` PAPER можно указать `--market-paper-wss wss://bsc-rpc.publicnode.com`
+и HTTP через `--acceptance-endpoint`; ключи и LIVE заблокированы аудитом.

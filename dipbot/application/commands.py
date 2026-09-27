@@ -24,6 +24,7 @@ from dipbot.market.chain import Chain, Pool, address, profiles
 from dipbot.market.head_feed import HeadFeed, HeadSchedule
 from dipbot.market.routes import seed_preference
 from dipbot.market.rpc_health import RpcHealth
+from dipbot.observability.cycle_trace import signal_cycle
 from dipbot.persistence import dynamic, wallet_registry
 from dipbot.persistence.vault import Vault
 from dipbot.research.market_tape import MarketTape
@@ -488,11 +489,12 @@ def handle_convert(runtime: CommandRuntime, name: CommandKind, data: dict[str, A
         raise ValueError("Нулевой баланс")
     if runtime.stop_event.is_set():
         raise ValueError("STOP запрошен во время чтения баланса")
-    runtime.session.executor.begin("Converter BUY" if data["buy"] else "Converter SELL ALL")
-    runtime.session.executor.convert(
-        runtime.market.selected.quote, amount, data["buy"], runtime.session.strategy.settings.slippage
-    )
-    runtime.session.executor.finish()
+    with signal_cycle(runtime, "CONVERT_BUY" if data["buy"] else "CONVERT_SELL", None):
+        runtime.session.executor.begin("Converter BUY" if data["buy"] else "Converter SELL ALL")
+        runtime.session.executor.convert(
+            runtime.market.selected.quote, amount, data["buy"], runtime.session.strategy.settings.slippage
+        )
+        runtime.session.executor.finish()
     runtime.log.emit("Converter завершён")
 
 

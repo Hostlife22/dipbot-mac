@@ -57,6 +57,7 @@ def run(
     cooldown: Any = None,
     trailing: Any = None,
     preflight_fault: Any = None,
+    ws_rpc: str = "",
 ) -> int | None:
     if automatic_only and (exercise_recovery or observe_manual_position):
         raise ValueError("Autonomous audit cannot inject signals or restart the strategy")
@@ -308,6 +309,7 @@ def run(
             w.save_rpc.setChecked(False)
             w.adaptive_rpc.setChecked(adaptive_rpc)
             w.backup_rpc.setText(backup_rpc)
+            w.ws_rpc.setText(ws_rpc)
             next(b for b in w.findChildren(QPushButton) if b.text() == "Подключить").click()
             wait(lambda: not w.busy)
             w.token.setText(token)
