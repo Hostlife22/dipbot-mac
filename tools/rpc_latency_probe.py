@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import platform
 import statistics
 import subprocess
@@ -28,6 +29,26 @@ POOLS = {
     "V2": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
     "V3": "0x172fcD41E0913e95784454622d1c3724f546f849",
 }
+
+
+def endpoint_selection(names):
+    """Resolve user-supplied endpoints without placing credentials in CLI/report."""
+    if not names:
+        return list(ENDPOINTS)
+    selected = []
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.fragment
+        ):
+            raise ValueError(f"Invalid or missing HTTPS endpoint in environment variable {name}")
+        selected.append(value)
+    return selected
 
 
 def summary(values):
@@ -468,9 +489,27 @@ if __name__ == "__main__":
     parser.add_argument("--connections", action="store_true")
     parser.add_argument("--identity", action="store_true")
     parser.add_argument("--router-identity", action="store_true")
+    parser.add_argument(
+        "--endpoint-env",
+        action="append",
+        default=[],
+        help="Environment variable containing an HTTPS RPC URL; repeat to compare endpoints",
+    )
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
+    if args.endpoint_env and (args.head_seconds or args.shadow_seconds or args.finality_seconds):
+        parser.error("Custom endpoints currently support HTTP/identity/connection probes only")
+    try:
+        endpoints = endpoint_selection(args.endpoint_env)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if (
+        args.endpoint_env
+        and len(endpoints) != 1
+        and (args.connections or args.identity or args.router_identity)
+    ):
+        parser.error("Connection/identity comparisons require exactly one explicit endpoint")
     start_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     source_hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -483,7 +522,7 @@ if __name__ == "__main__":
         ]
     }
     if args.connections:
-        result = connection_probe(ENDPOINTS[0], args.samples)
+        result = connection_probe(endpoints[0], args.samples)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
             json.dumps({"commit_at_start": start_commit, "source_sha256": source_hashes, **result}, indent=2)
@@ -507,22 +546,23 @@ if __name__ == "__main__":
         print(json.dumps({"output": str(args.output), "passed": passed}))
         raise SystemExit(0 if passed else 1)
     if args.identity or args.router_identity:
-        result = identity_probe(ENDPOINTS[0], args.samples, router_identity=args.router_identity)
+        result = identity_probe(endpoints[0], args.samples, router_identity=args.router_identity)
         result["identity_scope"] = "router" if args.router_identity else "pool"
+        result["host"] = urlsplit(endpoints[0]).hostname
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
             json.dumps({"commit_at_start": start_commit, "source_sha256": source_hashes, **result}, indent=2)
             + "\n"
         )
         print(json.dumps({"output": str(args.output), "rows": len(result["rows"])}))
-        raise SystemExit(0)
+        raise SystemExit(0 if result["rows"] and all(r["error_type"] is None for r in result["rows"]) else 1)
     with ThreadPoolExecutor(max_workers=3) as executor:
         rows = list(
             executor.map(
                 lambda endpoint: probe(
                     endpoint, args.samples, args.max_seconds, args.interval, args.uncached
                 ),
-                ENDPOINTS,
+                endpoints,
             )
         )
     report = {

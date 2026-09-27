@@ -148,3 +148,26 @@ def test_connection_probe_reuses_only_warm_client_and_closes_sessions(monkeypatc
     assert report["passed"] and len(report["rows"]) == 4
     assert len(providers) == len(sessions) == 3 and all(s.closed for s in sessions)
     assert calls.count(providers[0]) == 3
+
+
+def test_rpc_endpoint_selection_does_not_expose_credentials(monkeypatch):
+    from tools.rpc_latency_probe import ENDPOINTS, endpoint_selection
+
+    assert endpoint_selection([]) == ENDPOINTS
+    monkeypatch.setenv("AUDIT_TEST_RPC", "https://example.test/private-key-in-path")
+    assert endpoint_selection(["AUDIT_TEST_RPC"]) == ["https://example.test/private-key-in-path"]
+    monkeypatch.setenv("AUDIT_TEST_RPC", "http://user:secret@example.test/private-key-in-path")
+    try:
+        endpoint_selection(["AUDIT_TEST_RPC"])
+    except ValueError as error:
+        assert "AUDIT_TEST_RPC" in str(error) and "secret" not in str(error)
+        assert "private-key-in-path" not in str(error)
+    else:
+        raise AssertionError("Unsafe endpoint accepted")
+    monkeypatch.delenv("AUDIT_TEST_RPC")
+    try:
+        endpoint_selection(["AUDIT_TEST_RPC"])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Missing endpoint accepted")
