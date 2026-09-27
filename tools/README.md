@@ -128,3 +128,12 @@ factory/WBNB router напрямую и через Multicall: getCode сохра
 режимы требуют один endpoint. Значения переменных не пишутся в аргументы CLI
 или отчёт. WSS/shadow/finality используют отдельные встроенные настройки и не
 принимают этот флаг. Наличие интерфейса не означает, что paid RPC уже проверен.
+
+Опциональная проверка реального локального send/receipt с аварийным завершением
+процесса и восстановлением без повторной отправки:
+
+```bash
+DIPBOT_ANVIL=/path/to/anvil uv run --frozen pytest -q tests/execution/test_local_crash_recovery.py
+```
+
+Используется отдельный узел без upstream RPC и временные аккаунты; BSC-транзакций нет.
