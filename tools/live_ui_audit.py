@@ -151,7 +151,9 @@ def run(
         report["earlier_errors"] = report.get("earlier_errors", []) + report["errors"]
         report["errors"] = []
         report.pop("failure_type", None)
-        before += report["native_balance_delta_wei"]
+        # The previous snapshot may precede inclusion after a lost ACK.
+        # Never reconstruct the initial balance from that transient delta.
+        before = int(report["initial_native_balance_wei"])
     report["initial_native_balance_wei"] = before
     report["passed"] = False
     report["status"] = "running"
