@@ -454,13 +454,19 @@ class Worker(QThread, StateAccess):
         return market_observation.observe(self, read_only)
 
     def open_position(self) -> None:
-        return positions.open_position(self)
+        if getattr(self, "cycle_trace", None) is not None:
+            return positions.open_position(self)
+        with signal_cycle(self, "MANUAL_BUY", None):
+            return positions.open_position(self)
 
     def exit_read(self, read: Callable[[Chain | None], T], *, stopping: bool = False) -> T:
         return positions.exit_read(self, read, stopping=stopping)
 
     def close_position(self, reason: str) -> None:
-        return positions.close_position(self, reason)
+        if getattr(self, "cycle_trace", None) is not None:
+            return positions.close_position(self, reason)
+        with signal_cycle(self, "STOP" if reason == "STOP" else "MANUAL_SELL", None):
+            return positions.close_position(self, reason)
 
     def sweep_service(self) -> SweepService:
         """Bind the current connection and wallet when starting this use case."""

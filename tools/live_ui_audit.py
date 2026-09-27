@@ -40,6 +40,29 @@ def reserve_cost_usd(previous, gas_wei, value_wei, fx):
     return total
 
 
+def observe_finality(chain, receipt, timeout=15):
+    """Provider-reported finality after send returned; never change execution outcome."""
+    started = time.monotonic()
+    errors = []
+    while time.monotonic() - started < timeout:
+        try:
+            finalized = chain.w3.eth.get_block("finalized")
+            if finalized["number"] >= receipt["blockNumber"]:
+                chain.canonical_receipt(receipt)
+                return {
+                    "observed": True,
+                    "post_send_return_to_finalized_ms": (time.monotonic() - started) * 1000,
+                    "finalized_block": finalized["number"],
+                    "errors": errors,
+                    "rule": "provider finalized number >= receipt block, canonical receipt hash rechecked",
+                }
+        except Exception as exc:
+            errors.append(type(exc).__name__)
+            break
+        time.sleep(0.5)
+    return {"observed": False, "errors": errors, "reason": "timeout or provider/canonical check failure"}
+
+
 def run(
     key_path,
     directory,
@@ -121,6 +144,7 @@ def run(
             def estimate_gas(self, tx):
                 estimate = function.estimate_gas(tx)
                 gas = (estimate * 120 + 99) // 100
+                budget_started = time.monotonic()
                 response = requests.get("https://api.dexscreener.com/tokens/v1/bsc/" + WBNB, timeout=10)
                 response.raise_for_status()
                 fx = select_rate(response.json(), WBNB) * D("1.10")
@@ -133,6 +157,7 @@ def run(
                 report["conservative_cost_bound_usd"] = str(next_usd)
                 report["bnb_usd_with_10pct_margin"] = str(fx)
                 save()  # Retain the whole reservation even after an uncertain result.
+                report.setdefault("budget_check_ms", []).append((time.monotonic() - budget_started) * 1000)
                 return estimate
 
             def build_transaction(self, tx):
@@ -143,12 +168,21 @@ def run(
                 return built
 
         receipt = original_send(trader, BudgetFunction(), label, value)
+        finality = observe_finality(trader.chain, receipt)
+        trace = getattr(trader, "cycle_trace", None)
+        if finality["observed"] and trace is not None:
+            finality["cycle_id"] = trace.data["cycle_id"]
+            finality["cycle_start_to_finalized_observed_ms"] = (
+                time.perf_counter_ns() - trace.started_ns
+            ) / 1e6
         report["receipts"].append(
             {
                 "label": label,
                 "hash": receipt["transactionHash"].hex(),
                 "status": receipt["status"],
                 "block": receipt["blockNumber"],
+                "block_hash": receipt["blockHash"].hex(),
+                "finality": finality,
                 "gas_fee_wei": receipt["gasUsed"] * receipt["effectiveGasPrice"],
             }
         )
@@ -197,6 +231,16 @@ def run(
             assert not w.store.data.get("operation") and not w.store.data.get("positions"), (
                 "Unfinished Sweep audit"
             )
+        original_record = w.worker.record_market
+
+        def record(kind, **data):
+            # Capture manual/converter diagnostics even before the first recorder starts.
+            if kind == "cycle_latency":
+                report.setdefault("cycle_traces", []).append(dict(event=kind, **data))
+            original_record(kind, **data)
+
+        w.worker.record_market = record
+        w.record_market.setChecked(True)
         w.setWindowTitle("DipBot · LIVE audit · $1 position / $1 total cost cap")
         w.mode.setCurrentText("LIVE")
         w.show()

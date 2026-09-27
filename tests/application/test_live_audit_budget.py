@@ -25,3 +25,22 @@ def test_budget_rejects_before_reservation():
 def test_invalid_budget_inputs_fail_closed(old, gas, value, rate):
     with pytest.raises(ValueError):
         reserve_cost_usd(old, gas, value, rate)
+
+
+def test_finality_requires_canonical_receipt_and_errors_do_not_change_execution():
+    from types import SimpleNamespace as NS
+
+    from tools.live_ui_audit import observe_finality
+
+    checked = []
+    receipt = {"blockNumber": 10, "blockHash": b"original"}
+    chain = NS(w3=NS(eth=NS(get_block=lambda tag: {"number": 11})), canonical_receipt=checked.append)
+    result = observe_finality(chain, receipt, timeout=1)
+    assert result["observed"] and checked == [receipt]
+
+    def reorg(receipt):
+        raise ValueError("canonical hash mismatch")
+
+    chain.canonical_receipt = reorg
+    result = observe_finality(chain, receipt, timeout=1)
+    assert not result["observed"] and result["errors"] == ["ValueError"]

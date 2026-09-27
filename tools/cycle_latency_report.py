@@ -61,6 +61,9 @@ def summarize(paths):
                     "STOP_LOSS": "SELL",
                     "TRAILING_STOP": "SELL",
                     "TIME_EXIT": "SELL",
+                    "MANUAL_BUY": "MANUAL_BUY",
+                    "MANUAL_SELL": "MANUAL_SELL",
+                    "STOP": "STOP",
                     "CONTROLLED_BUY": "CONTROLLED_BUY",
                     "CONTROLLED_SELL": "CONTROLLED_SELL",
                 }.get(row.get("action"))

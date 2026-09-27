@@ -317,3 +317,24 @@ def test_legacy_recovery_ids_remain_unknown():
         {"phase": "review_started", "operation_id": None, "transaction_id": None, "signal_cycle_id": None}
     ]
     assert "private" not in str(rows)
+
+
+@pytest.mark.parametrize(
+    "side,reason,action",
+    [("buy", None, "MANUAL_BUY"), ("sell", "MANUAL", "MANUAL_SELL"), ("sell", "STOP", "STOP")],
+)
+def test_manual_worker_cycles_do_not_duplicate_automatic_traces(monkeypatch, side, reason, action):
+    from dipbot.application import positions
+    from dipbot.application.worker import Worker
+
+    rows, calls = [], []
+    worker = NS(mode="PAPER", live=None, record_market=lambda event, **kw: rows.append(kw))
+    monkeypatch.setattr(positions, "open_position", lambda w: calls.append("buy"))
+    monkeypatch.setattr(positions, "close_position", lambda w, r: calls.append(r))
+    invoke = lambda: Worker.open_position(worker) if side == "buy" else Worker.close_position(worker, reason)
+    invoke()
+    assert len(rows) == 1 and rows[0]["action"] == action
+    with signal_cycle(worker, "BUY" if side == "buy" else "TAKE_PROFIT", None):
+        invoke()
+    assert len(rows) == 2 and len(calls) == 2
+    assert worker.cycle_trace is None
