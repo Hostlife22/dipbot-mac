@@ -41,6 +41,7 @@ uv run --frozen python -m tools.rpc_latency_probe --identity --samples 5 --outpu
 ```
 
 `fork_roundtrip --paired-performance` дополнительно выполняет три пары BUY/SELL
+(число пар задаётся `--paired-repeats 1..30`)
 каждого варианта на одном Anvil, восстанавливая snapshot между вариантами.
 Все дополнительные отправки локальные; учитываются в `benchmark_local_submissions`.
 Не совмещайте с `--sweep-audit`: это разные наборы проверок. Результаты fork не

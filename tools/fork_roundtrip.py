@@ -68,7 +68,10 @@ def run(
     fork_block=None,
     paired_performance=False,
     cohort_audit=False,
+    paired_repeats=3,
 ):
+    if not 1 <= paired_repeats <= 30:
+        raise ValueError("paired repeats must be 1..30")
     if sweep_audit and paired_performance:
         raise ValueError("Run Sweep and performance as separate cohorts")
     # Upstream is constructed only as a Chain for validation/read calls.
@@ -285,7 +288,9 @@ def run(
                 report["paired_receipt_mode"] = (
                     "explicit local evm_mine before receipt read; not BSC inclusion timing"
                 )
-                report["paired_identity_cycles"] = paired_identity(chain, account, pool, amount, directory)
+                report["paired_identity_cycles"] = paired_identity(
+                    chain, account, pool, amount, directory, paired_repeats
+                )
                 report["benchmark_local_submissions"] = sum(
                     r["local_submissions"] for r in report["paired_identity_cycles"]
                 )
@@ -346,7 +351,7 @@ def run(
     return report
 
 
-def paired_identity(chain, account, pool, amount, directory):
+def paired_identity(chain, account, pool, amount, directory, repeats=3):
     """Warm same-fork snapshot A/B; all writes stay behind the local Anvil guard."""
     rows = []
     original_wait = chain.w3.eth.wait_for_transaction_receipt
@@ -360,7 +365,7 @@ def paired_identity(chain, account, pool, amount, directory):
         return original_wait(*args, **kwargs)
 
     with patch.object(chain.w3.eth, "wait_for_transaction_receipt", side_effect=mined_receipt):
-        for repeat in range(3):
+        for repeat in range(repeats):
             for enabled in [True, False] if repeat % 2 else [False, True]:
                 snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
                 traces = []
@@ -515,6 +520,7 @@ def main():
     p.add_argument("--sweep-audit", action="store_true")
     p.add_argument("--block", type=int)
     p.add_argument("--paired-performance", action="store_true")
+    p.add_argument("--paired-repeats", type=int, default=3)
     p.add_argument("--cohort-audit", action="store_true")
     a = p.parse_args()
     report = run(
@@ -528,6 +534,7 @@ def main():
         fork_block=a.block,
         paired_performance=a.paired_performance,
         cohort_audit=a.cohort_audit,
+        paired_repeats=a.paired_repeats,
     )
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)

@@ -605,7 +605,7 @@ shadow-прогоне нельзя считать доказанным сете�
 
 | Этап | Результат / что намеренно не заявляется |
 | --- | --- |
-| P0.1 | HTTP/head, решение, отдельные tx/approve/converter/Sweep измеряются. T12 нашей LIVE tx и сквозной restart operation ID не подтверждены; finalized проверен отдельно на публичном блоке |
+| P0.1 | HTTP/head, решение, отдельные tx/approve/converter/Sweep измеряются. Durable operation/transaction IDs проверены при lost ACK и перезапуске; legacy IDs остаются UNKNOWN. T12 нашей LIVE tx не подтверждён; finalized проверен отдельно на публичном блоке |
 | P0.2 | CPU, storage, public RPC, fork allowance/ABI cohorts, PAPER и ошибки сохранены. Cold ABI не равен cold DNS/TLS; малый N fork не даёт устойчивого p99 |
 | P0.3 | Multicall identity и прежний ABI cache сохранены по измерениям; необходимые nonce/gas/canonical проверки и receipt-зависимости оставлены |
 | P0.4 | HeadSchedule сопоставлен с polling, DEFAULT не изменён. Полный локальный V2/V3 log engine не внедрён: меняет набор наблюдений стратегии, выигрыш не доказан |
@@ -642,3 +642,25 @@ Read-only RECONCILE создаёт новый trace с ссылками на п�
 автоматически не мигрируются. Тест lost ACK → новый Store/исполнитель → receipt
 подтвердил сохранение IDs, отсутствие повторной отправки и сохранённую блокировку
 до проверки баланса. Проверены также прежние crash/disk/receipt сценарии.
+
+### Расширенное парное сравнение V2/V3
+
+`fork_roundtrip --paired-performance --paired-repeats 10`: десять чередующихся
+пар на одном snapshot для каждого router, по 106 локальных отправок. Суммы
+получения/возврата совпали между A/B, upstream errors 0, BSC sends 0.
+
+| Router / swap | Median signal→swap ACK без/с identity Multicall, мс | RPC за весь цикл без/с |
+| --- | --- | --- |
+| V2 BUY | 952,6 / 977,5 | 57 / 55 |
+| V2 SELL | 753,0 / 675,9 | 57 / 55 |
+| V3 BUY | 717,0 / 726,4 | 58 / 56 |
+| V3 SELL | 535,2 / 533,6 | 58 / 56 |
+
+Парная медиана разницы с/без: V2 BUY +18,6 мс, SELL −52,2 мс;
+V3 BUY +11,5 мс, SELL −1,9 мс. Нельзя заявлять ускорение полного BUY:
+время зависит от локального майнинга/approve и других стадий. RPC-выигрыш
+identity отдельно подтверждён на public RPC, поэтому оптимизация сохранена.
+N=10 не даёт устойчивого p99; локальное `evm_mine` не моделирует BSC inclusion.
+Полные распределения/парные разницы: `production-candidate/paired-summary.json`
+в `.local-artifacts/performance/`. Массовое удаление проверок nonce/gas либо
+перепись executor на async этими измерениями не обоснованы.
