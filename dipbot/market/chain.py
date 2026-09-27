@@ -213,7 +213,8 @@ class StaleBlock(ValueError, TimeoutError):
 
 class Chain:
     checked_header: BlockData
-    _price_cache: tuple[tuple[Pool, int, bytes], D]
+    _price_cache: tuple[tuple[Pool, int, bytes], D, dict[str, Any]]
+    price_state: dict[str, Any] | None
     _paper_price_snapshot: tuple[Pool, dict[str, Any], float] | None
     price_block: dict[str, Any]
 
@@ -432,6 +433,7 @@ class Chain:
     def price(self, pool: Pool) -> D:
         # A failed read must invalidate the snapshot used by a subsequent PAPER fill.
         self._paper_price_snapshot = None
+        self.price_state = None
         block = self.check(force_network=False)
         header = getattr(self, "checked_header", None)
         key = (pool, block, bytes(header["hash"])) if header is not None and header.get("hash") else None
@@ -446,16 +448,19 @@ class Chain:
             assert header is not None
             self.price_block = dict(header)
             self.price_cache_hit = True
+            self.price_state = dict(cached[2])
             self._paper_price_snapshot = (pool, dict(header), time.monotonic())
             TIMINGS.record("chain.price_cache_hit", 0)
             return cast(D, cached[1])
         with localcontext() as context:
             context.prec = 78
+            state: dict[str, Any] = {"pool": pool.address, "router": pool.router, "block": block}
             if pool.router == "V2":
                 r0, r1, _ = self.call(pool.address, POOL_ABI, "getReserves", block=block)
                 observation_mark("raw_market_received")
                 if not r0 or not r1:
                     raise ValueError("WAITING: нулевая ликвидность")
+                state.update(reserve0=str(r0), reserve1=str(r1))
                 numerator, denominator = (r1, r0) if pool.token_is_0 else (r0, r1)
                 ratio = D(numerator) / D(denominator)
             else:
@@ -470,6 +475,7 @@ class Chain:
                 if not liquidity:
                     raise ValueError("WAITING: нулевая ликвидность")
                 sqrt = slot[0]
+                state.update(liquidity=str(liquidity), sqrt_price_x96=str(sqrt))
                 if sqrt <= 0:
                     raise ValueError("Пустая цена V3")
                 ratio = D(sqrt) ** 2 / D(2) ** 192
@@ -479,10 +485,12 @@ class Chain:
             if key is not None:
                 assert header is not None
                 self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
-                self._price_cache = (key, price)
+                state["block_hash"] = bytes(header["hash"]).hex()
+                self._price_cache = (key, price, dict(state))
             if header is not None:
                 self.price_block = dict(header)
                 self._paper_price_snapshot = (pool, dict(header), time.monotonic())
+            self.price_state = state
             return price
 
     def resolve_address(self, raw: str, catalogs: dict[str, dict[str, str]]) -> Resolution:

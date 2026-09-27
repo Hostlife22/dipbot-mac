@@ -260,6 +260,8 @@ def shadow_processing(seconds=120):
                         "hash": bytes(chain.price_block["hash"]).hex(),
                         "price": str(price),
                         "cache_hit": chain.price_cache_hit,
+                        "price_ready_ns": trace.started_ns
+                        + round(trace.data["observation"]["price_ready"] * 1e6),
                         "observation": trace.data["observation"],
                         "head": trace.data.get("head"),
                         "unavailable": trace.data["unavailable"],
@@ -293,7 +295,7 @@ def shadow_processing(seconds=120):
         return {
             "rows": rows,
             "errors": errors,
-            "calls": dict(calls),
+            "provider_calls_including_chain_id_cache": dict(calls),
             "independent_blocks": len({r["hash"] for r in rows}),
             "head_to_price": summary(
                 [
@@ -302,6 +304,7 @@ def shadow_processing(seconds=120):
                 ]
             ),
             "head_unmatched": len(rows) - len(matched),
+            "independent_matched_blocks": len({r["hash"] for r in matched}),
             "reconnects": feed.reconnects if feed else 0,
         }
 
@@ -310,10 +313,19 @@ def shadow_processing(seconds=120):
     left = {r["hash"]: r["price"] for r in polling["rows"]}
     right = {r["hash"]: r["price"] for r in heads["rows"]}
     shared = left.keys() & right.keys()
+    first = []
+    for mode in [polling, heads]:
+        by_hash = {}
+        for row in mode["rows"]:
+            by_hash.setdefault(row["hash"], row["price_ready_ns"])
+        first.append(by_hash)
+    differences = [(first[0][h] - first[1][h]) / 1e6 for h in sorted(shared)]
     return {
         "polling": polling,
         "heads": heads,
         "common_blocks": len(shared),
+        "polling_minus_heads_first_price_ms": differences,
+        "median_first_price_advantage_ms": statistics.median(differences) if differences else None,
         "price_mismatches": sum(left[h] != right[h] for h in shared),
         "transactions_sent": 0,
         "limits": "Concurrent read-only V2 spot observations, no strategy/signing. Head correlation requires equal block/hash; unmatched reads remain unknown. Different cadence can change strategy observations; this does not justify changing trading defaults.",

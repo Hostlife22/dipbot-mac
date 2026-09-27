@@ -114,3 +114,39 @@ def test_reject_forged_pool(bad, monkeypatch):
     c.call = call
     with pytest.raises(ValueError):
         c.verify_pool(POOL, POOL if bad == "target" else WBNB)
+
+
+def test_price_state_is_same_block_cached_and_invalidated_on_failure():
+    c = fake_chain()
+    p = Pool(POOL, "V2", WBNB, USDT, 18, 6, True)
+    c.checked_header = {"number": 123, "hash": bytes.fromhex("11" * 32)}
+    c.canonical_receipt = lambda receipt: None
+    c.price(p)
+    expected = dict(c.price_state)
+    assert expected["reserve0"] == str(2 * 10**18)
+    assert expected["block_hash"] == "11" * 32
+    c.price_state["reserve0"] = "changed by consumer"
+    c.price(p)
+    assert c.price_cache_hit and c.price_state == expected
+
+    def failed(**kwargs):
+        raise TimeoutError("offline")
+
+    c.check = failed
+    with pytest.raises(TimeoutError):
+        c.price(p)
+    assert c.price_state is None
+
+
+def test_reorg_does_not_publish_pool_state():
+    c = fake_chain()
+    p = Pool(POOL, "V2", WBNB, USDT, 18, 6, True)
+    c.checked_header = {"number": 123, "hash": bytes.fromhex("11" * 32)}
+
+    def changed(receipt):
+        raise ValueError("reorg")
+
+    c.canonical_receipt = changed
+    with pytest.raises(ValueError, match="reorg"):
+        c.price(p)
+    assert c.price_state is None

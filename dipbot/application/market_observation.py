@@ -63,6 +63,7 @@ def read_price(runtime: ObservationRuntime, force_chain: bool = False) -> D:
         block_hash=bytes(header["hash"]).hex() if header else None,
         block_timestamp=header.get("timestamp") if header else None,
         source="DEMO" if demo else "BSC",
+        pool_state=getattr(source_chain, "price_state", None) if not demo else None,
     )
     runtime.emit_event(EventKind.PRICE, str(price))
     return price

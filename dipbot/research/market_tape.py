@@ -42,7 +42,7 @@ FIELDS = {
     "activity": {"count", "from_block", "to_block", "pool"},
     "stream_gap": {"previous_block", "new_block", "discontinuity"},
     "backfill": {"pool", "from_block", "to_block", "truncated", "events", "count", "error_type"},
-    "price": {"price", "block", "block_hash", "block_timestamp", "source"},
+    "price": {"price", "block", "block_hash", "block_timestamp", "source", "pool_state"},
     "observation": {"price", "block", "block_hash", "quote_usd", "quote_usd_observed_at"},
     "signal": {"action", "price", "base", "entry"},
     "execution": {"side", "price", "reason"},
