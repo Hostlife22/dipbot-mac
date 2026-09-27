@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton
 from dipbot.domain.assets import USDT, V2_ROUTER, V3_ROUTER, WBNB
 from dipbot.domain.usd import select_rate
 from dipbot.execution.trader import LiveTrader
-from dipbot.market.chain import Chain
+from dipbot.market.chain import Chain, address
 from dipbot.persistence.storage import Store
 from dipbot.persistence.vault import Vault
 from dipbot.ui.theme import STYLE
@@ -93,7 +93,15 @@ def run(
     exit_retry=False,
     sweep_route=False,
     inject_lost_ack=False,
+    automatic_token=None,
+    automatic_seconds=600,
 ):
+    if automatic_token and (
+        not 1 <= automatic_seconds <= 600
+        or any((resume, sweep_only, sweep_multi, sweep_stop, sweep_route, exit_retry, inject_lost_ack))
+    ):
+        raise ValueError("Automatic audit requires a new journal and 1..600 seconds")
+    audit_token = address(automatic_token) if automatic_token else USDT
     if inject_lost_ack and (resume or sweep_only or sweep_multi or sweep_stop or sweep_route or exit_retry):
         raise ValueError("Lost ACK injection requires a new audit")
     sweep_mode = sweep_only or sweep_multi or sweep_stop or sweep_route
@@ -118,19 +126,22 @@ def run(
     ) == chain.w3.eth.get_transaction_count(account.address, "latest")
     expected_wrapped = 10**14 if resume else 0
     assert (
-        chain.balance(WBNB, account.address) == expected_wrapped and chain.balance(USDT, account.address) == 0
+        chain.balance(WBNB, account.address) == expected_wrapped
+        and chain.balance(audit_token, account.address) == 0
     ), "Unexpected holdings: do not continue"
     if not resume:
         assert all(not Store(p).data.get("operation") for p in directory.glob("state*.json")), (
             "Earlier audit needs reconciliation"
         )
     before = chain.w3.eth.get_balance(account.address)
-    pools = chain.find_pools(USDT, WBNB)
+    pools = chain.find_pools(audit_token, WBNB)
     v2 = next(p for p in pools if p.router == "V2")
     v3s = [p for p in pools if p.router == "V3"]
     v3 = max(v3s, key=lambda p: chain.quote(p, 30000000000000, True)) if v3s else None
     report = {
         "mode": "LIVE",
+        "target_token": audit_token,
+        "automatic_max_buys": 2 if automatic_token else None,
         "scenarios": [],
         "receipts": [],
         "errors": [],
@@ -178,6 +189,9 @@ def run(
     original_send = LiveTrader.send
 
     def budgeted_send(trader, function, label, value=0):
+        if automatic_token and label == "BUY" and sum(r["label"] == "BUY" for r in report["receipts"]) >= 2:
+            raise ValueError("Automatic audit BUY limit reached before signing")
+
         class BudgetFunction:
             def estimate_gas(self, tx):
                 estimate = function.estimate_gas(tx)
@@ -200,9 +214,9 @@ def run(
 
             def build_transaction(self, tx):
                 built = function.build_transaction(tx)
-                assert built["to"].lower() in {a.lower() for a in [WBNB, USDT, V2_ROUTER, V3_ROUTER]}, (
-                    "Recipient outside audit allowlist"
-                )
+                assert built["to"].lower() in {
+                    a.lower() for a in [WBNB, audit_token, V2_ROUTER, V3_ROUTER]
+                }, "Recipient outside audit allowlist"
                 return built
 
         def sent():
@@ -325,7 +339,7 @@ def run(
             b.click()
             wait()
 
-        def select(pool, token=USDT):
+        def select(pool, token=audit_token):
             w.token.setText(token)
             w.pool_input.setText(pool.address)
             w.send("verify", token=token, pool=pool.address)
@@ -369,7 +383,7 @@ def run(
                 assert all(t["status"] == "confirmed" for t in w.store.data["operation"]["transactions"])
                 assert (
                     chain.balance(WBNB, account.address) == 10**14
-                    and chain.balance(USDT, account.address) == 0
+                    and chain.balance(audit_token, account.address) == 0
                 )
                 for t in w.store.data["operation"]["transactions"]:
                     receipt = chain.w3.eth.get_transaction_receipt(t["hash"])
@@ -388,6 +402,61 @@ def run(
                     "LIVE recovery: RPC change -> receipt -> balance verification -> unlock; no resend"
                 )
             select(v2)
+            if automatic_token:
+                w.convert_amount.setText("0.0001")
+                click("BUY BASE")
+                w.params["amount"].setText("0.00002")
+                for name, value in (
+                    ("dip", "10"),
+                    ("take_profit", "15"),
+                    ("stop_loss", "15"),
+                    ("slippage", "5"),
+                    ("dynamic", "120"),
+                ):
+                    w.params[name].setText(value)
+                w.interval.setValue(0.1)
+                w.continue_after_exit.setChecked(True)
+                w.exit_fields["cooldown_seconds"].setValue(3)
+                w.exit_fields["trailing_pct"].setValue(3)
+                w.start.click()
+                wait()
+                started = progress = time.monotonic()
+                while time.monotonic() - started < automatic_seconds and w.running:
+                    pump()
+                    if sum(r["label"] == "SELL" for r in report["receipts"]) >= 2:
+                        break
+                    if time.monotonic() - progress >= 30:
+                        progress = time.monotonic()
+                        capture("automatic")
+                        print(
+                            json.dumps(
+                                {
+                                    "elapsed": round(progress - started),
+                                    "buys": sum(r["label"] == "BUY" for r in report["receipts"]),
+                                    "status": w.strategy_status.text(),
+                                },
+                                ensure_ascii=False,
+                            ),
+                            flush=True,
+                        )
+                report["automatic_observed_seconds"] = time.monotonic() - started
+                report["automatic_running_before_stop"] = w.running
+                capture("automatic_end")
+                w.stop.click()
+                wait()
+                assert chain.balance(audit_token, account.address) == 0
+                assert not w.store.data.get("operation") and not w.worker.position()
+                report["automatic_closed_trades"] = list(w.store.data.get("closed_trades", {}).values())
+                report["automatic_settings"] = {name: field.text() for name, field in w.params.items()}
+                report["automatic_exit_policy"] = w.exit_policy()
+                report["scenarios"].append(
+                    "LIVE bounded automatic market observation; STOP cleanup separately identified in archive"
+                )
+                click("SELL ALL BASE → BNB")
+                assert chain.balance(WBNB, account.address) == 0
+                report["passed"] = not report["errors"] and not report["ui_mismatches"]
+                capture("completed")
+                return
             if exit_retry:
                 # One real round trip. Only a pre-send read failure is injected.
                 from requests import Response
@@ -405,7 +474,7 @@ def run(
                 click("BUY BASE")
                 w.params["amount"].setText("0.00002")
                 click("BUY NOW")
-                assert chain.balance(USDT, account.address) > 0
+                assert chain.balance(audit_token, account.address) > 0
                 capture("exit_retry_position")
                 fault = []
                 retries = []
@@ -428,7 +497,7 @@ def run(
                 with patch.object(Chain, "quote", quote):
                     w.stop.click()
                     wait()
-                assert fault and retries and chain.balance(USDT, account.address) == 0
+                assert fault and retries and chain.balance(audit_token, account.address) == 0
                 assert not w.store.data.get("operation") and not w.worker.position()
                 report["exit_retry_detail"] = dict(w.worker.trade_detail or {})
                 closed = list(w.store.data.get("closed_trades", {}).values())
@@ -454,7 +523,8 @@ def run(
                     w.params["amount"].setText("0.00002")
                     click("BUY NOW")
                     assert (
-                        chain.balance(USDT, account.address) > 0 and chain.balance(WBNB, account.address) > 0
+                        chain.balance(audit_token, account.address) > 0
+                        and chain.balance(WBNB, account.address) > 0
                     )
                 # Restrict the audit catalog, never sell other wallet holdings.
                 # Actual Worker Sweep and LiveTrader conversion remain unchanged.
@@ -462,14 +532,14 @@ def run(
                     original_quote = w.worker.chain.quote
 
                     def unavailable(pool, amount, buy):
-                        if not buy and pool.token.lower() == USDT.lower():
+                        if not buy and pool.token.lower() == audit_token.lower():
                             raise TimeoutError("Controlled preflight failure")
                         return original_quote(pool, amount, buy)
 
                     with patch.object(w.worker.chain, "quote", unavailable):
                         click("SELL WALLET → BNB")
                     partial = report["sweep_reports"][-1]
-                    assert USDT in partial["failed"] and partial["remaining"][USDT] > 0
+                    assert audit_token in partial["failed"] and partial["remaining"][audit_token] > 0
                     assert chain.balance(WBNB, account.address) == 0
                     assert w.worker.position() and not w.store.data.get("operation")
                     capture("sweep_route_partial")
@@ -489,7 +559,11 @@ def run(
                     assert len(target_ops) == 1
                     sells = [tx for tx in target_ops[0]["transactions"] if tx["label"] == "SELL"]
                     assert len(sells) == 1 and sells[0]["request"]["to"].lower() == V3_ROUTER.lower()
-                    assert chain.balance(USDT, account.address) == chain.balance(WBNB, account.address) == 0
+                    assert (
+                        chain.balance(audit_token, account.address)
+                        == chain.balance(WBNB, account.address)
+                        == 0
+                    )
                     assert not w.worker.position() and not w.store.data.get("operation")
                     report["scenarios"].append(
                         "LIVE partial Sweep: injected TARGET preflight timeout, WBNB unwrapped; controlled verified V2-to-V3 rediscovery, real SELL and unwrap"
@@ -503,7 +577,7 @@ def run(
 
                     def stop_after_swap(trader, pool, amount, buy, *args, **kwargs):
                         received = original_swap(trader, pool, amount, buy, *args, **kwargs)
-                        if not buy and pool.token.lower() == USDT.lower():
+                        if not buy and pool.token.lower() == audit_token.lower():
                             # Controlled STOP at a real receipt boundary, not an RPC fault.
                             stopped.append(pool.token)
                             w.worker.stop_event.set()
@@ -511,9 +585,10 @@ def run(
 
                     with patch.object(LiveTrader, "swap", stop_after_swap):
                         click("SELL WALLET → BNB")
-                    assert stopped == [USDT]
+                    assert stopped == [audit_token]
                     assert (
-                        chain.balance(USDT, account.address) == 0 and chain.balance(WBNB, account.address) > 0
+                        chain.balance(audit_token, account.address) == 0
+                        and chain.balance(WBNB, account.address) > 0
                     )
                     assert not w.store.data.get("operation") and not w.worker.position()
                     assert report["sweep_reports"][-1]["status"] == "stopped"
@@ -523,7 +598,7 @@ def run(
                     capture("sweep_stopped")
                 click("SELL WALLET → BNB")
                 assert chain.balance(WBNB, account.address) == 0
-                assert chain.balance(USDT, account.address) == 0
+                assert chain.balance(audit_token, account.address) == 0
                 assert not w.store.data.get("operation")
                 report["scenarios"].append(
                     "LIVE resume stopped Sweep: only remaining WBNB unwrapped"
@@ -546,14 +621,14 @@ def run(
             report["scenarios"].append("LIVE V2 BUY via UI")
             w.stop.click()
             wait()
-            assert chain.balance(USDT, account.address) == 0
+            assert chain.balance(audit_token, account.address) == 0
             report["scenarios"].append("LIVE STOP closes V2 position")
             if v3:
                 select(v3)
                 click("BUY NOW")
                 capture("v3_position")
                 click("SELL POSITION")
-                assert chain.balance(USDT, account.address) == 0
+                assert chain.balance(audit_token, account.address) == 0
                 report["scenarios"].append("LIVE V3 BUY -> SELL via UI")
             click("SELL ALL BASE → BNB")
             assert chain.balance(WBNB, account.address) == 0
@@ -562,10 +637,12 @@ def run(
             select(v2, WBNB)
             w.convert_amount.setText("0.00005")
             click("BUY BASE")
-            assert chain.balance(USDT, account.address) > 0
+            assert chain.balance(audit_token, account.address) > 0
             report["scenarios"].append("LIVE converter BNB -> USDT")
             click("SELL ALL BASE → BNB")
-            assert chain.balance(USDT, account.address) == 0 and chain.balance(WBNB, account.address) == 0
+            assert (
+                chain.balance(audit_token, account.address) == 0 and chain.balance(WBNB, account.address) == 0
+            )
             report["scenarios"].append("LIVE converter USDT -> BNB")
             # A real no-operation receipt check is safe; faults are exercised offline.
             click("Проверить receipts")
@@ -591,6 +668,7 @@ def run(
             report["status"] = "completed" if report.get("passed") else "failed"
             report["journal_locked"] = bool(w.store.data.get("operation"))
             report["remaining_wbnb_raw"] = chain.balance(WBNB, account.address)
+            report["remaining_target_raw"] = chain.balance(audit_token, account.address)
             report["remaining_usdt_raw"] = chain.balance(USDT, account.address)
             after = chain.w3.eth.get_balance(account.address)
             report["native_balance_delta_wei"] = before - after
@@ -613,6 +691,10 @@ if __name__ == "__main__":
     p.add_argument("--key-file", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--execute", action="store_true")
+    p.add_argument(
+        "--automatic-token", help="Explicitly selected token; requires separate prior sellability review"
+    )
+    p.add_argument("--automatic-seconds", type=int, default=600)
     p.add_argument(
         "--inject-lost-ack",
         action="store_true",
@@ -674,4 +756,6 @@ if __name__ == "__main__":
         a.exit_retry,
         a.sweep_route,
         a.inject_lost_ack,
+        automatic_token=a.automatic_token,
+        automatic_seconds=a.automatic_seconds,
     )

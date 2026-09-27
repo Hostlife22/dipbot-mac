@@ -56,3 +56,18 @@ def test_lost_ack_injection_permits_exactly_one_send():
     with pytest.raises(RuntimeError, match="Repeated"):
         send(b"synthetic")
     assert sends == [b"synthetic"] and noted == [True]
+
+
+@pytest.mark.parametrize("seconds", [0, 601])
+def test_automatic_audit_deadline_checked_before_key_access(seconds):
+    from tools.live_ui_audit import run
+
+    with pytest.raises(ValueError, match="1..600"):
+        run(None, None, automatic_token="unused", automatic_seconds=seconds)
+
+
+def test_automatic_audit_cannot_resume_a_different_scenario():
+    from tools.live_ui_audit import run
+
+    with pytest.raises(ValueError, match="new journal"):
+        run(None, None, automatic_token="unused", resume=True)
