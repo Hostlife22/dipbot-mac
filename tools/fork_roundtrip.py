@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 from collections import Counter
+from contextlib import contextmanager
 from decimal import Decimal as D
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -57,6 +58,69 @@ def validate_read_request(payload):
     return rows
 
 
+class ForkReadCache:
+    """Only successful immutable reads pinned to this fork height/hash; never latest."""
+
+    def __init__(self, block, block_hash=None):
+        self.block = block
+        self.block_hash = block_hash
+        self.values = {}
+        self.lock = threading.Lock()
+        self.hits = 0
+
+    def key(self, row):
+        if row.get("method") not in {
+            "eth_getStorageAt",
+            "eth_getBalance",
+            "eth_getTransactionCount",
+            "eth_getCode",
+        }:
+            return None
+        params = row.get("params", [])
+        if not params:
+            return None
+        tag = params[-1]
+        if tag != hex(self.block) and (self.block_hash is None or tag != self.block_hash):
+            return None
+        return json.dumps([row["method"], params], sort_keys=True)
+
+    def get(self, row):
+        key = self.key(row)
+        with self.lock:
+            if key in self.values:
+                self.hits += 1
+                return {"jsonrpc": "2.0", "id": row.get("id"), "result": self.values[key]}
+        return None
+
+    def put(self, row, reply):
+        key = self.key(row)
+        if key and "result" in reply and reply["result"] is not None and "error" not in reply:
+            with self.lock:
+                if len(self.values) < 10000:
+                    self.values[key] = reply["result"]
+
+
+def cached_fork_read(payload, cache, fetch):
+    rows = payload if isinstance(payload, list) else [payload]
+    found, missing = [], []
+    for row in rows:
+        cached = cache.get(row)
+        if cached is None:
+            missing.append(row)
+        else:
+            found.append(cached)
+    if missing:
+        replies = fetch(missing if isinstance(payload, list) else missing[0])
+        replies = replies if isinstance(replies, list) else [replies]
+        by_id = {row.get("id"): row for row in missing}
+        for reply in replies:
+            row = by_id.get(reply.get("id"))
+            if row is not None:
+                cache.put(row, reply)
+        found.extend(replies)
+    return found if isinstance(payload, list) else found[0]
+
+
 def run(
     anvil,
     endpoint,
@@ -89,6 +153,8 @@ def run(
         raise ValueError("Размер локальной симуляции должен быть <=0.01 WBNB")
     counts = Counter()
     proxy_errors = Counter()
+    fork_hash = remote.w3.eth.get_block(block)["hash"].hex()
+    fork_cache = ForkReadCache(block, "0x" + fork_hash.removeprefix("0x"))
 
     class Proxy(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -133,11 +199,21 @@ def run(
                     self.end_headers()
                     self.wfile.write(json.dumps(result if isinstance(payload, list) else result[0]).encode())
                     return
-                for row in rows:
-                    counts[row["method"]] += 1
-                response = requests.post(endpoint, json=payload, timeout=12)
-                response.raise_for_status()
-                result = response.content
+
+                def fetch(request):
+                    requested = request if isinstance(request, list) else [request]
+                    for row in requested:
+                        counts[row["method"]] += 1
+                    response = requests.post(endpoint, json=request, timeout=12)
+                    response.raise_for_status()
+                    reply = response.json()
+                    replies = reply if isinstance(reply, list) else [reply]
+                    for item in replies:
+                        if isinstance(item, dict) and "error" in item:
+                            proxy_errors[f"RPC:{item['error'].get('code')}"] += 1
+                    return reply
+
+                result = json.dumps(cached_fork_read(payload, fork_cache, fetch)).encode()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
@@ -162,7 +238,7 @@ def run(
     report = {
         "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "python": platform.python_version(),
-        "fork_block_hash": remote.w3.eth.get_block(block)["hash"].hex(),
+        "fork_block_hash": fork_hash,
         "cycle_traces": [],
         "environment": "local Anvil fork",
         "fork_block": block,
@@ -252,8 +328,7 @@ def run(
         def local_check(**kwargs):
             latest = chain.w3.eth.get_block("latest")
             if time.time() - latest["timestamp"] > 2:
-                chain.w3.provider.make_request("evm_setNextBlockTimestamp", [int(time.time()) + 1])
-                chain.w3.provider.make_request("evm_mine", [])
+                mine_local_block(chain)
             return original_check(**kwargs)
 
         chain.check = local_check
@@ -298,8 +373,16 @@ def run(
                 report["paired_receipt_mode"] = (
                     "explicit local evm_mine before receipt read; not BSC inclusion timing"
                 )
-                report["paired_identity_cycles"] = paired_identity(
-                    chain, account, pool, amount, directory, paired_repeats, router_identity=paired_router
+                report["paired_identity_cycles"] = []
+                paired_identity(
+                    chain,
+                    account,
+                    pool,
+                    amount,
+                    directory,
+                    paired_repeats,
+                    router_identity=paired_router,
+                    rows=report["paired_identity_cycles"],
                 )
                 report["benchmark_local_submissions"] = sum(
                     r["local_submissions"] for r in report["paired_identity_cycles"]
@@ -338,6 +421,12 @@ def run(
         from dipbot.application.errors import safe_error
 
         report["failure_detail"] = safe_error(exc)
+        context = exc.__context__
+        if context is not None:
+            report["failure_context_type"] = type(context).__name__
+            detail = re.sub(r"https?://[^\s]+", "<endpoint>", str(context))
+            detail = re.sub(r"0x[0-9a-fA-F]{40,}", "<hex>", detail)
+            report["failure_context"] = detail[:300]
         response = getattr(exc, "rpc_response", None)
         if isinstance(response, dict) and isinstance(response.get("error"), dict):
             report["rpc_error_code"] = response["error"].get("code")
@@ -358,25 +447,55 @@ def run(
         thread.join(timeout=1)
         report["upstream_methods"] = dict(counts)
         report["upstream_errors"] = dict(proxy_errors)
+        report["pinned_state_cache_hits"] = fork_cache.hits
+        report["pinned_state_cache_entries"] = len(fork_cache.values)
         output.write_text(json.dumps(report, indent=2) + "\n")
     return report
 
 
-def paired_identity(chain, account, pool, amount, directory, repeats=3, *, router_identity=False):
+def mine_local_block(chain):
+    """Explicit fork clock after snapshot rewind; never loosen production freshness."""
+    latest = chain.w3.eth.get_block("latest")
+    timestamp = max(int(time.time()) + 1, latest["timestamp"] + 1)
+    for method, params in (("evm_setNextBlockTimestamp", [timestamp]), ("evm_mine", [])):
+        response = chain.w3.provider.make_request(method, params)
+        if "error" in response:
+            raise RuntimeError(f"Local {method} failed: {response['error']}")
+
+
+@contextmanager
+def controlled_mining(chain):
+    response = chain.w3.provider.make_request("anvil_getAutomine", [])
+    previous = response.get("result")
+    if type(previous) is not bool:
+        raise RuntimeError("Cannot inspect local automine mode")
+    response = chain.w3.provider.make_request("evm_setAutomine", [False])
+    if "error" in response:
+        raise RuntimeError("Cannot disable local automine")
+    try:
+        yield
+    finally:
+        response = chain.w3.provider.make_request("evm_setAutomine", [previous])
+        if "error" in response:
+            raise RuntimeError("Cannot restore local automine")
+
+
+def paired_identity(chain, account, pool, amount, directory, repeats=3, *, router_identity=False, rows=None):
     """Warm same-fork snapshot A/B; all writes stay behind the local Anvil guard."""
-    rows = []
+    rows = [] if rows is None else rows
     flag = "router_identity_multicall_enabled" if router_identity else "identity_multicall_enabled"
     original_wait = chain.w3.eth.wait_for_transaction_receipt
 
     def mined_receipt(*args, **kwargs):
         # Only this benchmark controls local inclusion. Keep ACK measured before
         # mining and make dependent approve receipt timing comparable across A/B.
-        response = chain.w3.provider.make_request("evm_mine", [])
-        if "error" in response:
-            raise RuntimeError("Local deterministic mining failed")
+        mine_local_block(chain)
         return original_wait(*args, **kwargs)
 
-    with patch.object(chain.w3.eth, "wait_for_transaction_receipt", side_effect=mined_receipt):
+    with (
+        controlled_mining(chain),
+        patch.object(chain.w3.eth, "wait_for_transaction_receipt", side_effect=mined_receipt),
+    ):
         for repeat in range(repeats):
             for enabled in [True, False] if repeat % 2 else [False, True]:
                 snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
