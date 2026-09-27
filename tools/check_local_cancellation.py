@@ -9,18 +9,20 @@ import threading
 import time
 from decimal import Decimal as D
 from pathlib import Path
+from unittest.mock import patch
 
 from eth_account import Account
 from web3 import Web3
 
 from dipbot.execution.cancellation import cancel_pending, cancellation_plan
+from dipbot.execution.errors import UncertainTransaction
 from dipbot.execution.reconciliation import reconcile_receipts
 from dipbot.execution.trader import LiveTrader
 from dipbot.market.chain import Chain
 from dipbot.persistence.storage import Store
 
 
-def run(binary, output):
+def run(binary, output, *, original_wins=False):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -108,13 +110,32 @@ def run(binary, output):
                         return
                     miner_stop.wait(0.05)
 
-            miner = threading.Thread(target=mine_replacement, daemon=True)
-            miner.start()
-            try:
-                cancel_pending(trader, expected_hash=original_hash, expected_gas_price=plan["gas_price"])
-            finally:
-                miner_stop.set()
-                miner.join(timeout=2)
+            if original_wins:
+                sender = chain.w3.eth.send_raw_transaction
+
+                def original_first(raw):
+                    # The cancellation hash is already durable; the original wins
+                    # immediately before replacement submission, on this local node.
+                    control("evm_mine", [])
+                    return sender(raw)
+
+                with patch.object(chain.w3.eth, "send_raw_transaction", side_effect=original_first):
+                    try:
+                        cancel_pending(
+                            trader, expected_hash=original_hash, expected_gas_price=plan["gas_price"]
+                        )
+                    except UncertainTransaction:
+                        report["uncertain_latch_before_reconcile"] = bool(store.data.get("operation"))
+                    else:
+                        raise AssertionError("Losing replacement must not be reported confirmed")
+            else:
+                miner = threading.Thread(target=mine_replacement, daemon=True)
+                miner.start()
+                try:
+                    cancel_pending(trader, expected_hash=original_hash, expected_gas_price=plan["gas_price"])
+                finally:
+                    miner_stop.set()
+                    miner.join(timeout=2)
             reconcile_receipts(chain, store, account.address)
             rows = store.data["operation"]["transactions"]
             report.update(
@@ -124,9 +145,11 @@ def run(binary, output):
                 gas_wei=sum(r["gas_fee_wei"] for r in rows),
                 latch_preserved="operation" in store.data,
             )
+            report["scenario"] = "original_wins" if original_wins else "replacement_wins"
             report["passed"] = (
-                report["statuses"] == ["superseded", "confirmed"]
-                and report["recipient_balance"] == 0
+                report["statuses"]
+                == (["confirmed", "superseded"] if original_wins else ["superseded", "confirmed"])
+                and report["recipient_balance"] == (10**12 if original_wins else 0)
                 and report["wallet_nonce"] == 1
                 and report["latch_preserved"]
             )
@@ -145,8 +168,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--anvil", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--original-wins", action="store_true")
     args = p.parse_args()
-    report = run(args.anvil, args.output)
+    report = run(args.anvil, args.output, original_wins=args.original_wins)
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)
 

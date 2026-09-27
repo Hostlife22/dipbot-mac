@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal as D
 from typing import Any, cast
 
-from PySide6.QtCore import QModelIndex, Qt, QTimer
+from PySide6.QtCore import QModelIndex, Qt, QThread, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -133,6 +133,11 @@ class Window(QMainWindow, PresentationAccess):
     ws_rpc: QLineEdit
 
     def __init__(self, store: Store | None = None) -> None:
+        app = QApplication.instance()
+        if not isinstance(app, QApplication):
+            raise RuntimeError("Window requires a QApplication created before the window")
+        if QThread.currentThread() != app.thread():
+            raise RuntimeError("Window must be created on the QApplication thread")
         super().__init__()
         self.presentation = PresentationState()
         self.store = store or Store()
