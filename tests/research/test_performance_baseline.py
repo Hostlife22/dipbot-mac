@@ -45,3 +45,65 @@ def test_finality_probe_requires_canonical_hash_and_does_not_submit(monkeypatch)
     result = probe.finality_probe(0.01)
     assert not result["observed"] and result["errors"] == ["ValueError"]
     assert "block_received_to_finality_observed_ms" not in result
+
+
+def test_market_snapshot_keeps_quote_block_and_rejects_reorg(tmp_path, monkeypatch):
+    import json
+    from types import SimpleNamespace as NS
+
+    from dipbot.domain.assets import USDT, WBNB
+    from tools import read_only_probe as probe
+
+    clock = [0.0]
+    monkeypatch.setattr(probe.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(probe.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    monkeypatch.setattr(probe, "guard_provider", lambda _: {})
+    pool = NS(address=USDT, token=USDT, quote=WBNB, quote_decimals=18, router="V2")
+    calls = []
+
+    def quote(pool, amount, buy, *, block):
+        calls.append(block)
+        return amount * 2 if buy else amount // 2
+
+    chain = NS(
+        w3=NS(provider=None),
+        verify_pool=lambda *a: pool,
+        price=lambda p: probe.D(1),
+        price_block={"number": 42, "hash": bytes.fromhex("11" * 32)},
+        price_state={"reserve0": "123"},
+        quote=quote,
+        canonical_receipt=lambda r: None,
+    )
+    monkeypatch.setattr(probe, "Chain", lambda *a, **kw: chain)
+    monkeypatch.setattr("dipbot.market.activity.read_swaps", lambda *a: [])
+    monkeypatch.setattr(
+        probe.requests,
+        "get",
+        lambda *a, **kw: NS(
+            raise_for_status=lambda: None,
+            json=lambda: [
+                {
+                    "chainId": "bsc",
+                    "baseToken": {"address": WBNB},
+                    "priceUsd": "500",
+                    "liquidity": {"usd": 1000},
+                },
+            ],
+        ),
+    )
+    path = tmp_path / "snapshots.jsonl"
+    result = probe.market_snapshots("public", USDT, USDT, 1, probe.D(20), path)
+    rows = [json.loads(s) for s in path.read_text().splitlines()]
+    assert result == {"snapshots": 1, "errors": 0, "activity_errors": 0}
+    assert calls == [42, 42] and rows[1]["canonical"]
+    assert rows[1]["amount_in_raw"] == str(4 * 10**16)
+
+    def reorg(receipt):
+        raise ValueError("changed hash")
+
+    chain.canonical_receipt = reorg
+    path = tmp_path / "reorg.jsonl"
+    result = probe.market_snapshots("public", USDT, USDT, 1, probe.D(20), path)
+    rows = [json.loads(s) for s in path.read_text().splitlines()]
+    assert result == {"snapshots": 0, "errors": 1, "activity_errors": 0}
+    assert rows[1]["canonical"] is False and rows[1]["error_type"] == "ValueError"

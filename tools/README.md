@@ -64,3 +64,17 @@ read-only proxy; холодный сетевой клиент и BSC latency з�
 `--sweep-audit` сохраняет отдельные traces частичных отказов и STOP.
 В изолированном `.app` PAPER можно указать `--market-paper-wss wss://bsc-rpc.publicnode.com`
 и HTTP через `--acceptance-endpoint`; ключи и LIVE заблокированы аудитом.
+
+Для будущего анализа ликвидности без archive RPC сохраняйте снимки во время наблюдения:
+
+```bash
+uv run --frozen python -m tools.read_only_probe --endpoint https://bsc-rpc.publicnode.com --token TOKEN_ADDRESS --pool POOL_ADDRESS --seconds 600 --amount-usd 20 --output .local-artifacts/performance/market-snapshots.jsonl
+```
+
+Файл создаётся новым; каждые 5 с записываются block/hash, исходное состояние пула,
+котировки BUY/обратной продажи на том же блоке и активность за 100 блоков. USD —
+индикативный курс базового токена с источником/возрастом. Только `canonical=true`
+можно использовать как подтверждённый снимок; ошибки и неполная активность явные.
+Обратная котировка не моделирует состояние после BUY, tax/MEV и газ. RPC guard
+исключает отправки; инструмент не читает кошелёк. Не запускайте много диагностических
+потоков одновременно на public RPC: учитывайте rate limits и сохраняйте ошибки.

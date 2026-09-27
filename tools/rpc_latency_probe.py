@@ -321,6 +321,10 @@ def shadow_processing(seconds=120):
         first.append(by_hash)
     differences = [(first[0][h] - first[1][h]) / 1e6 for h in sorted(shared)]
     return {
+        "passed": bool(shared)
+        and not polling["errors"]
+        and not heads["errors"]
+        and all(left[h] == right[h] for h in shared),
         "polling": polling,
         "heads": heads,
         "common_blocks": len(shared),
@@ -406,8 +410,11 @@ if __name__ == "__main__":
             result["finality"] = finality_probe(args.finality_seconds)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2) + "\n")
-        print(json.dumps({"output": str(args.output)}))
-        raise SystemExit(0)
+        passed = ("shadow_processing" not in result or result["shadow_processing"]["passed"]) and (
+            "finality" not in result or result["finality"]["observed"]
+        )
+        print(json.dumps({"output": str(args.output), "passed": passed}))
+        raise SystemExit(0 if passed else 1)
     if args.identity:
         result = identity_probe(ENDPOINTS[0], args.samples)
         args.output.parent.mkdir(parents=True, exist_ok=True)
