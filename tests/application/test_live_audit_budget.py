@@ -44,3 +44,15 @@ def test_finality_requires_canonical_receipt_and_errors_do_not_change_execution(
     chain.canonical_receipt = reorg
     result = observe_finality(chain, receipt, timeout=1)
     assert not result["observed"] and result["errors"] == ["ValueError"]
+
+
+def test_lost_ack_injection_permits_exactly_one_send():
+    from tools.live_ui_audit import lose_send_ack
+
+    sends, noted = [], []
+    send = lose_send_ack(sends.append, lambda: noted.append(True))
+    with pytest.raises(TimeoutError):
+        send(b"synthetic")
+    with pytest.raises(RuntimeError, match="Repeated"):
+        send(b"synthetic")
+    assert sends == [b"synthetic"] and noted == [True]

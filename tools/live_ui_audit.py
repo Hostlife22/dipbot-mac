@@ -67,6 +67,22 @@ def observe_finality(chain, receipt, timeout=15, received_ns=None):
     return {"observed": False, "errors": errors, "reason": "timeout or provider/canonical check failure"}
 
 
+def lose_send_ack(sender, on_sent):
+    """Inject one client-side lost ACK, and forbid every subsequent send in this scope."""
+    attempted = False
+
+    def send(raw):
+        nonlocal attempted
+        if attempted:
+            raise RuntimeError("Repeated audit send forbidden")
+        attempted = True
+        sender(raw)
+        on_sent()
+        raise TimeoutError("Controlled lost broadcast acknowledgment")
+
+    return send
+
+
 def run(
     key_path,
     directory,
@@ -76,7 +92,10 @@ def run(
     sweep_stop=False,
     exit_retry=False,
     sweep_route=False,
+    inject_lost_ack=False,
 ):
+    if inject_lost_ack and (resume or sweep_only or sweep_multi or sweep_stop or sweep_route or exit_retry):
+        raise ValueError("Lost ACK injection requires a new audit")
     sweep_mode = sweep_only or sweep_multi or sweep_stop or sweep_route
     multi = sweep_multi or sweep_stop or sweep_route
     sweep_state = (
@@ -184,7 +203,21 @@ def run(
                 )
                 return built
 
-        receipt = original_send(trader, BudgetFunction(), label, value)
+        def sent():
+            report["lost_ack_injected"] = True
+            save()
+
+        if inject_lost_ack and not report.get("lost_ack_injected"):
+            if label != "BNB → WBNB" or report["receipts"]:
+                raise ValueError("Lost ACK injection is limited to the initial wrap")
+            with patch.object(
+                trader.chain.w3.eth,
+                "send_raw_transaction",
+                lose_send_ack(trader.chain.w3.eth.send_raw_transaction, sent),
+            ):
+                receipt = original_send(trader, BudgetFunction(), label, value)
+        else:
+            receipt = original_send(trader, BudgetFunction(), label, value)
         received_ns = time.perf_counter_ns()
         trace = getattr(trader, "cycle_trace", None)
         row = {
@@ -579,6 +612,11 @@ if __name__ == "__main__":
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--execute", action="store_true")
     p.add_argument(
+        "--inject-lost-ack",
+        action="store_true",
+        help="Initial wrap only; leave durable latch for a separate --resume process",
+    )
+    p.add_argument(
         "--resume",
         action="store_true",
         help="Only recover the single initial wrap, preserving the same budget",
@@ -607,10 +645,31 @@ if __name__ == "__main__":
         help="Continue budget: partial preflight failure then verified V3 reroute",
     )
     a = p.parse_args()
-    if sum([a.resume, a.sweep_only, a.sweep_multi, a.sweep_stop, a.exit_retry, a.sweep_route]) > 1:
+    if (
+        sum(
+            [
+                a.resume,
+                a.sweep_only,
+                a.sweep_multi,
+                a.sweep_stop,
+                a.exit_retry,
+                a.sweep_route,
+                a.inject_lost_ack,
+            ]
+        )
+        > 1
+    ):
         p.error("Choose one continuation mode")
     if not a.execute:
         p.error("Explicit --execute and user authorization required")
     run(
-        a.key_file, a.output, a.resume, a.sweep_only, a.sweep_multi, a.sweep_stop, a.exit_retry, a.sweep_route
+        a.key_file,
+        a.output,
+        a.resume,
+        a.sweep_only,
+        a.sweep_multi,
+        a.sweep_stop,
+        a.exit_retry,
+        a.sweep_route,
+        a.inject_lost_ack,
     )
