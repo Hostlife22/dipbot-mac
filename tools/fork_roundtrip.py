@@ -14,6 +14,7 @@ from decimal import Decimal as D
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import requests
 from eth_account import Account
@@ -56,7 +57,19 @@ def validate_read_request(payload):
     return rows
 
 
-def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False, fork_block=None):
+def run(
+    anvil,
+    endpoint,
+    token,
+    pool_address,
+    amount,
+    output,
+    sweep_audit=False,
+    fork_block=None,
+    paired_performance=False,
+):
+    if sweep_audit and paired_performance:
+        raise ValueError("Run Sweep and performance as separate cohorts")
     # Upstream is constructed only as a Chain for validation/read calls.
     remote = Chain(endpoint, request_timeout=8)
     head = remote.check()
@@ -266,6 +279,15 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False,
             with signal_cycle(trace_worker, "STOP_LOSS", None):
                 returned = trader.swap(pool, received, False, D(3), simulate=True)
             trader.finish()
+            if paired_performance:
+                report["phase"] = "paired_performance"
+                report["paired_receipt_mode"] = (
+                    "explicit local evm_mine before receipt read; not BSC inclusion timing"
+                )
+                report["paired_identity_cycles"] = paired_identity(chain, account, pool, amount, directory)
+                report["benchmark_local_submissions"] = sum(
+                    r["local_submissions"] for r in report["paired_identity_cycles"]
+                )
             if sweep_audit:
                 report["phase"] = "sweep_audit"
                 from tools.fork_sweep_audit import audit
@@ -281,7 +303,7 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False,
                 returned_wei=str(returned),
                 roundtrip_loss_pct=str((D(amount) - D(returned)) * 100 / D(amount)),
                 asset_flows=[flow for op in store.data["history"] for flow in op.get("asset_flows", [])],
-                local_transactions=len(receipts) + 1,
+                local_transactions=len(receipts) + 1 + report.get("benchmark_local_submissions", 0),
                 bootstrap_local_transactions=1,
                 local_gas_wei=str(sum(r.get("gas_fee_wei", 0) for r in receipts)),
             )
@@ -316,6 +338,67 @@ def run(anvil, endpoint, token, pool_address, amount, output, sweep_audit=False,
     return report
 
 
+def paired_identity(chain, account, pool, amount, directory):
+    """Warm same-fork snapshot A/B; all writes stay behind the local Anvil guard."""
+    rows = []
+    original_wait = chain.w3.eth.wait_for_transaction_receipt
+
+    def mined_receipt(*args, **kwargs):
+        # Only this benchmark controls local inclusion. Keep ACK measured before
+        # mining and make dependent approve receipt timing comparable across A/B.
+        response = chain.w3.provider.make_request("evm_mine", [])
+        if "error" in response:
+            raise RuntimeError("Local deterministic mining failed")
+        return original_wait(*args, **kwargs)
+
+    with patch.object(chain.w3.eth, "wait_for_transaction_receipt", side_effect=mined_receipt):
+        for repeat in range(3):
+            for enabled in [True, False] if repeat % 2 else [False, True]:
+                snapshot = chain.w3.provider.make_request("evm_snapshot", [])["result"]
+                traces = []
+                try:
+                    chain.identity_multicall_enabled = enabled
+                    # Read immutable metadata caches are shared; mutable state is reset.
+                    store = Store(Path(directory) / f"paired-{repeat}-{enabled}.json")
+                    trader = LiveTrader(chain, account.key, store, D(".1"), lambda _: None)
+                    worker = SimpleNamespace(
+                        mode="LIVE",
+                        live=trader,
+                        record_market=lambda event, **kw: traces.append(
+                            dict(event=event, environment="FORK", **kw)
+                        ),
+                    )
+                    trader.begin("LOCAL WRAP")
+                    trader.wrap(amount)
+                    trader.finish()
+                    trader.begin("BUY local fork")
+                    with signal_cycle(worker, "BUY", None):
+                        bought = trader.swap(pool, amount, True, D(3), simulate=True)
+                    trader.finish()
+                    trader.begin("SELL local fork")
+                    with signal_cycle(worker, "STOP_LOSS", None):
+                        sold = trader.swap(pool, bought, False, D(3), simulate=True)
+                    trader.finish()
+                    rows.append(
+                        {
+                            "repeat": repeat,
+                            "multicall": enabled,
+                            "traces": traces,
+                            "received": str(bought),
+                            "returned": str(sold),
+                            "local_submissions": sum(len(op["transactions"]) for op in store.data["history"]),
+                        }
+                    )
+                finally:
+                    result = chain.w3.provider.make_request("evm_revert", [snapshot])
+                    if result.get("result") is not True:
+                        raise RuntimeError("Fork snapshot restoration failed")
+                    chain.identity_multicall_enabled = True
+    if len({(r["received"], r["returned"]) for r in rows}) != 1:
+        raise AssertionError("Paired fork financial outputs differ")
+    return rows
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--anvil", type=Path, required=True)
@@ -326,6 +409,7 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--sweep-audit", action="store_true")
     p.add_argument("--block", type=int)
+    p.add_argument("--paired-performance", action="store_true")
     a = p.parse_args()
     report = run(
         a.anvil,
@@ -336,6 +420,7 @@ def main():
         a.output,
         sweep_audit=a.sweep_audit,
         fork_block=a.block,
+        paired_performance=a.paired_performance,
     )
     print(json.dumps(report))
     raise SystemExit(0 if report["passed"] else 1)

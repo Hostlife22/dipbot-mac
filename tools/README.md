@@ -33,3 +33,19 @@ uv run --frozen python -m tools.rpc_latency_probe --samples 1000 --max-seconds 3
 Ограничение по времени может завершить RPC-прогон раньше 1000 независимых блоков;
 смотрите `independent_blocks`, а не только число итераций. Сравнивайте одинаковые
 cohorts и сборки. Ни один из этих инструментов не отправляет транзакции.
+
+Для чередующегося сравнения direct/Multicall с одинаковыми canonical guards:
+
+```bash
+uv run --frozen python -m tools.rpc_latency_probe --identity --samples 5 --output .local-artifacts/performance/identity-ab.json
+```
+
+`fork_roundtrip --paired-performance` дополнительно выполняет три пары BUY/SELL
+каждого варианта на одном Anvil, восстанавливая snapshot между вариантами.
+Все дополнительные отправки локальные; учитываются в `benchmark_local_submissions`.
+Не совмещайте с `--sweep-audit`: это разные наборы проверок. Результаты fork не
+представляют BSC consensus или paid RPC. `rpc_latency_probe --head-seconds 60`
+добавляет shadow-сравнение HTTP/WSS по одинаковым hash без торговых решений.
+
+Для отдельного визуального PAPER-прогона trailing в собранном приложении доступен
+`--market-paper-trailing 3`; без этого параметра сохранены прежние настройки.
