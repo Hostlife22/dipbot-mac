@@ -133,6 +133,70 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1, uncached=False):
     return result
 
 
+def connection_probe(endpoint, samples=5, repeats=3):
+    """Alternate first request of a new client and a persistent client, read-only."""
+    import requests
+
+    from dipbot.market.rpc import BscHTTPProvider
+
+    rows = []
+    with requests.Session() as warm_session:
+        warm = BscHTTPProvider(
+            endpoint, session=warm_session, request_kwargs={"timeout": 3}, exception_retry_configuration=None
+        )
+        guard_provider(warm)
+        warm.make_request("eth_getBlockByNumber", ["latest", False])  # Excluded warm-up.
+        for repeat in range(repeats):
+            for sample in range(samples):
+                for cold in [False, True] if (repeat + sample) % 2 else [True, False]:
+                    session = requests.Session() if cold else None
+                    started = time.perf_counter()
+                    row = {"repeat": repeat, "sample": sample, "client": "new" if cold else "reused"}
+                    try:
+                        provider = (
+                            BscHTTPProvider(
+                                endpoint,
+                                session=session,
+                                request_kwargs={"timeout": 3},
+                                exception_retry_configuration=None,
+                            )
+                            if cold
+                            else warm
+                        )
+                        if cold:
+                            guard_provider(provider)
+                        response = provider.make_request("eth_getBlockByNumber", ["latest", False])
+                        if response.get("error") or not response.get("result"):
+                            raise ValueError("RPC response unavailable")
+                        header = response["result"]
+                        row.update(
+                            block=int(header["number"], 16),
+                            block_hash=header["hash"],
+                            block_age_s=time.time() - int(header["timestamp"], 16),
+                        )
+                    except Exception as exc:
+                        row["error_type"] = type(exc).__name__
+                        status = getattr(getattr(exc, "response", None), "status_code", None)
+                        if type(status) is int:
+                            row["http_status"] = status
+                    finally:
+                        row["ms"] = (time.perf_counter() - started) * 1000
+                        if session is not None:
+                            session.close()
+                    rows.append(row)
+                    time.sleep(0.5)  # Bound public-provider load, outside measured request.
+    return {
+        "rows": rows,
+        "summary": {
+            name: summary([r["ms"] / 1000 for r in rows if r["client"] == name and "error_type" not in r])
+            for name in ["new", "reused"]
+        },
+        "transactions_sent": 0,
+        "passed": not any("error_type" in r for r in rows),
+        "limits": "New HTTP session vs reused session using BscHTTPProvider; OS DNS/TLS/server caches are not flushed. Not a DNS/TLS phase breakdown, exact same block or trading latency. Small-N tails preliminary.",
+    }
+
+
 def identity_probe(endpoint, samples=5, repeats=3):
     """Alternating direct/Multicall identity reads with identical canonical guards."""
     chain = Chain(endpoint)
@@ -387,6 +451,7 @@ if __name__ == "__main__":
     parser.add_argument("--shadow-seconds", type=float, default=0)
     parser.add_argument("--finality-seconds", type=float, default=0)
     parser.add_argument("--uncached", action="store_true")
+    parser.add_argument("--connections", action="store_true")
     parser.add_argument("--identity", action="store_true")
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
@@ -402,6 +467,17 @@ if __name__ == "__main__":
             Path("dipbot/observability/cycle_trace.py"),
         ]
     }
+    if args.connections:
+        result = connection_probe(ENDPOINTS[0], args.samples)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps({"commit_at_start": start_commit, "source_sha256": source_hashes, **result}, indent=2)
+            + "\n"
+        )
+        print(
+            json.dumps({"output": str(args.output), "summary": result["summary"], "passed": result["passed"]})
+        )
+        raise SystemExit(0 if result["passed"] else 1)
     if args.shadow_seconds > 0 or args.finality_seconds > 0:
         result = {"commit_at_start": start_commit, "source_sha256": source_hashes}
         if args.shadow_seconds > 0:

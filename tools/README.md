@@ -78,3 +78,7 @@ uv run --frozen python -m tools.read_only_probe --endpoint https://bsc-rpc.publi
 Обратная котировка не моделирует состояние после BUY, tax/MEV и газ. RPC guard
 исключает отправки; инструмент не читает кошелёк. Не запускайте много диагностических
 потоков одновременно на public RPC: учитывайте rate limits и сохраняйте ошибки.
+
+`rpc_latency_probe --connections --samples 5 --output REPORT.json` сравнивает первый
+запрос новой HTTP-сессии и прогретый клиент в трёх чередующихся сериях. SDK retries
+отключены; это не разложение DNS/TLS и не измерение отправки транзакции.

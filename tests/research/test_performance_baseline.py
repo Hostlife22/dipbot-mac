@@ -107,3 +107,44 @@ def test_market_snapshot_keeps_quote_block_and_rejects_reorg(tmp_path, monkeypat
     rows = [json.loads(s) for s in path.read_text().splitlines()]
     assert result == {"snapshots": 0, "errors": 1, "activity_errors": 0}
     assert rows[1]["canonical"] is False and rows[1]["error_type"] == "ValueError"
+
+
+def test_connection_probe_reuses_only_warm_client_and_closes_sessions(monkeypatch):
+    import requests
+
+    from tools.rpc_latency_probe import connection_probe
+
+    sessions, providers, calls = [], [], []
+
+    class Session:
+        closed = False
+
+        def __init__(self):
+            sessions.append(self)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+        def close(self):
+            self.closed = True
+
+    class Provider:
+        def __init__(self, *args, **kwargs):
+            providers.append(self)
+            assert kwargs["exception_retry_configuration"] is None
+
+        def make_request(self, method, params):
+            assert method == "eth_getBlockByNumber" and params == ["latest", False]
+            calls.append(self)
+            return {"result": {"number": "0x1", "hash": "0x" + "11" * 32, "timestamp": "0x1"}}
+
+    monkeypatch.setattr(requests, "Session", Session)
+    monkeypatch.setattr("dipbot.market.rpc.BscHTTPProvider", Provider)
+    monkeypatch.setattr("tools.rpc_latency_probe.time.sleep", lambda _: None)
+    report = connection_probe("unused", samples=2, repeats=1)
+    assert report["passed"] and len(report["rows"]) == 4
+    assert len(providers) == len(sessions) == 3 and all(s.closed for s in sessions)
+    assert calls.count(providers[0]) == 3
