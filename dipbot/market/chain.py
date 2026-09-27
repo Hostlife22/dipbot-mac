@@ -380,23 +380,33 @@ class Chain:
         return cast(int, self.call(token, TOKEN_ABI, "balanceOf", address(owner)))
 
     def verify_pool(self, pool_address: str, target: str, *, require_liquidity: bool = True) -> Pool:
-        self.check()
+        block = self.check()
+        header = dict(self.checked_header)
         pool_address, target = address(pool_address), address(target)
-        if not self.w3.eth.get_code(pool_address):
+        if not self.w3.eth.get_code(pool_address, block_identifier=block):
             raise ValueError("Пул не содержит контракта")
-        factory = self.call(pool_address, POOL_ABI, "factory")
-        t0 = address(self.call(pool_address, POOL_ABI, "token0"))
-        t1 = address(self.call(pool_address, POOL_ABI, "token1"))
+        names = ("factory", "token0", "token1")
+        if getattr(self, "identity_multicall_enabled", True):
+            from dipbot.market.discovery import batch, request
+
+            values = batch(self, [request(pool_address, POOL_ABI, name) for name in names], block)
+        else:
+            # Control path for matched read-only benchmarks; same block/guards.
+            values = [self.call(pool_address, POOL_ABI, name, block=block) for name in names]
+        if len(values) != 3 or any(value is None for value in values):
+            raise ValueError("Не удалось проверить идентичность пула")
+        factory, raw0, raw1 = values
+        t0, t1 = address(raw0), address(raw1)
         if t0 == t1 or target not in (t0, t1):
             raise ValueError("TOKEN ADDRESS не является стороной пула")
         if factory.lower() == V2_FACTORY.lower():
-            canonical = self.call(V2_FACTORY, FACTORY_ABI, "getPair", t0, t1)
+            canonical = self.call(V2_FACTORY, FACTORY_ABI, "getPair", t0, t1, block=block)
             router, fee = "V2", 0
         elif factory.lower() == V3_FACTORY.lower():
-            fee = self.call(pool_address, POOL_ABI, "fee")
+            fee = self.call(pool_address, POOL_ABI, "fee", block=block)
             if fee not in FEES:
                 raise ValueError("Неподдерживаемый fee tier")
-            canonical = self.call(V3_FACTORY, FACTORY_ABI, "getPool", t0, t1, fee)
+            canonical = self.call(V3_FACTORY, FACTORY_ABI, "getPool", t0, t1, fee, block=block)
             router = "V3"
         else:
             raise ValueError("Пул не принадлежит официальной PancakeSwap factory")
@@ -413,6 +423,7 @@ class Chain:
             t0 == target,
             fee,
         )
+        self.canonical_receipt({"blockNumber": block, "blockHash": header["hash"]})
         if require_liquidity:
             self.price(pool)
         return pool

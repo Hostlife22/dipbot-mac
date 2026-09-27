@@ -130,6 +130,56 @@ def probe(endpoint, samples, max_seconds=300, interval=0.1, uncached=False):
     return result
 
 
+def identity_probe(endpoint, samples=5, repeats=3):
+    """Alternating direct/Multicall identity reads with identical canonical guards."""
+    chain = Chain(endpoint)
+    guard_provider(chain.w3.provider)
+    wire = []
+    original = chain.w3.provider._make_request
+
+    def measured(method, *args, **kwargs):
+        wire.append(method)
+        return original(method, *args, **kwargs)
+
+    chain.w3.provider._make_request = measured
+    rows = []
+    for router, addr in POOLS.items():
+        chain.verify_pool(addr, USDT)  # warm metadata/ABI, excluded explicitly
+        for repeat in range(repeats):
+            for index in range(samples):
+                modes = [False, True] if (repeat + index) % 2 else [True, False]
+                expected = None
+                for enabled in modes:
+                    chain.identity_multicall_enabled = enabled
+                    wire.clear()
+                    started = time.perf_counter()
+                    error = None
+                    try:
+                        pool = chain.verify_pool(addr, USDT)
+                        if expected is not None and pool != expected:
+                            raise AssertionError("pool identity mismatch")
+                        expected = pool
+                    except Exception as exc:
+                        error = type(exc).__name__
+                    rows.append(
+                        {
+                            "router": router,
+                            "repeat": repeat,
+                            "multicall": enabled,
+                            "ms": (time.perf_counter() - started) * 1000,
+                            "wire_calls": len(wire),
+                            "error_type": error,
+                        }
+                    )
+                time.sleep(0.1)
+    return {
+        "rows": rows,
+        "samples_per_mode_router": samples * repeats,
+        "transactions_sent": 0,
+        "limits": "Warm identity check, alternating wall-clock windows. Same guards but not identical head. Not signal-to-broadcast. Small-N tails preliminary.",
+    }
+
+
 def head_delivery(seconds=60):
     """Shadow comparison on equal hashes; never drive strategy from these hints."""
     from dipbot.market.head_feed import HeadFeed
@@ -182,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("--interval", type=float, default=0.1)
     parser.add_argument("--head-seconds", type=float, default=0)
     parser.add_argument("--uncached", action="store_true")
+    parser.add_argument("--identity", action="store_true")
     args = parser.parse_args()
     if args.samples < 1 or args.max_seconds <= 0 or args.interval < 0:
         parser.error("invalid sampling limits")
@@ -190,6 +241,15 @@ if __name__ == "__main__":
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in [Path(__file__), Path("dipbot/market/chain.py"), Path("dipbot/market/rpc.py")]
     }
+    if args.identity:
+        result = identity_probe(ENDPOINTS[0], args.samples)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps({"commit_at_start": start_commit, "source_sha256": source_hashes, **result}, indent=2)
+            + "\n"
+        )
+        print(json.dumps({"output": str(args.output), "rows": len(result["rows"])}))
+        raise SystemExit(0)
     with ThreadPoolExecutor(max_workers=3) as executor:
         rows = list(
             executor.map(

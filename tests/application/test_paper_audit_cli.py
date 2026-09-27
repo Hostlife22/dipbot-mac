@@ -50,6 +50,8 @@ def test_packaged_audit_honours_explicit_dip(tmp_path, monkeypatch, qt_applicati
             "--market-paper-continue-after-sl",
             "--market-paper-cooldown",
             "3",
+            "--market-paper-trailing",
+            "3",
             "--market-paper-dip",
             "12",
             "--market-paper-amount-usd",
@@ -61,6 +63,7 @@ def test_packaged_audit_honours_explicit_dip(tmp_path, monkeypatch, qt_applicati
     assert received["automatic_only"] and not received["exercise_recovery"]
     assert received["continue_after_sl"] is True and received["cooldown"] == 3
     assert received["amount_usd"] == "20"
+    assert received["trailing"] == 3
 
 
 @pytest.mark.parametrize("amount", ["0", "-1", "NaN", "Infinity"])

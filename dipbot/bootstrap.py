@@ -45,6 +45,7 @@ def main() -> int:
         help="Continue the isolated audit after a risk exit; does not change saved settings",
     )
     parser.add_argument("--market-paper-cooldown", type=float, default=None)
+    parser.add_argument("--market-paper-trailing", type=float, default=None)
     parser.add_argument(
         "--market-paper-amount-usd", help="Virtual position size in USD for the isolated PAPER audit"
     )
@@ -94,6 +95,7 @@ def main() -> int:
             dynamic=args.market_paper_dynamic,
             continue_after_sl=args.market_paper_continue_after_sl,
             cooldown=args.market_paper_cooldown,
+            trailing=args.market_paper_trailing,
             amount_usd=args.market_paper_amount_usd,
         )
         return result or 0

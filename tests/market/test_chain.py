@@ -86,17 +86,24 @@ def test_v3_abi_exact_input_has_deadline_and_quoter_argument_order():
 
 
 @pytest.mark.parametrize("bad", ["factory", "canonical", "target"])
-def test_reject_forged_pool(bad):
+def test_reject_forged_pool(bad, monkeypatch):
     c = object.__new__(Chain)
     c.check = lambda: 1
+    c.checked_header = {"number": 1, "hash": b"a" * 32}
+    monkeypatch.setattr(
+        "dipbot.market.discovery.batch",
+        lambda chain, requests, block: [
+            chain.call(a, b, n, *args, block=block) for a, b, n, args in requests
+        ],
+    )
 
     class Eth:
-        def get_code(self, a):
+        def get_code(self, a, **kwargs):
             return b"code"
 
     c.w3 = type("W", (), {"eth": Eth()})()
 
-    def call(addr, abi, method, *args):
+    def call(addr, abi, method, *args, **kwargs):
         return {
             "factory": POOL if bad == "factory" else V2_FACTORY,
             "token0": address(WBNB),
