@@ -78,3 +78,33 @@ def test_explicit_automatic_pool_requires_token_before_key_access():
 
     with pytest.raises(ValueError, match="requires a token"):
         run(None, None, automatic_pool="unused")
+
+
+@pytest.mark.parametrize("token,pool", [(None, None), ("unused", None), (None, "unused")])
+def test_cleanup_requires_original_market_before_key_access(token, pool):
+    from tools.live_ui_audit import run
+
+    with pytest.raises(ValueError, match="original automatic"):
+        run(None, None, automatic_token=token, automatic_pool=pool, cleanup_only=True)
+
+
+def test_reverted_gas_survives_send_exception_without_duplicate_receipts():
+    from tools.live_ui_audit import merge_settled_receipts
+
+    report = {"receipts": [{"hash": "0xabc", "gas_fee_wei": 10}]}
+    settled = {
+        "hash": "0xdef",
+        "label": "BUY",
+        "status": "reverted",
+        "block": 3,
+        "block_hash": "0x123",
+        "gas_fee_wei": 20,
+    }
+    state = {
+        "history": [{"transactions": [dict(settled, hash="ABC", status="confirmed")]}],
+        "operation": {"transactions": [settled, dict(settled, hash="0xaaa", status="pending")]},
+    }
+    merge_settled_receipts(report, state)
+    merge_settled_receipts(report, state)
+    assert [r.get("status") for r in report["receipts"]] == [None, 0]
+    assert sum(r["gas_fee_wei"] for r in report["receipts"]) == 30

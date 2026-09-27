@@ -83,6 +83,33 @@ def lose_send_ack(sender, on_sent):
     return send
 
 
+def merge_settled_receipts(report, state):
+    """Include reverted gas even when send raised before returning its receipt."""
+    known = {r["hash"].removeprefix("0x").lower() for r in report["receipts"]}
+    operations = list(state.get("history", []))
+    if state.get("operation"):
+        operations.append(state["operation"])
+    for operation in operations:
+        for tx in operation.get("transactions", []):
+            key = tx["hash"].removeprefix("0x").lower()
+            if key in known or tx.get("status") not in {"confirmed", "reverted"}:
+                continue
+            if not all(k in tx for k in ("block", "block_hash", "gas_fee_wei")):
+                continue
+            report["receipts"].append(
+                {
+                    "label": tx["label"],
+                    "hash": tx["hash"],
+                    "status": 1 if tx["status"] == "confirmed" else 0,
+                    "block": tx["block"],
+                    "block_hash": tx["block_hash"],
+                    "gas_fee_wei": tx["gas_fee_wei"],
+                    "receipt_source": "validated durable journal",
+                }
+            )
+            known.add(key)
+
+
 def run(
     key_path,
     directory,
@@ -96,7 +123,10 @@ def run(
     automatic_token=None,
     automatic_seconds=600,
     automatic_pool=None,
+    cleanup_only=False,
 ):
+    if cleanup_only and (not automatic_token or not automatic_pool):
+        raise ValueError("Cleanup requires the original automatic token and pool")
     if automatic_pool and not automatic_token:
         raise ValueError("Explicit automatic pool requires a token")
     if automatic_token and (
@@ -118,7 +148,7 @@ def run(
         if sweep_multi
         else "state-sweep.json"
     )
-    directory.mkdir(parents=True, exist_ok=resume or sweep_mode or exit_retry)
+    directory.mkdir(parents=True, exist_ok=resume or sweep_mode or exit_retry or cleanup_only)
     key = key_path.read_text().strip()
     account = Account.from_key(key)
     chain = Chain("https://bsc-dataseed.binance.org")
@@ -132,7 +162,7 @@ def run(
         chain.balance(WBNB, account.address) == expected_wrapped
         and chain.balance(audit_token, account.address) == 0
     ), "Unexpected holdings: do not continue"
-    if not resume:
+    if not resume and not cleanup_only:
         assert all(not Store(p).data.get("operation") for p in directory.glob("state*.json")), (
             "Earlier audit needs reconciliation"
         )
@@ -144,7 +174,7 @@ def run(
     )
     v2 = next(p for p in pools if p.router == "V2")
     audit_base = v2.quote
-    assert audit_base == address(WBNB) or chain.balance(audit_base, account.address) == 0, (
+    assert cleanup_only or audit_base == address(WBNB) or chain.balance(audit_base, account.address) == 0, (
         "Existing base holdings"
     )
     v3s = [p for p in pools if p.router == "V3"]
@@ -163,8 +193,13 @@ def run(
         "reserved_gas_wei": 0,
         "ui_mismatches": [],
     }
-    if resume or sweep_mode or exit_retry:
+    if resume or sweep_mode or exit_retry or cleanup_only:
         report = json.loads((directory / "report.json").read_text())
+        assert report.get("target_token") == audit_token, "Audit token changed"
+        assert report.get("base_token", WBNB) == audit_base, "Audit base changed"
+        if cleanup_only:
+            report["automatic_scenario_passed"] = report.get("passed", False)
+            report["automatic_failure_type"] = report.get("failure_type")
         if sweep_mode or exit_retry:
             assert report.get("passed") and not report.get("journal_locked")
             assert not Store(directory / "state.json").data.get("operation")
@@ -385,6 +420,43 @@ def run(
             w.rpc.setText("https://bsc-dataseed.binance.org")
             w.save_rpc.setChecked(False)
             click("Подключить")
+            if cleanup_only:
+                assert not w.store.data.get("positions") and chain.balance(audit_token, account.address) == 0
+                click("Проверить receipts")
+                operation = w.store.data.get("operation")
+                if operation:
+                    assert all(t["status"] in {"confirmed", "reverted"} for t in operation["transactions"])
+                    known = {r["hash"].removeprefix("0x") for r in report["receipts"]}
+                    for t in operation["transactions"]:
+                        if t["hash"].removeprefix("0x") not in known:
+                            receipt = chain.w3.eth.get_transaction_receipt(t["hash"])
+                            chain.canonical_receipt(receipt)
+                            report["receipts"].append(
+                                {
+                                    "label": t["label"],
+                                    "hash": t["hash"],
+                                    "status": receipt["status"],
+                                    "block": receipt["blockNumber"],
+                                    "block_hash": receipt["blockHash"].hex(),
+                                    "gas_fee_wei": receipt["gasUsed"] * receipt["effectiveGasPrice"],
+                                }
+                            )
+                    assert chain.balance(audit_token, account.address) == 0
+                    click("Балансы сверены · снять блокировку")
+                assert not w.store.data.get("operation") and not w.locked
+                select(v2)
+                w.params["slippage"].setText("5")
+                if chain.balance(audit_base, account.address):
+                    click("SELL ALL BASE → BNB")
+                report["remaining_base_raw"] = chain.balance(audit_base, account.address)
+                assert report["remaining_base_raw"] == 0 and chain.balance(WBNB, account.address) == 0
+                report["cleanup_passed"] = True
+                report["passed"] = not report["errors"] and not report["ui_mismatches"]
+                report["scenarios"].append(
+                    "Receipt reconciliation and base cleanup after failed automatic attempt; no repeated BUY"
+                )
+                capture("cleanup_completed")
+                return
             if resume:
                 op = w.store.data["operation"]
                 assert (
@@ -692,6 +764,7 @@ def run(
             report["remaining_usdt_raw"] = chain.balance(USDT, account.address)
             after = chain.w3.eth.get_balance(account.address)
             report["native_balance_delta_wei"] = before - after
+            merge_settled_receipts(report, w.store.data)
             report["gas_fee_wei"] = sum(x["gas_fee_wei"] for x in report["receipts"])
             report["logs"] = logs
             save()
@@ -715,6 +788,11 @@ if __name__ == "__main__":
         "--automatic-token", help="Explicitly selected token; requires separate prior sellability review"
     )
     p.add_argument("--automatic-seconds", type=int, default=600)
+    p.add_argument(
+        "--cleanup-only",
+        action="store_true",
+        help="Reconcile existing automatic audit and redeem only its base; never BUY",
+    )
     p.add_argument("--automatic-pool", help="Canonical V2 pool for the explicit automatic token")
     p.add_argument(
         "--inject-lost-ack",
@@ -780,4 +858,5 @@ if __name__ == "__main__":
         automatic_token=a.automatic_token,
         automatic_seconds=a.automatic_seconds,
         automatic_pool=a.automatic_pool,
+        cleanup_only=a.cleanup_only,
     )
