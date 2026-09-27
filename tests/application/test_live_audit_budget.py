@@ -71,3 +71,10 @@ def test_automatic_audit_cannot_resume_a_different_scenario():
 
     with pytest.raises(ValueError, match="new journal"):
         run(None, None, automatic_token="unused", resume=True)
+
+
+def test_explicit_automatic_pool_requires_token_before_key_access():
+    from tools.live_ui_audit import run
+
+    with pytest.raises(ValueError, match="requires a token"):
+        run(None, None, automatic_pool="unused")

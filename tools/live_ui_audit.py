@@ -95,7 +95,10 @@ def run(
     inject_lost_ack=False,
     automatic_token=None,
     automatic_seconds=600,
+    automatic_pool=None,
 ):
+    if automatic_pool and not automatic_token:
+        raise ValueError("Explicit automatic pool requires a token")
     if automatic_token and (
         not 1 <= automatic_seconds <= 600
         or any((resume, sweep_only, sweep_multi, sweep_stop, sweep_route, exit_retry, inject_lost_ack))
@@ -134,13 +137,22 @@ def run(
             "Earlier audit needs reconciliation"
         )
     before = chain.w3.eth.get_balance(account.address)
-    pools = chain.find_pools(audit_token, WBNB)
+    pools = (
+        [chain.verify_pool(automatic_pool, audit_token)]
+        if automatic_pool
+        else chain.find_pools(audit_token, WBNB)
+    )
     v2 = next(p for p in pools if p.router == "V2")
+    audit_base = v2.quote
+    assert audit_base == address(WBNB) or chain.balance(audit_base, account.address) == 0, (
+        "Existing base holdings"
+    )
     v3s = [p for p in pools if p.router == "V3"]
     v3 = max(v3s, key=lambda p: chain.quote(p, 30000000000000, True)) if v3s else None
     report = {
         "mode": "LIVE",
         "target_token": audit_token,
+        "base_token": audit_base,
         "automatic_max_buys": 2 if automatic_token else None,
         "scenarios": [],
         "receipts": [],
@@ -215,7 +227,7 @@ def run(
             def build_transaction(self, tx):
                 built = function.build_transaction(tx)
                 assert built["to"].lower() in {
-                    a.lower() for a in [WBNB, audit_token, V2_ROUTER, V3_ROUTER]
+                    a.lower() for a in [WBNB, audit_token, audit_base, V2_ROUTER, V3_ROUTER]
                 }, "Recipient outside audit allowlist"
                 return built
 
@@ -405,7 +417,10 @@ def run(
             if automatic_token:
                 w.convert_amount.setText("0.0001")
                 click("BUY BASE")
-                w.params["amount"].setText("0.00002")
+                funded_base = chain.balance(audit_base, account.address)
+                position_raw = funded_base // 5
+                assert position_raw > 0, "No base funding"
+                w.params["amount"].setText(str(D(position_raw) / D(10) ** v2.quote_decimals))
                 for name, value in (
                     ("dip", "10"),
                     ("take_profit", "15"),
@@ -423,6 +438,9 @@ def run(
                 started = progress = time.monotonic()
                 while time.monotonic() - started < automatic_seconds and w.running:
                     pump()
+                    if (directory / "stop.request").exists():
+                        report["automatic_stop_requested"] = True
+                        break
                     if sum(r["label"] == "SELL" for r in report["receipts"]) >= 2:
                         break
                     if time.monotonic() - progress >= 30:
@@ -453,6 +471,8 @@ def run(
                     "LIVE bounded automatic market observation; STOP cleanup separately identified in archive"
                 )
                 click("SELL ALL BASE → BNB")
+                report["remaining_base_raw"] = chain.balance(audit_base, account.address)
+                assert report["remaining_base_raw"] == 0
                 assert chain.balance(WBNB, account.address) == 0
                 report["passed"] = not report["errors"] and not report["ui_mismatches"]
                 capture("completed")
@@ -695,6 +715,7 @@ if __name__ == "__main__":
         "--automatic-token", help="Explicitly selected token; requires separate prior sellability review"
     )
     p.add_argument("--automatic-seconds", type=int, default=600)
+    p.add_argument("--automatic-pool", help="Canonical V2 pool for the explicit automatic token")
     p.add_argument(
         "--inject-lost-ack",
         action="store_true",
@@ -758,4 +779,5 @@ if __name__ == "__main__":
         a.inject_lost_ack,
         automatic_token=a.automatic_token,
         automatic_seconds=a.automatic_seconds,
+        automatic_pool=a.automatic_pool,
     )

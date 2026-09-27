@@ -81,8 +81,8 @@ def run(
     if not 0 < block <= head:
         raise ValueError("Invalid fork block")
     remote_pool = remote.verify_pool(pool_address, token)
-    if remote_pool.quote.lower() != WBNB.lower():
-        raise ValueError("Локальный тест пока требует базу WBNB")
+    if remote_pool.quote.lower() != WBNB.lower() and (sweep_audit or paired_performance or cohort_audit):
+        raise ValueError("Extended cohorts require WBNB; use a standalone converter round trip")
     if not 0 < amount <= 10**16:
         raise ValueError("Размер локальной симуляции должен быть <=0.01 WBNB")
     counts = Counter()
@@ -267,15 +267,17 @@ def run(
                     {"event": event, "environment": "FORK", **kw}
                 ),
             )
-            report["phase"] = "wrap"
-            trader.begin("LOCAL WRAP")
-            trader.wrap(amount)
+            report["phase"] = "base_funding"
+            trader.begin("LOCAL BASE FUNDING")
+            base_amount = trader.convert(pool.quote, amount, True, D(3))
             trader.finish()
-            quoted_buy = chain.quote(pool, amount, True)
+            report["base_token"] = pool.quote
+            report["base_amount_raw"] = str(base_amount)
+            quoted_buy = chain.quote(pool, base_amount, True)
             report["phase"] = "buy"
             trader.begin("BUY local fork")
             with signal_cycle(trace_worker, "BUY", None):
-                received = trader.swap(pool, amount, True, D(3), simulate=True)
+                received = trader.swap(pool, base_amount, True, D(3), simulate=True)
             trader.finish()
             quoted_sell = chain.quote(pool, received, False)
             report["phase"] = "sell"
@@ -283,6 +285,12 @@ def run(
             with signal_cycle(trace_worker, "STOP_LOSS", None):
                 returned = trader.swap(pool, received, False, D(3), simulate=True)
             trader.finish()
+            native_returned = returned
+            if pool.quote.lower() != WBNB.lower():
+                report["phase"] = "base_redemption"
+                trader.begin("LOCAL BASE REDEMPTION")
+                native_returned = trader.convert(pool.quote, returned, False, D(3))
+                trader.finish()
             if paired_performance:
                 report["phase"] = "paired_performance"
                 report["paired_receipt_mode"] = (
@@ -313,8 +321,9 @@ def run(
                 quoted_buy=str(quoted_buy),
                 received=str(received),
                 quoted_sell=str(quoted_sell),
-                returned_wei=str(returned),
-                roundtrip_loss_pct=str((D(amount) - D(returned)) * 100 / D(amount)),
+                returned_wei=str(native_returned),
+                returned_base_raw=str(returned),
+                roundtrip_loss_pct=str((D(amount) - D(native_returned)) * 100 / D(amount)),
                 asset_flows=[flow for op in store.data["history"] for flow in op.get("asset_flows", [])],
                 local_transactions=len(receipts) + 1 + report.get("benchmark_local_submissions", 0),
                 bootstrap_local_transactions=1,
